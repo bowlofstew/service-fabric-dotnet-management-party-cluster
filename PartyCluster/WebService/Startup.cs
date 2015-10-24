@@ -17,6 +17,7 @@ namespace WebService
         {
             HttpConfiguration config = new HttpConfiguration();
 
+            FormatterConfig.ConfigureFormatters(config.Formatters);
             PhysicalFileSystem physicalFileSystem = new PhysicalFileSystem(@".\wwwroot");
             FileServerOptions fileOptions = new FileServerOptions();
 
@@ -28,6 +29,7 @@ namespace WebService
             fileOptions.StaticFileOptions.ServeUnknownFileTypes = true;
 
             config.MapHttpAttributeRoutes();
+
 
             appBuilder.UseWebApi(config);
             appBuilder.UseFileServer(fileOptions);

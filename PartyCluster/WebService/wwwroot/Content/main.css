@@ -130,7 +130,7 @@ section#main
     width:550px;
     margin:20px 0 0 0;
 }
-.cluster-list table td{
+.cluster-list table td, .cluster-list table th{
     padding:10px;
 }
     .cluster-list table thead {

@@ -8,7 +8,7 @@
     <OutputType>Exe</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
     <RootNamespace>WebService</RootNamespace>
-    <AssemblyName>WebService</AssemblyName>
+    <AssemblyName>PartyCluster.WebService</AssemblyName>
     <TargetFrameworkVersion>v4.5.1</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
     <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
@@ -100,9 +100,12 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="App_Start\FormatterConfig.cs" />
+    <Compile Include="Controllers\ClusterController.cs" />
     <Compile Include="IOwinAppBuilder.cs" />
     <Compile Include="OwinCommunicationListener.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="ServiceUriBuilder.cs" />
     <Compile Include="Startup.cs" />
     <Compile Include="WebService.cs" />
     <Compile Include="Program.cs" />
@@ -115,7 +118,9 @@
     <None Include="packages.config" />
   </ItemGroup>
   <ItemGroup>
-    <Content Include="wwwroot\Content\main.css" />
+    <Content Include="wwwroot\Content\main.css">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
     <Content Include="wwwroot\Content\partycluster-background.png">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
@@ -128,6 +133,12 @@
     <Content Include="wwwroot\Scripts\main.js">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\Domain\Domain.csproj">
+      <Project>{af0bb737-6977-4f24-824a-c5a92eb683a5}</Project>
+      <Name>Domain</Name>
+    </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <Target Name="AfterBuild">

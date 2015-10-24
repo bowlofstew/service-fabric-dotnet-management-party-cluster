@@ -49,14 +49,14 @@ namespace ClusterService
 
             return from cluster in clusterDictionary.CreateEnumerable(EnumerationMode.Ordered)
                    where cluster.Value.Status == ClusterStatus.Ready
-                   select new ClusterView()
-                   {
-                       AppCount = cluster.Value.AppCount,
-                       Name = "Party Cluster " + cluster.Key,
-                       ServiceCount = cluster.Value.ServiceCount,
-                       Uptime = DateTimeOffset.UtcNow - cluster.Value.CreatedOn.ToUniversalTime(),
-                       UserCount = cluster.Value.Users.Count
-                   };
+                   select new ClusterView(
+                    "Party Cluster " + cluster.Key,
+                       cluster.Value.AppCount,
+                       cluster.Value.ServiceCount,
+                       cluster.Value.Users.Count,
+                       this.Config.MaxClusterUptime - (DateTimeOffset.UtcNow - cluster.Value.CreatedOn.ToUniversalTime()));
+                       
+                   
         }
 
         public async Task JoinClusterAsync(string username, string clusterName)
@@ -353,6 +353,8 @@ namespace ClusterService
 
         protected override async Task RunAsync(CancellationToken cancellationToken)
         {
+            return;
+
             while (!cancellationToken.IsCancellationRequested)
             {
                 await ProcessClusters();

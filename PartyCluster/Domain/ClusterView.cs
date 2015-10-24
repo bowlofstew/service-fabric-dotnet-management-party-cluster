@@ -6,17 +6,33 @@
 namespace Domain
 {
     using System;
+    using System.Runtime.Serialization;
 
+    [DataContract]
     public struct ClusterView
     {
-        public string Name { get; set; }
+        public ClusterView(string name, int appCount, int serviceCount, int userCount, TimeSpan timeRemaining)
+        {
+            this.Name = name;
+            this.AppCount = appCount;
+            this.ServiceCount = serviceCount;
+            this.UserCount = userCount;
+            this.TimeRemaining = timeRemaining;
+        }
 
-        public int AppCount { get; set; }
+        [DataMember]
+        public string Name { get; private set; }
 
-        public int ServiceCount { get; set; }
+        [DataMember]
+        public int AppCount { get; private set; }
 
-        public int UserCount { get; set; }
+        [DataMember]
+        public int ServiceCount { get; private set; }
 
-        public TimeSpan Uptime { get; set; }
+        [DataMember]
+        public int UserCount { get; private set; }
+
+        [DataMember]
+        public TimeSpan TimeRemaining { get; private set; }
     }
 }
