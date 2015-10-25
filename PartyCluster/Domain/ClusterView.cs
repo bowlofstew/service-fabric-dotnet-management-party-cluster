@@ -11,14 +11,18 @@ namespace Domain
     [DataContract]
     public struct ClusterView
     {
-        public ClusterView(string name, int appCount, int serviceCount, int userCount, TimeSpan timeRemaining)
+        public ClusterView(int clusterId, string name, int appCount, int serviceCount, int userCount, TimeSpan timeRemaining)
         {
+            this.ClusterId = clusterId;
             this.Name = name;
             this.AppCount = appCount;
             this.ServiceCount = serviceCount;
             this.UserCount = userCount;
             this.TimeRemaining = timeRemaining;
         }
+
+        [DataMember]
+        public int ClusterId { get; private set; }
 
         [DataMember]
         public string Name { get; private set; }

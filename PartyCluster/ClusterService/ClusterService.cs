@@ -50,6 +50,7 @@ namespace ClusterService
             return from cluster in clusterDictionary.CreateEnumerable(EnumerationMode.Ordered)
                    where cluster.Value.Status == ClusterStatus.Ready
                    select new ClusterView(
+                       cluster.Key,
                     "Party Cluster " + cluster.Key,
                        cluster.Value.AppCount,
                        cluster.Value.ServiceCount,
@@ -59,27 +60,23 @@ namespace ClusterService
                    
         }
 
-        public async Task JoinClusterAsync(string username, string clusterName)
+        public async Task JoinClusterAsync(string username, int clusterId)
         {
             if (String.IsNullOrWhiteSpace(username))
             {
                 throw new ArgumentNullException("username");
             }
+            
 
-            if (String.IsNullOrWhiteSpace(clusterName))
-            {
-                throw new ArgumentNullException("clusterName");
-            }
-
-            IReliableDictionary<string, Cluster> clusterDictionary =
-                await this.reliableStateManager.GetOrAddAsync<IReliableDictionary<string, Cluster>>(ClusterDictionaryName);
+            IReliableDictionary<int, Cluster> clusterDictionary =
+                await this.reliableStateManager.GetOrAddAsync<IReliableDictionary<int, Cluster>>(ClusterDictionaryName);
 
             int userPort;
             string clusterAddress;
 
             using (ITransaction tx = this.reliableStateManager.CreateTransaction())
             {
-                ConditionalResult<Cluster> result = await clusterDictionary.TryGetValueAsync(tx, clusterName, LockMode.Update);
+                ConditionalResult<Cluster> result = await clusterDictionary.TryGetValueAsync(tx, clusterId, LockMode.Update);
 
                 if (!result.HasValue)
                 {
@@ -105,7 +102,7 @@ namespace ClusterService
 
                 cluster.Users.Add(new ClusterUser() { Name = username, Port = userPort });
 
-                await clusterDictionary.SetAsync(tx, clusterName, cluster);
+                await clusterDictionary.SetAsync(tx, clusterId, cluster);
 
                 await tx.CommitAsync();
             }

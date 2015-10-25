@@ -24,14 +24,46 @@
     }
 };
 
+function Dialog($modal) {
+    var overlay = $('.overlay');
+
+    this.Window = $modal;
+
+    this.Show = function () {
+        overlay.fadeIn(300);
+        $modal.fadeIn(300);
+    };
+
+    overlay.click(function () {
+        $(this).fadeOut(200);
+        $modal.fadeOut(200);
+    });
+};
+
 function PartyClusters(api) {
     var self = this;
     this.api = api;
+    this.selectedClusterId = 0;
+    this.joinClusterDialog = new Dialog($('.join-cluster'));
 
     this.Initialize = function () {
         this.PopulateClusterList();
 
+        $('.join-now', self.joinClusterDialog.Window).click(function () {
+            alert(self.selectedClusterId);
+        });
+
+        $('.partynow').click(function () {
+            alert('join random');
+        });
+
         setInterval(this.PopulateClusterList, 5000);
+    };
+
+    this.ShowJoinClusterDialog = function (clusterId, clusterName) {
+        self.selectedClusterId = clusterId;
+        $('.join-cluster-name', self.joinClusterDialog.Window).text(clusterName);
+        self.joinClusterDialog.Show();
     };
 
     this.PopulateClusterList = function () {
@@ -47,13 +79,13 @@ function PartyClusters(api) {
                        .append(
                            $('<th/>').text('Users'))
                        .append(
-                           $('<th />').text('Applications'))
+                           $('<th/>').text('Applications'))
                        .append(
-                           $('<th />').text('Services'))
+                           $('<th/>').text('Services'))
                        .append(
-                           $('<th />').text('Time left'))
+                           $('<th/>').text('Time left'))
                        .append(
-                           $('<th />').text(''))
+                           $('<th/>').text(''))
                        )
                .appendTo(clusterTable);
 
@@ -61,7 +93,7 @@ function PartyClusters(api) {
 				.appendTo(clusterTable);
 
             $.each(data, function (id, jObject) {
-                $('<tr/>')
+                $('<tr />')
 					.append(
 						$('<td/>').text(jObject.Name))
 					.append(
@@ -75,7 +107,9 @@ function PartyClusters(api) {
 					.append(
 						$('<td/>')
 							.append(
-								$('<a class="button">').text('Join!')))
+								$('<a href="javascript:void(0);" class="button">')
+									.text('Join!')
+									.click(function () { self.ShowJoinClusterDialog(jObject.ClusterId, jObject.Name); })))
 				.appendTo(clusterTable);
 
             });

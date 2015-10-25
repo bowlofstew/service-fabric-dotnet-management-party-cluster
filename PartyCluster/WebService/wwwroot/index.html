@@ -26,6 +26,25 @@
         </div>
     </header>
     <section id="main" class="wrapper clearfix">
+        <div class="overlay"></div>
+        <div class="dialog join-cluster">
+            <h3 class="join-cluster-name"></h3>
+            <p>
+                To join the cluster, just fill in your name and email address, and the cluster address will be emailed to you.
+                These are unsecured clusters, so once you have the cluster address you can connect normally.
+            </p>
+            <div>
+                <label for="username">Your name:</label><input name="username"></input>
+            </div>
+            <div>
+                <label for="useremail">Your email:</label><input name="useremail"></input>
+            </div>
+            <a class="button join-now" href="javascript:void(0)">Join!</a>
+            <p class="disclaimer">
+                This is just to prevent spam. We do not retain your name and email information and will not use this information for any other purpose.
+                Still skeptical? This application is open source! <a href="http://github.com" target="_blank">See for yourself</a>.
+            </p>
+        </div>
         <div class="cluster-list clearfix">
             <table class="clearfix"></table>
         </div>

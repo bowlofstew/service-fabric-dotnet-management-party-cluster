@@ -20,8 +20,26 @@ namespace WebService.Controllers
             //IClusterService clusterService = ServiceProxy.Create<IClusterService>(1, builder.ToUri());
 
             //return clusterService.GetClusterList();
+            Random random = new Random();
+            return Task.FromResult((IEnumerable<ClusterView>)new List<ClusterView>()
+            {
+                new ClusterView(random.Next(), "Party Cluster", 2, 5, 10, TimeSpan.FromMinutes(68)),
+                new ClusterView(random.Next(), "Party Cluster", 2, 5, 10, TimeSpan.FromMinutes(68)),
+                new ClusterView(random.Next(), "Party Cluster", 2, 5, 10, TimeSpan.FromMinutes(68)),
+                new ClusterView(random.Next(), "Party Cluster", 2, 5, 10, TimeSpan.FromMinutes(68)),
+                new ClusterView(random.Next(), "Party Cluster", 2, 5, 10, TimeSpan.FromMinutes(68)),
+                new ClusterView(random.Next(), "Party Cluster", 2, 5, 10, TimeSpan.FromMinutes(68)),
+                new ClusterView(random.Next(), "Party Cluster", 2, 5, 10, TimeSpan.FromMinutes(68)),
+                new ClusterView(random.Next(), "Party Cluster", 2, 5, 10, TimeSpan.FromMinutes(68)),
+                new ClusterView(random.Next(), "Party Cluster", 2, 5, 10, TimeSpan.FromMinutes(68))
+            });
+        }
 
-            return Task.FromResult(Enumerable.Repeat<ClusterView>(new ClusterView("Party Cluster", 2, 5, 10, TimeSpan.FromMinutes(68)), 11));
+        [HttpPost]
+        [Route("clusters/join")]
+        public Task JoinRandom([FromBody]string user)
+        {
+            throw new NotImplementedException();
         }
 
         [HttpPost]
@@ -30,5 +48,6 @@ namespace WebService.Controllers
         {
             throw new NotImplementedException();
         }
+
     }
 }
