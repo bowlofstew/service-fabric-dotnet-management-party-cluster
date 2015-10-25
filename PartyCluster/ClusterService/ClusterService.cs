@@ -24,7 +24,9 @@ namespace ClusterService
 
         public ClusterService()
         {
-            this.Config = new ClusterConfig();
+            this.Config = new ClusterConfig() { MaxClusterUptime = TimeSpan.FromSeconds(30), RefreshInterval = TimeSpan.FromSeconds(3) };
+            this.clusterOperator = new FakeClusterOperator(this.Config);
+
         }
 
         /// <summary>
@@ -42,7 +44,7 @@ namespace ClusterService
 
         internal ClusterConfig Config { get; set; }
 
-        public async Task<IEnumerable<ClusterView>> GetClusterList()
+        public async Task<IEnumerable<ClusterView>> GetClusterListAsync()
         {
             IReliableDictionary<int, Cluster> clusterDictionary =
                 await this.reliableStateManager.GetOrAddAsync<IReliableDictionary<int, Cluster>>(ClusterDictionaryName);
@@ -51,13 +53,11 @@ namespace ClusterService
                    where cluster.Value.Status == ClusterStatus.Ready
                    select new ClusterView(
                        cluster.Key,
-                    "Party Cluster " + cluster.Key,
+                       "Party Cluster " + cluster.Key,
                        cluster.Value.AppCount,
                        cluster.Value.ServiceCount,
                        cluster.Value.Users.Count,
                        this.Config.MaxClusterUptime - (DateTimeOffset.UtcNow - cluster.Value.CreatedOn.ToUniversalTime()));
-                       
-                   
         }
 
         public async Task JoinClusterAsync(string username, int clusterId)
@@ -67,7 +67,6 @@ namespace ClusterService
                 throw new ArgumentNullException("username");
             }
             
-
             IReliableDictionary<int, Cluster> clusterDictionary =
                 await this.reliableStateManager.GetOrAddAsync<IReliableDictionary<int, Cluster>>(ClusterDictionaryName);
 
@@ -131,22 +130,27 @@ namespace ClusterService
                 {
                     target = this.Config.MinimumClusterCount;
                 }
-                
+
                 if (target > this.Config.MaximumClusterCount)
                 {
                     target = this.Config.MaximumClusterCount;
                 }
 
+                ServiceEventSource.Current.ServiceMessage(this, "Balancing clusters. Currently active: {0}. Target: {1}.", activeClusterCount, target);
+
                 if (activeClusterCount < target)
                 {
-                    int limit = Math.Min(target, this.Config.MaximumClusterCount);
+                    int limit = Math.Min(target, this.Config.MaximumClusterCount) - activeClusterCount;
 
-                    for (int i = 0; i < limit - activeClusterCount; ++i)
+                    for (int i = 0; i < limit; ++i)
                     {
                         await clusterDictionary.AddAsync(tx, random.Next(), new Cluster());
                     }
 
                     await tx.CommitAsync();
+
+                    ServiceEventSource.Current.ServiceMessage(this, "Balancing clusters completed. Added: {0}", limit);
+                    return;
                 }
 
                 if (activeClusterCount > target)
@@ -155,24 +159,29 @@ namespace ClusterService
                         .Where(x => x.Value.Users.Count == 0)
                         .Take(Math.Min(activeClusterCount - this.Config.MinimumClusterCount, activeClusterCount - target));
 
+                    int ix = 0;
                     foreach (var item in removeList)
                     {
                         Cluster value = item.Value;
                         value.Status = ClusterStatus.Remove;
 
                         await clusterDictionary.SetAsync(tx, item.Key, value);
+                        ++ix;
                     }
 
                     await tx.CommitAsync();
+
+                    ServiceEventSource.Current.ServiceMessage(this, "Balancing clusters completed. Marked for removal: {0}", ix);
+                    return;
                 }
             }
         }
-        
+
         /// <summary>
         /// Removes clusters that have been deleted from the list.
         /// </summary>
         /// <returns></returns>
-        internal async Task ProcessClusters()
+        internal async Task ProcessClustersAsync()
         {
             IReliableDictionary<int, Cluster> clusterDictionary =
                 await this.reliableStateManager.GetOrAddAsync<IReliableDictionary<int, Cluster>>(ClusterDictionaryName);
@@ -249,6 +258,8 @@ namespace ClusterService
                     Random random = new Random();
                     cluster.Address = await this.clusterOperator.CreateClusterAsync(random.Next().ToString());
                     cluster.Status = ClusterStatus.Creating;
+
+                    ServiceEventSource.Current.ServiceMessage(this, "Creating cluster {0}. ", cluster.Address);
                     break;
 
                 case ClusterStatus.Creating:
@@ -258,14 +269,21 @@ namespace ClusterService
                         case ClusterOperationStatus.Creating:
                             // still creating
                             break;
+
                         case ClusterOperationStatus.Ready:
                             cluster.Ports = await this.clusterOperator.GetClusterPortsAsync(cluster.Address);
                             cluster.CreatedOn = DateTimeOffset.UtcNow;
                             cluster.Status = ClusterStatus.Ready;
+
+                            ServiceEventSource.Current.ServiceMessage(this, "Cluster {0} is ready. ", cluster.Address);
                             break;
+
                         case ClusterOperationStatus.CreateFailed:
                             cluster.Status = ClusterStatus.New;
+
+                            ServiceEventSource.Current.ServiceMessage(this, "Cluster {0} failed to create. ", cluster.Address);
                             break;
+
                         case ClusterOperationStatus.Deleting:
                             cluster.Status = ClusterStatus.Deleting;
                             break;
@@ -277,6 +295,9 @@ namespace ClusterService
                     {
                         await this.clusterOperator.DeleteClusterAsync(cluster.Address);
                         cluster.Status = ClusterStatus.Deleting;
+
+                        ServiceEventSource.Current.ServiceMessage(this, "Cluster {0} expired. Deleting.", cluster.Address);
+                        break;
                     }
 
                     ClusterOperationStatus readyStatus = await this.clusterOperator.GetClusterStatusAsync(cluster.Address);
@@ -300,6 +321,8 @@ namespace ClusterService
                         case ClusterOperationStatus.DeleteFailed:
                             await this.clusterOperator.DeleteClusterAsync(cluster.Address);
                             cluster.Status = ClusterStatus.Deleting;
+
+                            ServiceEventSource.Current.ServiceMessage(this, "Deleting cluster {0}.", cluster.Address);
                             break;
                         case ClusterOperationStatus.Deleting:
                             cluster.Status = ClusterStatus.Deleting;
@@ -314,22 +337,31 @@ namespace ClusterService
                         case ClusterOperationStatus.Creating:
                         case ClusterOperationStatus.Ready:
                             await this.clusterOperator.DeleteClusterAsync(cluster.Address);
+
+                            ServiceEventSource.Current.ServiceMessage(this, "Deleting cluster {0}.", cluster.Address);
                             break;
+
                         case ClusterOperationStatus.Deleting:
                             break; // still in progress
+
                         case ClusterOperationStatus.ClusterNotFound:
                             cluster.Status = ClusterStatus.Deleted;
+
+                            ServiceEventSource.Current.ServiceMessage(this, "Deleted cluster {0}.", cluster.Address);
                             break;
+
                         case ClusterOperationStatus.CreateFailed:
                         case ClusterOperationStatus.DeleteFailed:
                             cluster.Status = ClusterStatus.Remove;
+
+                            ServiceEventSource.Current.ServiceMessage(this, "Cluster {0} failed to delete.", cluster.Address);
                             break;
                     }
                     break;
 
             }
         }
-        
+
         /// <summary>
         /// Poor-man's dependency injection for now until the API supports proper injection of IReliableStateManager.
         /// </summary>
@@ -350,16 +382,37 @@ namespace ClusterService
 
         protected override async Task RunAsync(CancellationToken cancellationToken)
         {
-            return;
-
             while (!cancellationToken.IsCancellationRequested)
             {
-                await ProcessClusters();
+                try
+                {
+                    await ProcessClustersAsync();
 
-                int target = await this.GetTargetClusterCapacityAsync();
+                    int target = await this.GetTargetClusterCapacityAsync();
 
-                await this.BalanceClustersAsync(target);
+                    await this.BalanceClustersAsync(target);
 
+                }
+                catch (TimeoutException te)
+                {
+                    ServiceEventSource.Current.ServiceMessage(this, "TimeoutException in RunAsync: {0}.", te.Message);
+                }
+                catch (FabricNotPrimaryException fnpe)
+                {
+                    ServiceEventSource.Current.ServiceMessage(this, "FabricNotPrimaryException in RunAsync: {0}.", fnpe.Message);
+                    break;
+                }
+                catch (FabricObjectClosedException foce)
+                {
+                    ServiceEventSource.Current.ServiceMessage(this, "FabricObjectClosedException in RunAsync: {0}.", foce.Message);
+                    break;
+                }
+                catch (FabricNotReadableException fnre)
+                {
+                    ServiceEventSource.Current.ServiceMessage(this, "FabricNotReadableException in RunAsync: {0}.", fnre.Message);
+                    break;
+                }
+                
                 await Task.Delay(this.Config.RefreshInterval, cancellationToken);
             }
         }

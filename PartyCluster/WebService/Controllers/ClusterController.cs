@@ -16,23 +16,10 @@ namespace WebService.Controllers
         [Route("clusters")]
         public Task<IEnumerable<ClusterView>> Get()
         {
-            //ServiceUriBuilder builder = new ServiceUriBuilder("ClusterService");
-            //IClusterService clusterService = ServiceProxy.Create<IClusterService>(1, builder.ToUri());
+            ServiceUriBuilder builder = new ServiceUriBuilder("ClusterService");
+            IClusterService clusterService = ServiceProxy.Create<IClusterService>(1, builder.ToUri());
 
-            //return clusterService.GetClusterList();
-            Random random = new Random();
-            return Task.FromResult((IEnumerable<ClusterView>)new List<ClusterView>()
-            {
-                new ClusterView(random.Next(), "Party Cluster", 2, 5, 10, TimeSpan.FromMinutes(68)),
-                new ClusterView(random.Next(), "Party Cluster", 2, 5, 10, TimeSpan.FromMinutes(68)),
-                new ClusterView(random.Next(), "Party Cluster", 2, 5, 10, TimeSpan.FromMinutes(68)),
-                new ClusterView(random.Next(), "Party Cluster", 2, 5, 10, TimeSpan.FromMinutes(68)),
-                new ClusterView(random.Next(), "Party Cluster", 2, 5, 10, TimeSpan.FromMinutes(68)),
-                new ClusterView(random.Next(), "Party Cluster", 2, 5, 10, TimeSpan.FromMinutes(68)),
-                new ClusterView(random.Next(), "Party Cluster", 2, 5, 10, TimeSpan.FromMinutes(68)),
-                new ClusterView(random.Next(), "Party Cluster", 2, 5, 10, TimeSpan.FromMinutes(68)),
-                new ClusterView(random.Next(), "Party Cluster", 2, 5, 10, TimeSpan.FromMinutes(68))
-            });
+            return clusterService.GetClusterListAsync();
         }
 
         [HttpPost]

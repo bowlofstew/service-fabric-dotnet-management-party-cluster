@@ -11,7 +11,7 @@ namespace Domain
 
     public interface IClusterService : IService
     {
-        Task<IEnumerable<ClusterView>> GetClusterList();
+        Task<IEnumerable<ClusterView>> GetClusterListAsync();
         Task JoinClusterAsync(string username, int clusterId);
     }
 }

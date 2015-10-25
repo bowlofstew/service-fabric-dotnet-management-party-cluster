@@ -51,7 +51,7 @@ namespace ClusterService.UnitTests
                 await tx.CommitAsync();
             }
 
-            IEnumerable<ClusterView> actual = await target.GetClusterList();
+            IEnumerable<ClusterView> actual = await target.GetClusterListAsync();
 
             Assert.AreEqual(readyClusters, actual.Count());
         }

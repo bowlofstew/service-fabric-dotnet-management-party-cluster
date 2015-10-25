@@ -19,6 +19,11 @@ namespace Domain
             this.ServiceCount = serviceCount;
             this.UserCount = userCount;
             this.TimeRemaining = timeRemaining;
+
+            if (this.TimeRemaining < TimeSpan.Zero)
+            {
+                this.TimeRemaining = TimeSpan.Zero;
+            }
         }
 
         [DataMember]
