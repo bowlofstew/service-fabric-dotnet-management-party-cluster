@@ -74,7 +74,18 @@ function PartyClusters(api) {
         });
 
         $('.partynow').click(function () {
-            alert('join random');
+            var tableRows = $('.cluster-list table tr');
+            var clusterId = 0;
+            var clusterName = '';
+            for (var i = 0; i < tableRows.length; ++i) {
+                var $row = $(tableRows[i]);
+                if ($row.attr('data-users') < $row.attr('data-capacity')) {
+                    self.ShowJoinClusterDialog($row.attr('data-id'), 'Surprise me!');
+                    return;
+                }
+            }
+
+            alert('no clusters available. Come back later');
         });
 
         setInterval(this.PopulateClusterList, 5000);
@@ -113,7 +124,7 @@ function PartyClusters(api) {
 				.appendTo(clusterTable);
 
             $.each(data, function (id, jObject) {
-                $('<tr />')
+                $('<tr data-id="' + jObject.ClusterId + '" data-users="' + jObject.UserCount + '" data-capacity="' + jObject.Capacity + '" />')
 					.append(
 						$('<td/>').text(jObject.Name))
 					.append(

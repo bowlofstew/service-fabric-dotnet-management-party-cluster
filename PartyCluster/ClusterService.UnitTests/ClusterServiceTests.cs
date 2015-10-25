@@ -665,7 +665,7 @@ namespace ClusterService.UnitTests
 
             ClusterConfig config = new ClusterConfig()
             {
-                MaxClusterUptime = TimeSpan.FromHours(2)
+                MaximumClusterUptime = TimeSpan.FromHours(2)
             };
              
             MockReliableStateManager stateManager = new MockReliableStateManager();
@@ -686,7 +686,7 @@ namespace ClusterService.UnitTests
             Cluster cluster = new Cluster()
             {
                 Status = ClusterStatus.Ready,
-                CreatedOn = DateTimeOffset.UtcNow - config.MaxClusterUptime
+                CreatedOn = DateTimeOffset.UtcNow - config.MaximumClusterUptime
             };
 
             await target.ProcessClusterStatusAsync(cluster);

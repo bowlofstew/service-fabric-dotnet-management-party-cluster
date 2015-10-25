@@ -24,7 +24,7 @@ namespace ClusterService
 
         public ClusterService()
         {
-            this.Config = new ClusterConfig() { MaxClusterUptime = TimeSpan.FromMinutes(2), RefreshInterval = TimeSpan.FromSeconds(5), MaximumUsersPerCluster = 2 };
+            this.Config = new ClusterConfig() { MaximumClusterUptime = TimeSpan.FromMinutes(2), RefreshInterval = TimeSpan.FromSeconds(5), MaximumUsersPerCluster = 2 };
             this.clusterOperator = new FakeClusterOperator(this.Config);
         }
 
@@ -50,13 +50,15 @@ namespace ClusterService
 
             return from cluster in clusterDictionary
                    where cluster.Value.Status == ClusterStatus.Ready
+                   orderby cluster.Value.CreatedOn descending
                    select new ClusterView(
                        cluster.Key,
                        "Party Cluster " + cluster.Key,
                        cluster.Value.AppCount,
                        cluster.Value.ServiceCount,
                        cluster.Value.Users.Count,
-                       this.Config.MaxClusterUptime - (DateTimeOffset.UtcNow - cluster.Value.CreatedOn.ToUniversalTime()));
+                       this.Config.MaximumUsersPerCluster,
+                       this.Config.MaximumClusterUptime - (DateTimeOffset.UtcNow - cluster.Value.CreatedOn.ToUniversalTime()));
         }
 
         public async Task JoinClusterAsync(int clusterId, UserView user)
@@ -93,7 +95,7 @@ namespace ClusterService
                 }
 
                 // make sure the cluster isn't about to be deleted.
-                if ((DateTimeOffset.UtcNow - cluster.CreatedOn.ToUniversalTime()) > (this.Config.MaxClusterUptime))
+                if ((DateTimeOffset.UtcNow - cluster.CreatedOn.ToUniversalTime()) > (this.Config.MaximumClusterUptime))
                 {
                     ServiceEventSource.Current.ServiceMessage(this, "Join cluster request failed. Cluster has expired. Cluster: {0}. Cluster creation time: {1}", clusterId, cluster.CreatedOn.ToUniversalTime());
                     throw new InvalidOperationException(); // need a better exception here
@@ -309,7 +311,7 @@ namespace ClusterService
                     break;
 
                 case ClusterStatus.Ready:
-                    if (DateTimeOffset.UtcNow - cluster.CreatedOn.ToUniversalTime() >= this.Config.MaxClusterUptime)
+                    if (DateTimeOffset.UtcNow - cluster.CreatedOn.ToUniversalTime() >= this.Config.MaximumClusterUptime)
                     {
                         await this.clusterOperator.DeleteClusterAsync(cluster.Address);
                         cluster.Status = ClusterStatus.Deleting;
