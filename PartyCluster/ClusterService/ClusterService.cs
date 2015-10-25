@@ -24,9 +24,8 @@ namespace ClusterService
 
         public ClusterService()
         {
-            this.Config = new ClusterConfig() { MaxClusterUptime = TimeSpan.FromSeconds(30), RefreshInterval = TimeSpan.FromSeconds(3) };
+            this.Config = new ClusterConfig() { MaxClusterUptime = TimeSpan.FromMinutes(2), RefreshInterval = TimeSpan.FromSeconds(5), MaximumUsersPerCluster = 2 };
             this.clusterOperator = new FakeClusterOperator(this.Config);
-
         }
 
         /// <summary>
@@ -49,7 +48,7 @@ namespace ClusterService
             IReliableDictionary<int, Cluster> clusterDictionary =
                 await this.reliableStateManager.GetOrAddAsync<IReliableDictionary<int, Cluster>>(ClusterDictionaryName);
 
-            return from cluster in clusterDictionary.CreateEnumerable(EnumerationMode.Ordered)
+            return from cluster in clusterDictionary
                    where cluster.Value.Status == ClusterStatus.Ready
                    select new ClusterView(
                        cluster.Key,
@@ -60,13 +59,15 @@ namespace ClusterService
                        this.Config.MaxClusterUptime - (DateTimeOffset.UtcNow - cluster.Value.CreatedOn.ToUniversalTime()));
         }
 
-        public async Task JoinClusterAsync(string username, int clusterId)
+        public async Task JoinClusterAsync(int clusterId, UserView user)
         {
-            if (String.IsNullOrWhiteSpace(username))
+            if (user == null || String.IsNullOrWhiteSpace(user.UserName) || String.IsNullOrWhiteSpace(user.UserEmail))
             {
                 throw new ArgumentNullException("username");
             }
-            
+
+            ServiceEventSource.Current.ServiceMessage(this, "Join cluster request. Cluster: {0}.", clusterId);
+
             IReliableDictionary<int, Cluster> clusterDictionary =
                 await this.reliableStateManager.GetOrAddAsync<IReliableDictionary<int, Cluster>>(ClusterDictionaryName);
 
@@ -87,25 +88,42 @@ namespace ClusterService
                 // make sure the cluster is ready
                 if (cluster.Status != ClusterStatus.Ready)
                 {
+                    ServiceEventSource.Current.ServiceMessage(this, "Join cluster request failed. Cluster is not ready. Cluster: {0}. Status: {1}", clusterId, cluster.Status);
                     throw new InvalidOperationException(); // need a better exception here
                 }
 
                 // make sure the cluster isn't about to be deleted.
-                if ((DateTimeOffset.UtcNow - cluster.CreatedOn.ToUniversalTime()) > (this.Config.MaxClusterUptime - TimeSpan.FromMinutes(5)))
+                if ((DateTimeOffset.UtcNow - cluster.CreatedOn.ToUniversalTime()) > (this.Config.MaxClusterUptime))
                 {
+                    ServiceEventSource.Current.ServiceMessage(this, "Join cluster request failed. Cluster has expired. Cluster: {0}. Cluster creation time: {1}", clusterId, cluster.CreatedOn.ToUniversalTime());
                     throw new InvalidOperationException(); // need a better exception here
                 }
 
-                userPort = cluster.Ports.First(port => !cluster.Users.Select(x => x.Port).Contains(port));
-                clusterAddress = cluster.Address;
+                if (cluster.Users.Count >= this.Config.MaximumUsersPerCluster)
+                {
+                    ServiceEventSource.Current.ServiceMessage(this, "Join cluster request failed. Cluster is full. Cluster: {0}. Users: {1}", clusterId, cluster.Users.Count);
+                    throw new InvalidOperationException("Cluster is full!");
+                }
 
-                cluster.Users.Add(new ClusterUser() { Name = username, Port = userPort });
+                try
+                {
+                    userPort = cluster.Ports.First(port => !cluster.Users.Any(x => x.Port == port));
+                    clusterAddress = cluster.Address;
+
+                    cluster.Users.Add(new ClusterUser() { Name = user.UserName, Port = userPort });
+                }
+                catch (InvalidOperationException)
+                {
+                    //TODO: no port available, whatdo?                    
+                    ServiceEventSource.Current.ServiceMessage(this, "Join cluster request failed. No available ports. Cluster: {0}. Users: {1}. Ports: {2}", clusterId, cluster.Users.Count, cluster.Ports.Count());
+                }
 
                 await clusterDictionary.SetAsync(tx, clusterId, cluster);
 
                 await tx.CommitAsync();
             }
 
+            ServiceEventSource.Current.ServiceMessage(this, "Join cluster request completed. Cluster: {0}.", clusterId);
             // send email to user with cluster info
         }
 
@@ -397,22 +415,7 @@ namespace ClusterService
                 {
                     ServiceEventSource.Current.ServiceMessage(this, "TimeoutException in RunAsync: {0}.", te.Message);
                 }
-                catch (FabricNotPrimaryException fnpe)
-                {
-                    ServiceEventSource.Current.ServiceMessage(this, "FabricNotPrimaryException in RunAsync: {0}.", fnpe.Message);
-                    break;
-                }
-                catch (FabricObjectClosedException foce)
-                {
-                    ServiceEventSource.Current.ServiceMessage(this, "FabricObjectClosedException in RunAsync: {0}.", foce.Message);
-                    break;
-                }
-                catch (FabricNotReadableException fnre)
-                {
-                    ServiceEventSource.Current.ServiceMessage(this, "FabricNotReadableException in RunAsync: {0}.", fnre.Message);
-                    break;
-                }
-                
+
                 await Task.Delay(this.Config.RefreshInterval, cancellationToken);
             }
         }

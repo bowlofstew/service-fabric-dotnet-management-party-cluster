@@ -1,10 +1,27 @@
 ﻿function Api() {
+    var self = this;
     this.serviceUrl = location.protocol + '//' + location.hostname + (location.port ? ':' + location.port : '') + '/partyclusters';
 
     this.GetClusters = function (result) {
-        this.httpGetJson(this.serviceUrl + '/api/clusters', result);
+        this.httpGetJson(self.serviceUrl + '/api/clusters', result);
     };
 
+    this.JoinCluster = function (clusterId, username, useremail, result, failure) {
+        $.ajax({
+            url: self.serviceUrl + '/api/clusters/join/' + clusterId,
+            type: 'POST',
+            contentType: 'application/json',
+            datatype: 'json',
+            data: "{ UserName: '" + username + "', UserEmail: '" + useremail + "' }"
+        })
+	   .done(function (data) {
+	       result(data);
+	   })
+	   .fail(function () {
+	       failure();
+	       return;
+	   });
+    };
 
     this.httpGetJson = function (url, result) {
         $.ajax({
@@ -50,7 +67,10 @@ function PartyClusters(api) {
         this.PopulateClusterList();
 
         $('.join-now', self.joinClusterDialog.Window).click(function () {
-            alert(self.selectedClusterId);
+            var name = $('#join-username', self.joinClusterDialog.Window).val();
+            var email = $('#join-useremail', self.joinClusterDialog.Window).val();
+
+            self.api.JoinCluster(self.selectedClusterId, name, email)
         });
 
         $('.partynow').click(function () {

@@ -31,10 +31,30 @@ namespace WebService.Controllers
 
         [HttpPost]
         [Route("clusters/join/{clusterId}")]
-        public Task Join(int clusterId, [FromBody]string user)
+        public async Task<IHttpActionResult> Join(int clusterId, [FromBody]UserView user)
         {
-            throw new NotImplementedException();
-        }
+            ServiceUriBuilder builder = new ServiceUriBuilder("ClusterService");
+            IClusterService clusterService = ServiceProxy.Create<IClusterService>(1, builder.ToUri());
 
+            try
+            {
+                await clusterService.JoinClusterAsync(clusterId, user);
+
+                return this.Ok();
+            }
+            catch (AggregateException ae)
+            {
+                if (ae.InnerException is ArgumentException)
+                {
+                    return this.BadRequest();
+                }
+
+                return this.InternalServerError(ae.InnerException);
+            }
+            catch (Exception e)
+            {
+                return this.InternalServerError(e);
+            }
+        }
     }
 }

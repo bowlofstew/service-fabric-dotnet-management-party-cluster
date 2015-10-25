@@ -3,12 +3,17 @@
 //  Licensed under the MIT License (MIT). See License.txt in the repo root for license information.
 // ------------------------------------------------------------
 
+using System.Runtime.Serialization;
+
 namespace ClusterService
 {
+    [DataContract]
     internal class ClusterUser
     {
+        [DataMember]
         public string Name { get; set; }
 
+        [DataMember]
         public int Port { get; set; }
     }
 }

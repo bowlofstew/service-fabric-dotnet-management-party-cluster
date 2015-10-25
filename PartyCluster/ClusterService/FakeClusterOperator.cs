@@ -24,9 +24,9 @@ namespace ClusterService
             string domain = String.Format(addressFormat, name);
 
             clusters[domain] = ClusterOperationStatus.Creating;
-            clusterCreateDelay[domain] = DateTimeOffset.UtcNow + TimeSpan.FromSeconds(random.Next(1, 20));
+            clusterCreateDelay[domain] = DateTimeOffset.UtcNow + TimeSpan.FromSeconds(random.Next(2, 20));
 
-            await Task.Delay(TimeSpan.FromMilliseconds(random.Next(500, 2000)));
+            await Task.Delay(TimeSpan.FromMilliseconds(random.Next(200, 1000)));
 
             return domain;
         }
@@ -40,7 +40,14 @@ namespace ClusterService
 
         public Task<IEnumerable<int>> GetClusterPortsAsync(string domain)
         {
-            return Task.FromResult(Enumerable.Repeat<int>(80, this.config.MaximumUsersPerCluster));
+            Random random = new Random();
+            List<int> ports = new List<int>(config.MaximumUsersPerCluster);
+            for (int i = 0; i < config.MaximumUsersPerCluster; ++i)
+            {
+                ports.Add(80 + i);
+            }
+
+            return Task.FromResult((IEnumerable<int>)ports);
         }
 
         public Task<ClusterOperationStatus> GetClusterStatusAsync(string domain)
