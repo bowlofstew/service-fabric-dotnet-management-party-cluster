@@ -7,7 +7,6 @@ namespace ClusterService
 {
     using System;
     using System.Collections.Generic;
-    using System.Fabric;
     using System.Linq;
     using System.Threading;
     using System.Threading.Tasks;
@@ -24,7 +23,12 @@ namespace ClusterService
 
         public ClusterService()
         {
-            this.Config = new ClusterConfig() { MaximumClusterUptime = TimeSpan.FromMinutes(2), RefreshInterval = TimeSpan.FromSeconds(5), MaximumUsersPerCluster = 2 };
+            this.Config = new ClusterConfig()
+            {
+                MaximumClusterUptime = TimeSpan.FromMinutes(2),
+                RefreshInterval = TimeSpan.FromSeconds(5),
+                MaximumUsersPerCluster = 2
+            };
             this.clusterOperator = new FakeClusterOperator(this.Config);
         }
 
@@ -49,23 +53,23 @@ namespace ClusterService
                 await this.reliableStateManager.GetOrAddAsync<IReliableDictionary<int, Cluster>>(ClusterDictionaryName);
 
             return from cluster in clusterDictionary
-                   where cluster.Value.Status == ClusterStatus.Ready
-                   orderby cluster.Value.CreatedOn descending
-                   select new ClusterView(
-                       cluster.Key,
-                       "Party Cluster " + cluster.Key,
-                       cluster.Value.AppCount,
-                       cluster.Value.ServiceCount,
-                       cluster.Value.Users.Count,
-                       this.Config.MaximumUsersPerCluster,
-                       this.Config.MaximumClusterUptime - (DateTimeOffset.UtcNow - cluster.Value.CreatedOn.ToUniversalTime()));
+                where cluster.Value.Status == ClusterStatus.Ready
+                orderby cluster.Value.CreatedOn descending
+                select new ClusterView(
+                    cluster.Key,
+                    "Party Cluster " + cluster.Key,
+                    cluster.Value.AppCount,
+                    cluster.Value.ServiceCount,
+                    cluster.Value.Users.Count,
+                    this.Config.MaximumUsersPerCluster,
+                    this.Config.MaximumClusterUptime - (DateTimeOffset.UtcNow - cluster.Value.CreatedOn.ToUniversalTime()));
         }
 
         public async Task JoinClusterAsync(int clusterId, UserView user)
         {
             if (user == null || String.IsNullOrWhiteSpace(user.UserName) || String.IsNullOrWhiteSpace(user.UserEmail))
             {
-                throw new ArgumentNullException("username");
+                throw new ArgumentNullException(nameof(user));
             }
 
             ServiceEventSource.Current.ServiceMessage(this, "Join cluster request. Cluster: {0}.", clusterId);
@@ -90,36 +94,53 @@ namespace ClusterService
                 // make sure the cluster is ready
                 if (cluster.Status != ClusterStatus.Ready)
                 {
-                    ServiceEventSource.Current.ServiceMessage(this, "Join cluster request failed. Cluster is not ready. Cluster: {0}. Status: {1}", clusterId, cluster.Status);
+                    ServiceEventSource.Current.ServiceMessage(
+                        this,
+                        "Join cluster request failed. Cluster is not ready. Cluster: {0}. Status: {1}",
+                        clusterId,
+                        cluster.Status);
                     throw new JoinClusterFailedException(JoinClusterFailedReason.ClusterNotReady);
                 }
 
                 // make sure the cluster isn't about to be deleted.
                 if ((DateTimeOffset.UtcNow - cluster.CreatedOn.ToUniversalTime()) > (this.Config.MaximumClusterUptime))
                 {
-                    ServiceEventSource.Current.ServiceMessage(this, "Join cluster request failed. Cluster has expired. Cluster: {0}. Cluster creation time: {1}", clusterId, cluster.CreatedOn.ToUniversalTime());
+                    ServiceEventSource.Current.ServiceMessage(
+                        this,
+                        "Join cluster request failed. Cluster has expired. Cluster: {0}. Cluster creation time: {1}",
+                        clusterId,
+                        cluster.CreatedOn.ToUniversalTime());
                     throw new JoinClusterFailedException(JoinClusterFailedReason.ClusterExpired);
                 }
 
                 if (cluster.Users.Count >= this.Config.MaximumUsersPerCluster)
                 {
-                    ServiceEventSource.Current.ServiceMessage(this, "Join cluster request failed. Cluster is full. Cluster: {0}. Users: {1}", clusterId, cluster.Users.Count);
+                    ServiceEventSource.Current.ServiceMessage(
+                        this,
+                        "Join cluster request failed. Cluster is full. Cluster: {0}. Users: {1}",
+                        clusterId,
+                        cluster.Users.Count);
                     throw new JoinClusterFailedException(JoinClusterFailedReason.ClusterFull);
                 }
 
-                if (cluster.Users.Any(x => String.Equals(x.Email, user.UserEmail, StringComparison.OrdinalIgnoreCase )))
+                if (cluster.Users.Any(x => String.Equals(x.Email, user.UserEmail, StringComparison.OrdinalIgnoreCase)))
                 {
                     ServiceEventSource.Current.ServiceMessage(this, "Join cluster request failed. User already exists. Cluster: {0}.", clusterId);
                     throw new JoinClusterFailedException(JoinClusterFailedReason.UserAlreadyJoined);
                 }
-                
+
                 try
                 {
                     userPort = cluster.Ports.First(port => !cluster.Users.Any(x => x.Port == port));
                 }
                 catch (InvalidOperationException)
-                {         
-                    ServiceEventSource.Current.ServiceMessage(this, "Join cluster request failed. No available ports. Cluster: {0}. Users: {1}. Ports: {2}", clusterId, cluster.Users.Count, cluster.Ports.Count());
+                {
+                    ServiceEventSource.Current.ServiceMessage(
+                        this,
+                        "Join cluster request failed. No available ports. Cluster: {0}. Users: {1}. Ports: {2}",
+                        clusterId,
+                        cluster.Users.Count,
+                        cluster.Ports.Count());
                     throw new JoinClusterFailedException(JoinClusterFailedReason.NoPortsAvailable);
                 }
 
@@ -136,9 +157,48 @@ namespace ClusterService
         }
 
         /// <summary>
+        /// Poor-man's dependency injection for now until the API supports proper injection of IReliableStateManager.
+        /// </summary>
+        /// <returns></returns>
+        protected override IReliableStateManager CreateReliableStateManager()
+        {
+            if (this.reliableStateManager == null)
+            {
+                this.reliableStateManager = base.CreateReliableStateManager();
+            }
+            return this.reliableStateManager;
+        }
+
+        protected override IEnumerable<ServiceReplicaListener> CreateServiceReplicaListeners()
+        {
+            return new[] {new ServiceReplicaListener(parameters => new ServiceCommunicationListener<IClusterService>(parameters, this))};
+        }
+
+        protected override async Task RunAsync(CancellationToken cancellationToken)
+        {
+            while (!cancellationToken.IsCancellationRequested)
+            {
+                try
+                {
+                    await this.ProcessClustersAsync();
+
+                    int target = await this.GetTargetClusterCapacityAsync();
+
+                    await this.BalanceClustersAsync(target);
+                }
+                catch (TimeoutException te)
+                {
+                    ServiceEventSource.Current.ServiceMessage(this, "TimeoutException in RunAsync: {0}.", te.Message);
+                }
+
+                await Task.Delay(this.Config.RefreshInterval, cancellationToken);
+            }
+        }
+
+        /// <summary>
         /// Adds clusters by the given amount without going over the max threshold and without resulting in below the min threshold.
         /// </summary>
-        /// <param name="targetCount"></param>
+        /// <param name="target"></param>
         /// <returns></returns>
         internal async Task BalanceClustersAsync(int target)
         {
@@ -149,7 +209,7 @@ namespace ClusterService
 
             using (ITransaction tx = this.reliableStateManager.CreateTransaction())
             {
-                var activeClusters = this.GetActiveClusters(clusterDictionary);
+                IEnumerable<KeyValuePair<int, Cluster>> activeClusters = this.GetActiveClusters(clusterDictionary);
                 int activeClusterCount = activeClusters.Count();
 
                 if (target < this.Config.MinimumClusterCount)
@@ -181,12 +241,12 @@ namespace ClusterService
 
                 if (activeClusterCount > target)
                 {
-                    var removeList = activeClusters
+                    IEnumerable<KeyValuePair<int, Cluster>> removeList = activeClusters
                         .Where(x => x.Value.Users.Count == 0)
                         .Take(Math.Min(activeClusterCount - this.Config.MinimumClusterCount, activeClusterCount - target));
 
                     int ix = 0;
-                    foreach (var item in removeList)
+                    foreach (KeyValuePair<int, Cluster> item in removeList)
                     {
                         Cluster value = item.Value;
                         value.Status = ClusterStatus.Remove;
@@ -214,7 +274,7 @@ namespace ClusterService
 
             using (ITransaction tx = this.reliableStateManager.CreateTransaction())
             {
-                foreach (var cluster in clusterDictionary)
+                foreach (KeyValuePair<int, Cluster> cluster in clusterDictionary)
                 {
                     await this.ProcessClusterStatusAsync(cluster.Value);
 
@@ -245,28 +305,29 @@ namespace ClusterService
             IReliableDictionary<int, Cluster> clusterDictionary =
                 await this.reliableStateManager.GetOrAddAsync<IReliableDictionary<int, Cluster>>(ClusterDictionaryName);
 
-            var activeClusters = this.GetActiveClusters(clusterDictionary);
+            IEnumerable<KeyValuePair<int, Cluster>> activeClusters = this.GetActiveClusters(clusterDictionary);
             int activeClusterCount = activeClusters.Count();
 
-            double totalCapacity = activeClusterCount * this.Config.MaximumUsersPerCluster;
+            double totalCapacity = activeClusterCount*this.Config.MaximumUsersPerCluster;
 
             double totalUsers = activeClusters
-                    .Aggregate(0, (total, next) => total += next.Value.Users.Count);
+                .Aggregate(0, (total, next) => total += next.Value.Users.Count);
 
-            double percentFull = totalUsers / totalCapacity;
+            double percentFull = totalUsers/totalCapacity;
 
             if (percentFull >= this.Config.UserCapacityHighPercentThreshold)
             {
                 return Math.Min(
                     this.Config.MaximumClusterCount,
-                    activeClusterCount + (int)Math.Ceiling(activeClusterCount * (1 - this.Config.UserCapacityHighPercentThreshold)));
+                    activeClusterCount + (int) Math.Ceiling(activeClusterCount*(1 - this.Config.UserCapacityHighPercentThreshold)));
             }
 
             if (percentFull <= this.Config.UserCapacityLowPercentThreshold)
             {
                 return Math.Max(
                     this.Config.MinimumClusterCount,
-                    activeClusterCount - (int)Math.Floor(activeClusterCount * (this.Config.UserCapacityHighPercentThreshold - this.Config.UserCapacityLowPercentThreshold)));
+                    activeClusterCount -
+                    (int) Math.Floor(activeClusterCount*(this.Config.UserCapacityHighPercentThreshold - this.Config.UserCapacityLowPercentThreshold)));
             }
 
             return activeClusterCount;
@@ -384,57 +445,16 @@ namespace ClusterService
                             break;
                     }
                     break;
-
-            }
-        }
-
-        /// <summary>
-        /// Poor-man's dependency injection for now until the API supports proper injection of IReliableStateManager.
-        /// </summary>
-        /// <returns></returns>
-        protected override IReliableStateManager CreateReliableStateManager()
-        {
-            if (this.reliableStateManager == null)
-            {
-                this.reliableStateManager = base.CreateReliableStateManager();
-            }
-            return this.reliableStateManager;
-        }
-
-        protected override IEnumerable<ServiceReplicaListener> CreateServiceReplicaListeners()
-        {
-            return new[] { new ServiceReplicaListener(parameters => new ServiceCommunicationListener<IClusterService>(parameters, this)) };
-        }
-
-        protected override async Task RunAsync(CancellationToken cancellationToken)
-        {
-            while (!cancellationToken.IsCancellationRequested)
-            {
-                try
-                {
-                    await ProcessClustersAsync();
-
-                    int target = await this.GetTargetClusterCapacityAsync();
-
-                    await this.BalanceClustersAsync(target);
-
-                }
-                catch (TimeoutException te)
-                {
-                    ServiceEventSource.Current.ServiceMessage(this, "TimeoutException in RunAsync: {0}.", te.Message);
-                }
-
-                await Task.Delay(this.Config.RefreshInterval, cancellationToken);
             }
         }
 
         private IEnumerable<KeyValuePair<int, Cluster>> GetActiveClusters(IReliableDictionary<int, Cluster> clusterDictionary)
         {
-            return clusterDictionary.Where(x =>
-                x.Value.Status == ClusterStatus.New ||
-                x.Value.Status == ClusterStatus.Creating ||
-                x.Value.Status == ClusterStatus.Ready);
+            return clusterDictionary.Where(
+                x =>
+                    x.Value.Status == ClusterStatus.New ||
+                    x.Value.Status == ClusterStatus.Creating ||
+                    x.Value.Status == ClusterStatus.Ready);
         }
-
     }
 }

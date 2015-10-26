@@ -1,12 +1,15 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using Domain;
+﻿// ------------------------------------------------------------
+//  Copyright (c) Microsoft Corporation.  All rights reserved.
+//  Licensed under the MIT License (MIT). See License.txt in the repo root for license information.
+// ------------------------------------------------------------
 
 namespace ClusterService
 {
+    using System;
+    using System.Collections.Generic;
+    using System.Threading.Tasks;
+    using Domain;
+
     internal class FakeClusterOperator : IClusterOperator
     {
         private Dictionary<string, ClusterOperationStatus> clusters = new Dictionary<string, ClusterOperationStatus>();
@@ -19,21 +22,22 @@ namespace ClusterService
         {
             this.config = config;
         }
+
         public async Task<string> CreateClusterAsync(string name)
         {
-            string domain = String.Format(addressFormat, name);
+            string domain = String.Format(this.addressFormat, name);
 
-            clusters[domain] = ClusterOperationStatus.Creating;
-            clusterCreateDelay[domain] = DateTimeOffset.UtcNow + TimeSpan.FromSeconds(random.Next(2, 20));
+            this.clusters[domain] = ClusterOperationStatus.Creating;
+            this.clusterCreateDelay[domain] = DateTimeOffset.UtcNow + TimeSpan.FromSeconds(this.random.Next(2, 20));
 
-            await Task.Delay(TimeSpan.FromMilliseconds(random.Next(200, 1000)));
+            await Task.Delay(TimeSpan.FromMilliseconds(this.random.Next(200, 1000)));
 
             return domain;
         }
 
         public Task DeleteClusterAsync(string domain)
         {
-            clusters[domain] = ClusterOperationStatus.Deleting;
+            this.clusters[domain] = ClusterOperationStatus.Deleting;
 
             return Task.FromResult(true);
         }
@@ -41,36 +45,36 @@ namespace ClusterService
         public Task<IEnumerable<int>> GetClusterPortsAsync(string domain)
         {
             Random random = new Random();
-            List<int> ports = new List<int>(config.MaximumUsersPerCluster);
-            for (int i = 0; i < config.MaximumUsersPerCluster; ++i)
+            List<int> ports = new List<int>(this.config.MaximumUsersPerCluster);
+            for (int i = 0; i < this.config.MaximumUsersPerCluster; ++i)
             {
                 ports.Add(80 + i);
             }
 
-            return Task.FromResult((IEnumerable<int>)ports);
+            return Task.FromResult((IEnumerable<int>) ports);
         }
 
         public Task<ClusterOperationStatus> GetClusterStatusAsync(string domain)
         {
-            ClusterOperationStatus status = clusters[domain];
+            ClusterOperationStatus status = this.clusters[domain];
 
             switch (status)
             {
                 case ClusterOperationStatus.Creating:
-                    if (DateTimeOffset.UtcNow > clusterCreateDelay[domain])
+                    if (DateTimeOffset.UtcNow > this.clusterCreateDelay[domain])
                     {
-                        clusters[domain] = ClusterOperationStatus.Ready;
+                        this.clusters[domain] = ClusterOperationStatus.Ready;
                     }
                     break;
                 case ClusterOperationStatus.Ready:
-                    clusters[domain] = ClusterOperationStatus.Ready;
+                    this.clusters[domain] = ClusterOperationStatus.Ready;
                     break;
                 case ClusterOperationStatus.Deleting:
-                    clusters[domain] = ClusterOperationStatus.ClusterNotFound;
+                    this.clusters[domain] = ClusterOperationStatus.ClusterNotFound;
                     break;
             }
 
-            return Task.FromResult(clusters[domain]);
+            return Task.FromResult(this.clusters[domain]);
         }
     }
 }

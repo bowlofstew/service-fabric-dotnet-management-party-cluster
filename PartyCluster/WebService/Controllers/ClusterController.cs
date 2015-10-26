@@ -1,14 +1,17 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using System.Web.Http;
-using Domain;
-using Microsoft.ServiceFabric.Services;
+﻿// ------------------------------------------------------------
+//  Copyright (c) Microsoft Corporation.  All rights reserved.
+//  Licensed under the MIT License (MIT). See License.txt in the repo root for license information.
+// ------------------------------------------------------------
 
 namespace WebService.Controllers
 {
+    using System;
+    using System.Collections.Generic;
+    using System.Threading.Tasks;
+    using System.Web.Http;
+    using Domain;
+    using Microsoft.ServiceFabric.Services;
+
     [RoutePrefix("api")]
     public class ClusterController : ApiController
     {
@@ -24,14 +27,14 @@ namespace WebService.Controllers
 
         [HttpPost]
         [Route("clusters/join")]
-        public Task JoinRandom([FromBody]string user)
+        public Task JoinRandom([FromBody] string user)
         {
             throw new NotImplementedException();
         }
 
         [HttpPost]
         [Route("clusters/join/{clusterId}")]
-        public async Task<IHttpActionResult> Join(int clusterId, [FromBody]UserView user)
+        public async Task<IHttpActionResult> Join(int clusterId, [FromBody] UserView user)
         {
             ServiceUriBuilder builder = new ServiceUriBuilder("ClusterService");
             IClusterService clusterService = ServiceProxy.Create<IClusterService>(1, builder.ToUri());

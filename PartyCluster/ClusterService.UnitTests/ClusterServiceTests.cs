@@ -6,14 +6,14 @@
 namespace ClusterService.UnitTests
 {
     using System;
+    using System.Collections.Generic;
+    using System.Linq;
     using System.Threading.Tasks;
+    using Domain;
+    using Microsoft.ServiceFabric.Data;
     using Microsoft.ServiceFabric.Data.Collections;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Mocks;
-    using System.Linq;
-    using Microsoft.ServiceFabric.Data;
-    using System.Collections.Generic;
-    using Domain;
 
     [TestClass]
     public class ClusterServiceTests
@@ -40,14 +40,15 @@ namespace ClusterService.UnitTests
             int newClusters = 2;
             int removeClusters = 1;
 
-            var dictionary = await stateManager.GetOrAddAsync<IReliableDictionary<int, Cluster>>(ClusterService.ClusterDictionaryName);
+            IReliableDictionary<int, Cluster> dictionary =
+                await stateManager.GetOrAddAsync<IReliableDictionary<int, Cluster>>(ClusterService.ClusterDictionaryName);
 
             using (ITransaction tx = stateManager.CreateTransaction())
             {
-                await AddClusters(tx, dictionary, readyClusters, ClusterStatus.Ready);
-                await AddClusters(tx, dictionary, deletingCluster, ClusterStatus.Deleting);
-                await AddClusters(tx, dictionary, newClusters, ClusterStatus.New);
-                await AddClusters(tx, dictionary, removeClusters, ClusterStatus.Remove);
+                await this.AddClusters(tx, dictionary, readyClusters, ClusterStatus.Ready);
+                await this.AddClusters(tx, dictionary, deletingCluster, ClusterStatus.Deleting);
+                await this.AddClusters(tx, dictionary, newClusters, ClusterStatus.New);
+                await this.AddClusters(tx, dictionary, removeClusters, ClusterStatus.Remove);
                 await tx.CommitAsync();
             }
 
@@ -72,7 +73,8 @@ namespace ClusterService.UnitTests
 
             await target.BalanceClustersAsync(config.MinimumClusterCount);
 
-            var result = await stateManager.TryGetAsync<IReliableDictionary<int, Cluster>>(ClusterService.ClusterDictionaryName);
+            ConditionalResult<IReliableDictionary<int, Cluster>> result =
+                await stateManager.TryGetAsync<IReliableDictionary<int, Cluster>>(ClusterService.ClusterDictionaryName);
 
             Assert.IsTrue(result.HasValue);
             Assert.AreEqual(config.MinimumClusterCount, await result.Value.GetCountAsync());
@@ -94,27 +96,31 @@ namespace ClusterService.UnitTests
                 Config = config
             };
 
-            var dictionary = await stateManager.GetOrAddAsync<IReliableDictionary<int, Cluster>>(ClusterService.ClusterDictionaryName);
+            IReliableDictionary<int, Cluster> dictionary =
+                await stateManager.GetOrAddAsync<IReliableDictionary<int, Cluster>>(ClusterService.ClusterDictionaryName);
 
-            int readyCount = (int)Math.Floor(config.MinimumClusterCount / 5D);
+            int readyCount = (int) Math.Floor(config.MinimumClusterCount/5D);
             int newCount = readyCount;
             int creatingCount = readyCount;
 
             using (ITransaction tx = stateManager.CreateTransaction())
             {
-                await AddClusters(tx, dictionary, readyCount, ClusterStatus.Ready);
-                await AddClusters(tx, dictionary, newCount, ClusterStatus.New);
-                await AddClusters(tx, dictionary, creatingCount, ClusterStatus.Creating);
-                await AddClusters(tx, dictionary, config.MinimumClusterCount, ClusterStatus.Deleting);
+                await this.AddClusters(tx, dictionary, readyCount, ClusterStatus.Ready);
+                await this.AddClusters(tx, dictionary, newCount, ClusterStatus.New);
+                await this.AddClusters(tx, dictionary, creatingCount, ClusterStatus.Creating);
+                await this.AddClusters(tx, dictionary, config.MinimumClusterCount, ClusterStatus.Deleting);
                 await tx.CommitAsync();
             }
 
-            await target.BalanceClustersAsync(readyCount * 4);
+            await target.BalanceClustersAsync(readyCount*4);
 
-            Assert.AreEqual(config.MinimumClusterCount, dictionary.Count(x =>
-                x.Value.Status == ClusterStatus.Ready ||
-                x.Value.Status == ClusterStatus.New ||
-                x.Value.Status == ClusterStatus.Creating));
+            Assert.AreEqual(
+                config.MinimumClusterCount,
+                dictionary.Count(
+                    x =>
+                        x.Value.Status == ClusterStatus.Ready ||
+                        x.Value.Status == ClusterStatus.New ||
+                        x.Value.Status == ClusterStatus.Creating));
         }
 
         /// <summary>
@@ -132,12 +138,13 @@ namespace ClusterService.UnitTests
                 Config = config
             };
 
-            var dictionary = await stateManager.GetOrAddAsync<IReliableDictionary<int, Cluster>>(ClusterService.ClusterDictionaryName);
+            IReliableDictionary<int, Cluster> dictionary =
+                await stateManager.GetOrAddAsync<IReliableDictionary<int, Cluster>>(ClusterService.ClusterDictionaryName);
 
             int readyCount = config.MinimumClusterCount - 1;
             using (ITransaction tx = stateManager.CreateTransaction())
             {
-                await AddClusters(tx, dictionary, readyCount, ClusterStatus.Ready);
+                await this.AddClusters(tx, dictionary, readyCount, ClusterStatus.Ready);
                 await tx.CommitAsync();
             }
 
@@ -162,11 +169,12 @@ namespace ClusterService.UnitTests
                 Config = config
             };
 
-            var dictionary = await stateManager.GetOrAddAsync<IReliableDictionary<int, Cluster>>(ClusterService.ClusterDictionaryName);
+            IReliableDictionary<int, Cluster> dictionary =
+                await stateManager.GetOrAddAsync<IReliableDictionary<int, Cluster>>(ClusterService.ClusterDictionaryName);
 
             using (ITransaction tx = stateManager.CreateTransaction())
             {
-                await AddClusters(tx, dictionary, config.MinimumClusterCount, ClusterStatus.Ready);
+                await this.AddClusters(tx, dictionary, config.MinimumClusterCount, ClusterStatus.Ready);
                 await tx.CommitAsync();
             }
 
@@ -193,12 +201,13 @@ namespace ClusterService.UnitTests
 
             int readyClusters = 10;
             int deletingClusterCount = 20;
-            var dictionary = await stateManager.GetOrAddAsync<IReliableDictionary<int, Cluster>>(ClusterService.ClusterDictionaryName);
+            IReliableDictionary<int, Cluster> dictionary =
+                await stateManager.GetOrAddAsync<IReliableDictionary<int, Cluster>>(ClusterService.ClusterDictionaryName);
 
             using (ITransaction tx = stateManager.CreateTransaction())
             {
-                await AddClusters(tx, dictionary, readyClusters, ClusterStatus.Ready);
-                await AddClusters(tx, dictionary, deletingClusterCount, ClusterStatus.Deleting);
+                await this.AddClusters(tx, dictionary, readyClusters, ClusterStatus.Ready);
+                await this.AddClusters(tx, dictionary, deletingClusterCount, ClusterStatus.Deleting);
                 await tx.CommitAsync();
             }
 
@@ -227,12 +236,13 @@ namespace ClusterService.UnitTests
             int aboveMax = 10;
             int readyClusters = config.MaximumClusterCount + aboveMax;
             int deletingClusterCount = 20;
-            var dictionary = await stateManager.GetOrAddAsync<IReliableDictionary<int, Cluster>>(ClusterService.ClusterDictionaryName);
+            IReliableDictionary<int, Cluster> dictionary =
+                await stateManager.GetOrAddAsync<IReliableDictionary<int, Cluster>>(ClusterService.ClusterDictionaryName);
 
             using (ITransaction tx = stateManager.CreateTransaction())
             {
-                await AddClusters(tx, dictionary, readyClusters, ClusterStatus.Ready);
-                await AddClusters(tx, dictionary, deletingClusterCount, ClusterStatus.Deleting);
+                await this.AddClusters(tx, dictionary, readyClusters, ClusterStatus.Ready);
+                await this.AddClusters(tx, dictionary, deletingClusterCount, ClusterStatus.Deleting);
                 await tx.CommitAsync();
             }
 
@@ -261,16 +271,17 @@ namespace ClusterService.UnitTests
             int aboveMax = 10;
             int readyClusters = config.MaximumClusterCount + aboveMax;
             int deletingClusterCount = 20;
-            var dictionary = await stateManager.GetOrAddAsync<IReliableDictionary<int, Cluster>>(ClusterService.ClusterDictionaryName);
+            IReliableDictionary<int, Cluster> dictionary =
+                await stateManager.GetOrAddAsync<IReliableDictionary<int, Cluster>>(ClusterService.ClusterDictionaryName);
 
             using (ITransaction tx = stateManager.CreateTransaction())
             {
-                await AddClusters(tx, dictionary, readyClusters, ClusterStatus.Ready);
-                await AddClusters(tx, dictionary, deletingClusterCount, ClusterStatus.Deleting);
+                await this.AddClusters(tx, dictionary, readyClusters, ClusterStatus.Ready);
+                await this.AddClusters(tx, dictionary, deletingClusterCount, ClusterStatus.Deleting);
                 await tx.CommitAsync();
             }
 
-            await target.BalanceClustersAsync(readyClusters - (aboveMax / 2));
+            await target.BalanceClustersAsync(readyClusters - (aboveMax/2));
 
             Assert.AreEqual(config.MaximumClusterCount, dictionary.Count(x => x.Value.Status == ClusterStatus.Ready));
             Assert.AreEqual(aboveMax, dictionary.Count(x => x.Value.Status == ClusterStatus.Remove));
@@ -291,16 +302,17 @@ namespace ClusterService.UnitTests
                 Config = config
             };
 
-            var dictionary = await stateManager.GetOrAddAsync<IReliableDictionary<int, Cluster>>(ClusterService.ClusterDictionaryName);
+            IReliableDictionary<int, Cluster> dictionary =
+                await stateManager.GetOrAddAsync<IReliableDictionary<int, Cluster>>(ClusterService.ClusterDictionaryName);
 
             int readyCount = 5 + config.MinimumClusterCount;
             int deletingCount = 10;
-            int targetCount = config.MinimumClusterCount / 2;
+            int targetCount = config.MinimumClusterCount/2;
 
             using (ITransaction tx = stateManager.CreateTransaction())
             {
-                await AddClusters(tx, dictionary, readyCount, ClusterStatus.Ready);
-                await AddClusters(tx, dictionary, deletingCount, ClusterStatus.Deleting);
+                await this.AddClusters(tx, dictionary, readyCount, ClusterStatus.Ready);
+                await this.AddClusters(tx, dictionary, deletingCount, ClusterStatus.Deleting);
 
                 await tx.CommitAsync();
             }
@@ -327,7 +339,8 @@ namespace ClusterService.UnitTests
                 Config = config
             };
 
-            var dictionary = await stateManager.GetOrAddAsync<IReliableDictionary<int, Cluster>>(ClusterService.ClusterDictionaryName);
+            IReliableDictionary<int, Cluster> dictionary =
+                await stateManager.GetOrAddAsync<IReliableDictionary<int, Cluster>>(ClusterService.ClusterDictionaryName);
 
             int withUsers = config.MinimumClusterCount + 5;
             int withoutUsers = 10;
@@ -335,13 +348,17 @@ namespace ClusterService.UnitTests
 
             using (ITransaction tx = stateManager.CreateTransaction())
             {
-                await AddClusters(tx, dictionary, withUsers, () => new Cluster()
-                {
-                    Users = new List<ClusterUser>() { new ClusterUser() },
-                    Status = ClusterStatus.Ready
-                });
+                await this.AddClusters(
+                    tx,
+                    dictionary,
+                    withUsers,
+                    () => new Cluster()
+                    {
+                        Users = new List<ClusterUser>() {new ClusterUser()},
+                        Status = ClusterStatus.Ready
+                    });
 
-                await AddClusters(tx, dictionary, withoutUsers, ClusterStatus.Ready);
+                await this.AddClusters(tx, dictionary, withoutUsers, ClusterStatus.Ready);
 
                 await tx.CommitAsync();
             }
@@ -367,28 +384,41 @@ namespace ClusterService.UnitTests
                 Config = config
             };
 
-            var dictionary = await stateManager.GetOrAddAsync<IReliableDictionary<int, Cluster>>(ClusterService.ClusterDictionaryName);
+            IReliableDictionary<int, Cluster> dictionary =
+                await stateManager.GetOrAddAsync<IReliableDictionary<int, Cluster>>(ClusterService.ClusterDictionaryName);
 
             int clusterCount = config.MinimumClusterCount;
             using (ITransaction tx = stateManager.CreateTransaction())
             {
-                await AddClusters(tx, dictionary, clusterCount, () => new Cluster()
-                {
-                    Users = new List<ClusterUser>(Enumerable.Repeat(new ClusterUser(), (int)Math.Ceiling((double)config.MaximumUsersPerCluster * config.UserCapacityHighPercentThreshold)))
-                });
+                await this.AddClusters(
+                    tx,
+                    dictionary,
+                    clusterCount,
+                    () => new Cluster()
+                    {
+                        Users =
+                            new List<ClusterUser>(
+                                Enumerable.Repeat(
+                                    new ClusterUser(),
+                                    (int) Math.Ceiling((double) config.MaximumUsersPerCluster*config.UserCapacityHighPercentThreshold)))
+                    });
 
-                await AddClusters(tx, dictionary, 5, () => new Cluster()
-                {
-                    Status = ClusterStatus.Remove,
-                    Users = new List<ClusterUser>(Enumerable.Repeat(new ClusterUser(), config.MaximumUsersPerCluster))
-                });
+                await this.AddClusters(
+                    tx,
+                    dictionary,
+                    5,
+                    () => new Cluster()
+                    {
+                        Status = ClusterStatus.Remove,
+                        Users = new List<ClusterUser>(Enumerable.Repeat(new ClusterUser(), config.MaximumUsersPerCluster))
+                    });
 
-                await AddClusters(tx, dictionary, 5, ClusterStatus.Deleting);
-                
+                await this.AddClusters(tx, dictionary, 5, ClusterStatus.Deleting);
+
                 await tx.CommitAsync();
             }
 
-            int expected = clusterCount + (int)Math.Ceiling(clusterCount * (1 - config.UserCapacityHighPercentThreshold));
+            int expected = clusterCount + (int) Math.Ceiling(clusterCount*(1 - config.UserCapacityHighPercentThreshold));
             int actual = await target.GetTargetClusterCapacityAsync();
 
             Assert.AreEqual(expected, actual);
@@ -409,25 +439,38 @@ namespace ClusterService.UnitTests
                 Config = config
             };
 
-            var dictionary = await stateManager.GetOrAddAsync<IReliableDictionary<int, Cluster>>(ClusterService.ClusterDictionaryName);
+            IReliableDictionary<int, Cluster> dictionary =
+                await stateManager.GetOrAddAsync<IReliableDictionary<int, Cluster>>(ClusterService.ClusterDictionaryName);
 
             int clusterCount = config.MaximumClusterCount - 1;
             using (ITransaction tx = stateManager.CreateTransaction())
             {
-                await AddClusters(tx, dictionary, clusterCount, () =>  new Cluster()
-                {
-                    Users = new List<ClusterUser>(Enumerable.Repeat(new ClusterUser(), (int)Math.Ceiling((double)config.MaximumUsersPerCluster * config.UserCapacityHighPercentThreshold)))
-                });
+                await this.AddClusters(
+                    tx,
+                    dictionary,
+                    clusterCount,
+                    () => new Cluster()
+                    {
+                        Users =
+                            new List<ClusterUser>(
+                                Enumerable.Repeat(
+                                    new ClusterUser(),
+                                    (int) Math.Ceiling((double) config.MaximumUsersPerCluster*config.UserCapacityHighPercentThreshold)))
+                    });
 
-                await AddClusters(tx, dictionary, 5, () => new Cluster()
-                {
-                    Status = ClusterStatus.Remove,
-                    Users = new List<ClusterUser>(Enumerable.Repeat(new ClusterUser(), config.MaximumUsersPerCluster))
-                });
+                await this.AddClusters(
+                    tx,
+                    dictionary,
+                    5,
+                    () => new Cluster()
+                    {
+                        Status = ClusterStatus.Remove,
+                        Users = new List<ClusterUser>(Enumerable.Repeat(new ClusterUser(), config.MaximumUsersPerCluster))
+                    });
 
                 await tx.CommitAsync();
             }
-            
+
             int actual = await target.GetTargetClusterCapacityAsync();
 
             Assert.AreEqual(config.MaximumClusterCount, actual);
@@ -448,26 +491,39 @@ namespace ClusterService.UnitTests
                 Config = config
             };
 
-            var dictionary = await stateManager.GetOrAddAsync<IReliableDictionary<int, Cluster>>(ClusterService.ClusterDictionaryName);
+            IReliableDictionary<int, Cluster> dictionary =
+                await stateManager.GetOrAddAsync<IReliableDictionary<int, Cluster>>(ClusterService.ClusterDictionaryName);
 
             int clusterCount = config.MaximumClusterCount;
             using (ITransaction tx = stateManager.CreateTransaction())
             {
-                await AddClusters(tx, dictionary, clusterCount, () => new Cluster()
-                {
-                    Users = new List<ClusterUser>(Enumerable.Repeat(new ClusterUser(), (int)Math.Floor((double)config.MaximumUsersPerCluster * config.UserCapacityLowPercentThreshold)))
-                });
+                await this.AddClusters(
+                    tx,
+                    dictionary,
+                    clusterCount,
+                    () => new Cluster()
+                    {
+                        Users =
+                            new List<ClusterUser>(
+                                Enumerable.Repeat(
+                                    new ClusterUser(),
+                                    (int) Math.Floor((double) config.MaximumUsersPerCluster*config.UserCapacityLowPercentThreshold)))
+                    });
 
-                await AddClusters(tx, dictionary, 5, () => new Cluster()
-                {
-                    Status = ClusterStatus.Remove,
-                    Users = new List<ClusterUser>(Enumerable.Repeat(new ClusterUser(), config.MaximumUsersPerCluster))
-                });
+                await this.AddClusters(
+                    tx,
+                    dictionary,
+                    5,
+                    () => new Cluster()
+                    {
+                        Status = ClusterStatus.Remove,
+                        Users = new List<ClusterUser>(Enumerable.Repeat(new ClusterUser(), config.MaximumUsersPerCluster))
+                    });
 
                 await tx.CommitAsync();
             }
 
-            int expected = clusterCount - (int)Math.Floor(clusterCount * (config.UserCapacityHighPercentThreshold - config.UserCapacityLowPercentThreshold));
+            int expected = clusterCount - (int) Math.Floor(clusterCount*(config.UserCapacityHighPercentThreshold - config.UserCapacityLowPercentThreshold));
             int actual = await target.GetTargetClusterCapacityAsync();
 
             Assert.AreEqual(expected, actual);
@@ -488,16 +544,25 @@ namespace ClusterService.UnitTests
                 Config = config
             };
 
-            var dictionary = await stateManager.GetOrAddAsync<IReliableDictionary<int, Cluster>>(ClusterService.ClusterDictionaryName);
+            IReliableDictionary<int, Cluster> dictionary =
+                await stateManager.GetOrAddAsync<IReliableDictionary<int, Cluster>>(ClusterService.ClusterDictionaryName);
 
             int clusterCount = config.MinimumClusterCount + 1;
             using (ITransaction tx = stateManager.CreateTransaction())
             {
-                await AddClusters(tx, dictionary, clusterCount, () => new Cluster()
-                {
-                    Users = new List<ClusterUser>(Enumerable.Repeat(new ClusterUser(), (int)Math.Floor((double)config.MaximumUsersPerCluster * config.UserCapacityLowPercentThreshold)))
-                });
-                
+                await this.AddClusters(
+                    tx,
+                    dictionary,
+                    clusterCount,
+                    () => new Cluster()
+                    {
+                        Users =
+                            new List<ClusterUser>(
+                                Enumerable.Repeat(
+                                    new ClusterUser(),
+                                    (int) Math.Floor((double) config.MaximumUsersPerCluster*config.UserCapacityLowPercentThreshold)))
+                    });
+
                 await tx.CommitAsync();
             }
 
@@ -542,7 +607,7 @@ namespace ClusterService.UnitTests
             Assert.AreEqual(ClusterStatus.Creating, cluster.Status);
             Assert.AreEqual(String.Format(nameTemplate, nameActual), cluster.Address);
         }
-        
+
         /// <summary>
         /// A creating cluster should set its status to ready and populate fields when the cluster creation has completed.
         /// </summary>
@@ -563,7 +628,7 @@ namespace ClusterService.UnitTests
             };
 
             await target.ProcessClusterStatusAsync(cluster);
-            
+
             Assert.AreEqual(ClusterStatus.Ready, cluster.Status);
             Assert.IsTrue(cluster.CreatedOn.ToUniversalTime() <= DateTimeOffset.UtcNow);
             cluster.Ports.SequenceEqual(await clusterOperator.GetClusterPortsAsync(""));
@@ -650,7 +715,7 @@ namespace ClusterService.UnitTests
             };
 
             await target.ProcessClusterStatusAsync(cluster);
-            
+
             Assert.AreEqual(ClusterStatus.Deleted, cluster.Status);
         }
 
@@ -667,7 +732,7 @@ namespace ClusterService.UnitTests
             {
                 MaximumClusterUptime = TimeSpan.FromHours(2)
             };
-             
+
             MockReliableStateManager stateManager = new MockReliableStateManager();
             MockClusterOperator clusterOperator = new MockClusterOperator()
             {
@@ -707,8 +772,9 @@ namespace ClusterService.UnitTests
 
             int id = 5;
             string email = "test@test.com";
-            Cluster cluster = new Cluster() { Status = ClusterStatus.Ready, Ports = new[] { 80 } };
-            var dictionary = await stateManager.GetOrAddAsync<IReliableDictionary<int, Cluster>>(ClusterService.ClusterDictionaryName);
+            Cluster cluster = new Cluster() {Status = ClusterStatus.Ready, Ports = new[] {80}};
+            IReliableDictionary<int, Cluster> dictionary =
+                await stateManager.GetOrAddAsync<IReliableDictionary<int, Cluster>>(ClusterService.ClusterDictionaryName);
             using (ITransaction tx = stateManager.CreateTransaction())
             {
                 await dictionary.AddAsync(tx, id, cluster);
@@ -716,14 +782,14 @@ namespace ClusterService.UnitTests
             }
 
             await target.JoinClusterAsync(id, new UserView("name", email));
-        
+
             Assert.AreEqual(1, cluster.Users.Count(x => x.Email == email));
         }
 
         [TestMethod]
         public async Task JoinClusterFull()
         {
-            ClusterConfig config = new ClusterConfig() { MaximumUsersPerCluster = 1 };
+            ClusterConfig config = new ClusterConfig() {MaximumUsersPerCluster = 1};
             MockReliableStateManager stateManager = new MockReliableStateManager();
             ClusterService target = new ClusterService(null, stateManager)
             {
@@ -734,11 +800,12 @@ namespace ClusterService.UnitTests
             Cluster cluster = new Cluster()
             {
                 Status = ClusterStatus.Ready,
-                Users = new[] { new ClusterUser() },
-                Ports = new[] { 80 } 
+                Users = new[] {new ClusterUser()},
+                Ports = new[] {80}
             };
 
-            var dictionary = await stateManager.GetOrAddAsync<IReliableDictionary<int, Cluster>>(ClusterService.ClusterDictionaryName);
+            IReliableDictionary<int, Cluster> dictionary =
+                await stateManager.GetOrAddAsync<IReliableDictionary<int, Cluster>>(ClusterService.ClusterDictionaryName);
             using (ITransaction tx = stateManager.CreateTransaction())
             {
                 await dictionary.AddAsync(tx, id, cluster);
@@ -759,7 +826,7 @@ namespace ClusterService.UnitTests
         [TestMethod]
         public async Task JoinClusterNotReady()
         {
-            ClusterConfig config = new ClusterConfig() { MaximumUsersPerCluster = 2 };
+            ClusterConfig config = new ClusterConfig() {MaximumUsersPerCluster = 2};
             MockReliableStateManager stateManager = new MockReliableStateManager();
             ClusterService target = new ClusterService(null, stateManager)
             {
@@ -770,10 +837,11 @@ namespace ClusterService.UnitTests
             Cluster cluster = new Cluster()
             {
                 Status = ClusterStatus.Creating,
-                Ports = new[] { 80 }
+                Ports = new[] {80}
             };
 
-            var dictionary = await stateManager.GetOrAddAsync<IReliableDictionary<int, Cluster>>(ClusterService.ClusterDictionaryName);
+            IReliableDictionary<int, Cluster> dictionary =
+                await stateManager.GetOrAddAsync<IReliableDictionary<int, Cluster>>(ClusterService.ClusterDictionaryName);
             using (ITransaction tx = stateManager.CreateTransaction())
             {
                 await dictionary.AddAsync(tx, id, cluster);
@@ -794,7 +862,7 @@ namespace ClusterService.UnitTests
         [TestMethod]
         public async Task JoinClusterUserAlreadyExists()
         {
-            ClusterConfig config = new ClusterConfig() { MaximumUsersPerCluster = 2 };
+            ClusterConfig config = new ClusterConfig() {MaximumUsersPerCluster = 2};
             MockReliableStateManager stateManager = new MockReliableStateManager();
             ClusterService target = new ClusterService(null, stateManager)
             {
@@ -806,11 +874,12 @@ namespace ClusterService.UnitTests
             Cluster cluster = new Cluster()
             {
                 Status = ClusterStatus.Ready,
-                Users = new[] { new ClusterUser(email, 80) },
-                Ports = new[] { 80, 81 }
+                Users = new[] {new ClusterUser(email, 80)},
+                Ports = new[] {80, 81}
             };
 
-            var dictionary = await stateManager.GetOrAddAsync<IReliableDictionary<int, Cluster>>(ClusterService.ClusterDictionaryName);
+            IReliableDictionary<int, Cluster> dictionary =
+                await stateManager.GetOrAddAsync<IReliableDictionary<int, Cluster>>(ClusterService.ClusterDictionaryName);
             using (ITransaction tx = stateManager.CreateTransaction())
             {
                 await dictionary.AddAsync(tx, id, cluster);
@@ -826,14 +895,13 @@ namespace ClusterService.UnitTests
             {
                 Assert.AreEqual(JoinClusterFailedReason.UserAlreadyJoined, result.Reason);
             }
-
         }
 
 
         [TestMethod]
         public async Task JoinClusterExpired()
         {
-            ClusterConfig config = new ClusterConfig() { MaximumUsersPerCluster = 2 };
+            ClusterConfig config = new ClusterConfig() {MaximumUsersPerCluster = 2};
             MockReliableStateManager stateManager = new MockReliableStateManager();
             ClusterService target = new ClusterService(null, stateManager)
             {
@@ -843,12 +911,13 @@ namespace ClusterService.UnitTests
             int id = 5;
             Cluster cluster = new Cluster()
             {
-                 CreatedOn = DateTimeOffset.UtcNow - (config.MaximumClusterUptime + TimeSpan.FromSeconds(1)),
+                CreatedOn = DateTimeOffset.UtcNow - (config.MaximumClusterUptime + TimeSpan.FromSeconds(1)),
                 Status = ClusterStatus.Ready,
-                Ports = new[] { 80, 81 }
+                Ports = new[] {80, 81}
             };
 
-            var dictionary = await stateManager.GetOrAddAsync<IReliableDictionary<int, Cluster>>(ClusterService.ClusterDictionaryName);
+            IReliableDictionary<int, Cluster> dictionary =
+                await stateManager.GetOrAddAsync<IReliableDictionary<int, Cluster>>(ClusterService.ClusterDictionaryName);
             using (ITransaction tx = stateManager.CreateTransaction())
             {
                 await dictionary.AddAsync(tx, id, cluster);
@@ -869,7 +938,7 @@ namespace ClusterService.UnitTests
         [TestMethod]
         public async Task JoinClusterNoPortsAvailable()
         {
-            ClusterConfig config = new ClusterConfig() { MaximumUsersPerCluster = 2 };
+            ClusterConfig config = new ClusterConfig() {MaximumUsersPerCluster = 2};
             MockReliableStateManager stateManager = new MockReliableStateManager();
             ClusterService target = new ClusterService(null, stateManager)
             {
@@ -881,11 +950,12 @@ namespace ClusterService.UnitTests
             Cluster cluster = new Cluster()
             {
                 Status = ClusterStatus.Ready,
-                Users = new[] { new ClusterUser(email, 80) },
-                Ports = new[] { 80 }
+                Users = new[] {new ClusterUser(email, 80)},
+                Ports = new[] {80}
             };
 
-            var dictionary = await stateManager.GetOrAddAsync<IReliableDictionary<int, Cluster>>(ClusterService.ClusterDictionaryName);
+            IReliableDictionary<int, Cluster> dictionary =
+                await stateManager.GetOrAddAsync<IReliableDictionary<int, Cluster>>(ClusterService.ClusterDictionaryName);
             using (ITransaction tx = stateManager.CreateTransaction())
             {
                 await dictionary.AddAsync(tx, id, cluster);
@@ -903,13 +973,12 @@ namespace ClusterService.UnitTests
             }
         }
 
-        
 
         private int GetRandom()
         {
-            lock (locker)
+            lock (this.locker)
             {
-                return random.Next();
+                return this.random.Next();
             }
         }
 
@@ -917,14 +986,13 @@ namespace ClusterService.UnitTests
         {
             for (int i = 0; i < count; ++i)
             {
-                await dictionary.AddAsync(tx, GetRandom(), newCluster());
+                await dictionary.AddAsync(tx, this.GetRandom(), newCluster());
             }
         }
 
         private Task AddClusters(ITransaction tx, IReliableDictionary<int, Cluster> dictionary, int count, ClusterStatus status)
         {
-            return this.AddClusters(tx, dictionary, count, () => new Cluster() { Status = status });
+            return this.AddClusters(tx, dictionary, count, () => new Cluster() {Status = status});
         }
-
     }
 }

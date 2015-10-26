@@ -6,9 +6,9 @@
 namespace Mocks
 {
     using System;
-    using System.Linq;
     using System.Collections.Concurrent;
     using System.Collections.Generic;
+    using System.Linq;
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.ServiceFabric.Data;
@@ -27,7 +27,7 @@ namespace Mocks
             {
                 throw new InvalidOperationException("key already exists: " + key.ToString());
             }
-            
+
 
             return Task.FromResult(true);
         }
@@ -229,7 +229,7 @@ namespace Mocks
 
         public Task<long> GetCountAsync()
         {
-            return Task.FromResult((long)this.dictionary.Count);
+            return Task.FromResult((long) this.dictionary.Count);
         }
     }
 }

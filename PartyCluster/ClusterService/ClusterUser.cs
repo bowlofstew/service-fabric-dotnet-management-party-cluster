@@ -3,14 +3,14 @@
 //  Licensed under the MIT License (MIT). See License.txt in the repo root for license information.
 // ------------------------------------------------------------
 
-using System.Runtime.Serialization;
-
 namespace ClusterService
 {
+    using System.Runtime.Serialization;
+
     [DataContract]
     internal struct ClusterUser
     {
-        public ClusterUser (string email, int port)
+        public ClusterUser(string email, int port)
         {
             this.Email = email;
             this.Port = port;
