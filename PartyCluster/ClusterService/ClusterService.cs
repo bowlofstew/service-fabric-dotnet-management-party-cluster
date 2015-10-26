@@ -91,34 +91,40 @@ namespace ClusterService
                 if (cluster.Status != ClusterStatus.Ready)
                 {
                     ServiceEventSource.Current.ServiceMessage(this, "Join cluster request failed. Cluster is not ready. Cluster: {0}. Status: {1}", clusterId, cluster.Status);
-                    throw new InvalidOperationException(); // need a better exception here
+                    throw new JoinClusterFailedException(JoinClusterFailedReason.ClusterNotReady);
                 }
 
                 // make sure the cluster isn't about to be deleted.
                 if ((DateTimeOffset.UtcNow - cluster.CreatedOn.ToUniversalTime()) > (this.Config.MaximumClusterUptime))
                 {
                     ServiceEventSource.Current.ServiceMessage(this, "Join cluster request failed. Cluster has expired. Cluster: {0}. Cluster creation time: {1}", clusterId, cluster.CreatedOn.ToUniversalTime());
-                    throw new InvalidOperationException(); // need a better exception here
+                    throw new JoinClusterFailedException(JoinClusterFailedReason.ClusterExpired);
                 }
 
                 if (cluster.Users.Count >= this.Config.MaximumUsersPerCluster)
                 {
                     ServiceEventSource.Current.ServiceMessage(this, "Join cluster request failed. Cluster is full. Cluster: {0}. Users: {1}", clusterId, cluster.Users.Count);
-                    throw new InvalidOperationException("Cluster is full!");
+                    throw new JoinClusterFailedException(JoinClusterFailedReason.ClusterFull);
                 }
 
+                if (cluster.Users.Any(x => String.Equals(x.Email, user.UserEmail, StringComparison.OrdinalIgnoreCase )))
+                {
+                    ServiceEventSource.Current.ServiceMessage(this, "Join cluster request failed. User already exists. Cluster: {0}.", clusterId);
+                    throw new JoinClusterFailedException(JoinClusterFailedReason.UserAlreadyJoined);
+                }
+                
                 try
                 {
                     userPort = cluster.Ports.First(port => !cluster.Users.Any(x => x.Port == port));
-                    clusterAddress = cluster.Address;
-
-                    cluster.Users.Add(new ClusterUser() { Name = user.UserName, Port = userPort });
                 }
                 catch (InvalidOperationException)
-                {
-                    //TODO: no port available, whatdo?                    
+                {         
                     ServiceEventSource.Current.ServiceMessage(this, "Join cluster request failed. No available ports. Cluster: {0}. Users: {1}. Ports: {2}", clusterId, cluster.Users.Count, cluster.Ports.Count());
+                    throw new JoinClusterFailedException(JoinClusterFailedReason.NoPortsAvailable);
                 }
+
+                clusterAddress = cluster.Address;
+                cluster.Users.Add(new ClusterUser(user.UserEmail, userPort));
 
                 await clusterDictionary.SetAsync(tx, clusterId, cluster);
 

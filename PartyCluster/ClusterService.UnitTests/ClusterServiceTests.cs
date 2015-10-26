@@ -26,7 +26,7 @@ namespace ClusterService.UnitTests
         /// </summary>
         /// <returns></returns>
         [TestMethod]
-        public async Task TestGetClusterList()
+        public async Task GetClusterList()
         {
             ClusterConfig config = new ClusterConfig();
             MockReliableStateManager stateManager = new MockReliableStateManager();
@@ -61,7 +61,7 @@ namespace ClusterService.UnitTests
         /// </summary>
         /// <returns></returns>
         [TestMethod]
-        public async Task TestBalanceClusters()
+        public async Task BalanceClusters()
         {
             ClusterConfig config = new ClusterConfig();
             MockReliableStateManager stateManager = new MockReliableStateManager();
@@ -85,7 +85,7 @@ namespace ClusterService.UnitTests
         /// </summary>
         /// <returns></returns>
         [TestMethod]
-        public async Task TestBalanceClustersIncreaseBelowMin()
+        public async Task BalanceClustersIncreaseBelowMin()
         {
             ClusterConfig config = new ClusterConfig();
             MockReliableStateManager stateManager = new MockReliableStateManager();
@@ -123,7 +123,7 @@ namespace ClusterService.UnitTests
         /// </summary>
         /// <returns></returns>
         [TestMethod]
-        public async Task TestBalanceClustersDecreaseBelowMin()
+        public async Task BalanceClustersDecreaseBelowMin()
         {
             ClusterConfig config = new ClusterConfig();
             MockReliableStateManager stateManager = new MockReliableStateManager();
@@ -153,7 +153,7 @@ namespace ClusterService.UnitTests
         /// </summary>
         /// <returns></returns>
         [TestMethod]
-        public async Task TestBalanceClustersMinThreshold()
+        public async Task BalanceClustersMinThreshold()
         {
             ClusterConfig config = new ClusterConfig();
             MockReliableStateManager stateManager = new MockReliableStateManager();
@@ -182,7 +182,7 @@ namespace ClusterService.UnitTests
         /// </summary>
         /// <returns></returns>
         [TestMethod]
-        public async Task TestBalanceClustersMaxThreshold()
+        public async Task BalanceClustersMaxThreshold()
         {
             ClusterConfig config = new ClusterConfig();
             MockReliableStateManager stateManager = new MockReliableStateManager();
@@ -215,7 +215,7 @@ namespace ClusterService.UnitTests
         /// </summary>
         /// <returns></returns>
         [TestMethod]
-        public async Task TestBalanceClustersIncreaseAboveMax()
+        public async Task BalanceClustersIncreaseAboveMax()
         {
             ClusterConfig config = new ClusterConfig();
             MockReliableStateManager stateManager = new MockReliableStateManager();
@@ -249,7 +249,7 @@ namespace ClusterService.UnitTests
         /// </summary>
         /// <returns></returns>
         [TestMethod]
-        public async Task TestBalanceClustersDecreaseAboveMax()
+        public async Task BalanceClustersDecreaseAboveMax()
         {
             ClusterConfig config = new ClusterConfig();
             MockReliableStateManager stateManager = new MockReliableStateManager();
@@ -282,7 +282,7 @@ namespace ClusterService.UnitTests
         /// </summary>
         /// <returns></returns>
         [TestMethod]
-        public async Task TestBalanceClusterDecreaseAlreadyDeleting()
+        public async Task BalanceClusterDecreaseAlreadyDeleting()
         {
             ClusterConfig config = new ClusterConfig();
             MockReliableStateManager stateManager = new MockReliableStateManager();
@@ -318,7 +318,7 @@ namespace ClusterService.UnitTests
         /// </summary>
         /// <returns></returns>
         [TestMethod]
-        public async Task TestBalanceClustersDecreaseNonEmpty()
+        public async Task BalanceClustersDecreaseNonEmpty()
         {
             ClusterConfig config = new ClusterConfig();
             MockReliableStateManager stateManager = new MockReliableStateManager();
@@ -358,7 +358,7 @@ namespace ClusterService.UnitTests
         /// </summary>
         /// <returns></returns>
         [TestMethod]
-        public async Task TestTargetClusterCapacityIncrease()
+        public async Task TargetClusterCapacityIncrease()
         {
             ClusterConfig config = new ClusterConfig();
             MockReliableStateManager stateManager = new MockReliableStateManager();
@@ -400,7 +400,7 @@ namespace ClusterService.UnitTests
         /// </summary>
         /// <returns></returns>
         [TestMethod]
-        public async Task TestTargetClusterCapacityIncreaseAtMaxCount()
+        public async Task TargetClusterCapacityIncreaseAtMaxCount()
         {
             ClusterConfig config = new ClusterConfig();
             MockReliableStateManager stateManager = new MockReliableStateManager();
@@ -439,7 +439,7 @@ namespace ClusterService.UnitTests
         /// </summary>
         /// <returns></returns>
         [TestMethod]
-        public async Task TestTargetClusterCapacityDecrease()
+        public async Task TargetClusterCapacityDecrease()
         {
             ClusterConfig config = new ClusterConfig();
             MockReliableStateManager stateManager = new MockReliableStateManager();
@@ -479,7 +479,7 @@ namespace ClusterService.UnitTests
         /// </summary>
         /// <returns></returns>
         [TestMethod]
-        public async Task TestTargetClusterCapacityDecreaseAtMinCount()
+        public async Task TargetClusterCapacityDecreaseAtMinCount()
         {
             ClusterConfig config = new ClusterConfig();
             MockReliableStateManager stateManager = new MockReliableStateManager();
@@ -512,7 +512,7 @@ namespace ClusterService.UnitTests
         /// </summary>
         /// <returns></returns>
         [TestMethod]
-        public async Task TestProcessNewCluster()
+        public async Task ProcessNewCluster()
         {
             bool calledActual = false;
             string nameTemplate = "Test:{0}";
@@ -548,7 +548,7 @@ namespace ClusterService.UnitTests
         /// </summary>
         /// <returns></returns>
         [TestMethod]
-        public async Task TestProcessCreatingClusterSuccess()
+        public async Task ProcessCreatingClusterSuccess()
         {
             MockReliableStateManager stateManager = new MockReliableStateManager();
             MockClusterOperator clusterOperator = new MockClusterOperator()
@@ -574,7 +574,7 @@ namespace ClusterService.UnitTests
         /// </summary>
         /// <returns></returns>
         [TestMethod]
-        public async Task TestProcessCreatingClusterFailed()
+        public async Task ProcessCreatingClusterFailed()
         {
             MockReliableStateManager stateManager = new MockReliableStateManager();
             MockClusterOperator clusterOperator = new MockClusterOperator()
@@ -600,7 +600,7 @@ namespace ClusterService.UnitTests
         /// </summary>
         /// <returns></returns>
         [TestMethod]
-        public async Task TestProcessRemove()
+        public async Task ProcessRemove()
         {
             bool calledActual = false;
             string nameActual = null;
@@ -634,7 +634,7 @@ namespace ClusterService.UnitTests
         /// </summary>
         /// <returns></returns>
         [TestMethod]
-        public async Task TestProcessDeletingSuccessful()
+        public async Task ProcessDeletingSuccessful()
         {
             MockReliableStateManager stateManager = new MockReliableStateManager();
             MockClusterOperator clusterOperator = new MockClusterOperator()
@@ -659,7 +659,7 @@ namespace ClusterService.UnitTests
         /// </summary>
         /// <returns></returns>
         [TestMethod]
-        public async Task TestProcessRemoveTimeLimit()
+        public async Task ProcessRemoveTimeLimit()
         {
             bool calledActual = false;
 
@@ -696,12 +696,214 @@ namespace ClusterService.UnitTests
         }
 
         [TestMethod]
-        public void JoinClusterSuccessful()
+        public async Task JoinClusterSuccessful()
         {
-            throw new NotImplementedException();
+            ClusterConfig config = new ClusterConfig();
             MockReliableStateManager stateManager = new MockReliableStateManager();
-            ClusterService target = new ClusterService(null, stateManager);
+            ClusterService target = new ClusterService(null, stateManager)
+            {
+                Config = config
+            };
+
+            int id = 5;
+            string email = "test@test.com";
+            Cluster cluster = new Cluster() { Status = ClusterStatus.Ready, Ports = new[] { 80 } };
+            var dictionary = await stateManager.GetOrAddAsync<IReliableDictionary<int, Cluster>>(ClusterService.ClusterDictionaryName);
+            using (ITransaction tx = stateManager.CreateTransaction())
+            {
+                await dictionary.AddAsync(tx, id, cluster);
+                await tx.CommitAsync();
+            }
+
+            await target.JoinClusterAsync(id, new UserView("name", email));
+        
+            Assert.AreEqual(1, cluster.Users.Count(x => x.Email == email));
         }
+
+        [TestMethod]
+        public async Task JoinClusterFull()
+        {
+            ClusterConfig config = new ClusterConfig() { MaximumUsersPerCluster = 1 };
+            MockReliableStateManager stateManager = new MockReliableStateManager();
+            ClusterService target = new ClusterService(null, stateManager)
+            {
+                Config = config
+            };
+
+            int id = 5;
+            Cluster cluster = new Cluster()
+            {
+                Status = ClusterStatus.Ready,
+                Users = new[] { new ClusterUser() },
+                Ports = new[] { 80 } 
+            };
+
+            var dictionary = await stateManager.GetOrAddAsync<IReliableDictionary<int, Cluster>>(ClusterService.ClusterDictionaryName);
+            using (ITransaction tx = stateManager.CreateTransaction())
+            {
+                await dictionary.AddAsync(tx, id, cluster);
+                await tx.CommitAsync();
+            }
+
+            try
+            {
+                await target.JoinClusterAsync(id, new UserView("name", "email"));
+                Assert.Fail("JoinClusterFailedException not thrown.");
+            }
+            catch (JoinClusterFailedException result)
+            {
+                Assert.AreEqual(JoinClusterFailedReason.ClusterFull, result.Reason);
+            }
+        }
+
+        [TestMethod]
+        public async Task JoinClusterNotReady()
+        {
+            ClusterConfig config = new ClusterConfig() { MaximumUsersPerCluster = 2 };
+            MockReliableStateManager stateManager = new MockReliableStateManager();
+            ClusterService target = new ClusterService(null, stateManager)
+            {
+                Config = config
+            };
+
+            int id = 5;
+            Cluster cluster = new Cluster()
+            {
+                Status = ClusterStatus.Creating,
+                Ports = new[] { 80 }
+            };
+
+            var dictionary = await stateManager.GetOrAddAsync<IReliableDictionary<int, Cluster>>(ClusterService.ClusterDictionaryName);
+            using (ITransaction tx = stateManager.CreateTransaction())
+            {
+                await dictionary.AddAsync(tx, id, cluster);
+                await tx.CommitAsync();
+            }
+
+            try
+            {
+                await target.JoinClusterAsync(id, new UserView("name", "email"));
+                Assert.Fail("JoinClusterFailedException not thrown.");
+            }
+            catch (JoinClusterFailedException result)
+            {
+                Assert.AreEqual(JoinClusterFailedReason.ClusterNotReady, result.Reason);
+            }
+        }
+
+        [TestMethod]
+        public async Task JoinClusterUserAlreadyExists()
+        {
+            ClusterConfig config = new ClusterConfig() { MaximumUsersPerCluster = 2 };
+            MockReliableStateManager stateManager = new MockReliableStateManager();
+            ClusterService target = new ClusterService(null, stateManager)
+            {
+                Config = config
+            };
+
+            int id = 5;
+            string email = "test@test.com";
+            Cluster cluster = new Cluster()
+            {
+                Status = ClusterStatus.Ready,
+                Users = new[] { new ClusterUser(email, 80) },
+                Ports = new[] { 80, 81 }
+            };
+
+            var dictionary = await stateManager.GetOrAddAsync<IReliableDictionary<int, Cluster>>(ClusterService.ClusterDictionaryName);
+            using (ITransaction tx = stateManager.CreateTransaction())
+            {
+                await dictionary.AddAsync(tx, id, cluster);
+                await tx.CommitAsync();
+            }
+
+            try
+            {
+                await target.JoinClusterAsync(id, new UserView("name", email));
+                Assert.Fail("JoinClusterFailedException not thrown.");
+            }
+            catch (JoinClusterFailedException result)
+            {
+                Assert.AreEqual(JoinClusterFailedReason.UserAlreadyJoined, result.Reason);
+            }
+
+        }
+
+
+        [TestMethod]
+        public async Task JoinClusterExpired()
+        {
+            ClusterConfig config = new ClusterConfig() { MaximumUsersPerCluster = 2 };
+            MockReliableStateManager stateManager = new MockReliableStateManager();
+            ClusterService target = new ClusterService(null, stateManager)
+            {
+                Config = config
+            };
+
+            int id = 5;
+            Cluster cluster = new Cluster()
+            {
+                 CreatedOn = DateTimeOffset.UtcNow - (config.MaximumClusterUptime + TimeSpan.FromSeconds(1)),
+                Status = ClusterStatus.Ready,
+                Ports = new[] { 80, 81 }
+            };
+
+            var dictionary = await stateManager.GetOrAddAsync<IReliableDictionary<int, Cluster>>(ClusterService.ClusterDictionaryName);
+            using (ITransaction tx = stateManager.CreateTransaction())
+            {
+                await dictionary.AddAsync(tx, id, cluster);
+                await tx.CommitAsync();
+            }
+
+            try
+            {
+                await target.JoinClusterAsync(id, new UserView("name", "email"));
+                Assert.Fail("JoinClusterFailedException not thrown.");
+            }
+            catch (JoinClusterFailedException result)
+            {
+                Assert.AreEqual(JoinClusterFailedReason.ClusterExpired, result.Reason);
+            }
+        }
+
+        [TestMethod]
+        public async Task JoinClusterNoPortsAvailable()
+        {
+            ClusterConfig config = new ClusterConfig() { MaximumUsersPerCluster = 2 };
+            MockReliableStateManager stateManager = new MockReliableStateManager();
+            ClusterService target = new ClusterService(null, stateManager)
+            {
+                Config = config
+            };
+
+            int id = 5;
+            string email = "test@test.com";
+            Cluster cluster = new Cluster()
+            {
+                Status = ClusterStatus.Ready,
+                Users = new[] { new ClusterUser(email, 80) },
+                Ports = new[] { 80 }
+            };
+
+            var dictionary = await stateManager.GetOrAddAsync<IReliableDictionary<int, Cluster>>(ClusterService.ClusterDictionaryName);
+            using (ITransaction tx = stateManager.CreateTransaction())
+            {
+                await dictionary.AddAsync(tx, id, cluster);
+                await tx.CommitAsync();
+            }
+
+            try
+            {
+                await target.JoinClusterAsync(id, new UserView("name", "test"));
+                Assert.Fail("JoinClusterFailedException not thrown.");
+            }
+            catch (JoinClusterFailedException result)
+            {
+                Assert.AreEqual(JoinClusterFailedReason.NoPortsAvailable, result.Reason);
+            }
+        }
+
+        
 
         private int GetRandom()
         {

@@ -8,12 +8,18 @@ using System.Runtime.Serialization;
 namespace ClusterService
 {
     [DataContract]
-    internal class ClusterUser
+    internal struct ClusterUser
     {
-        [DataMember]
-        public string Name { get; set; }
+        public ClusterUser (string email, int port)
+        {
+            this.Email = email;
+            this.Port = port;
+        }
 
         [DataMember]
-        public int Port { get; set; }
+        public string Email { get; private set; }
+
+        [DataMember]
+        public int Port { get; private set; }
     }
 }
