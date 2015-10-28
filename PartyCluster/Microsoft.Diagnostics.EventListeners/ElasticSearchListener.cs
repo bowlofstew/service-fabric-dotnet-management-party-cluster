@@ -5,6 +5,7 @@
 using Nest;
 using System;
 using System.Collections.Generic;
+using System.Configuration;
 using System.Diagnostics;
 using System.Threading;
 using System.Threading.Tasks;
@@ -13,45 +14,76 @@ namespace Microsoft.Diagnostics.EventListeners
 {
     public class ElasticSearchListener : BufferingEventListener, IDisposable
     {
+        private class ElasticSearchConnectionData
+        {
+            public ElasticClient Client { get; set; }
+            public string IndexNamePrefix { get; set; }
+            public string LastIndexName { get; set; }
+        }
+
         private const string Dot = ".";
         private const string Dash = "-";
 
         // TODO: make it a (configuration) property of the listener
         private const string EventDocumentTypeName = "event";
 
-        private ElasticClient esClient;
-        private string indexNamePrefix;
-        private string lastIndexName;
-        private string contextInfo;
+        private ElasticSearchConnectionData connectionData;
+        private object connectionDataLock;
 
         // TODO: support for multiple ES nodes/connection pools, for failover and load-balancing
-        public ElasticSearchListener(string contextInfo, Uri serverUri, string userName, string password, string indexNamePrefix)
+        public ElasticSearchListener(IConfigurationProvider configurationProvider)
         {
-            if (serverUri == null || !serverUri.IsAbsoluteUri)
+            if (configurationProvider == null)
             {
-                throw new ArgumentException("serverUri must be a valid, absolute URI", "serverUri");
+                throw new ArgumentNullException("configurationProvider");
             }
 
-            if (string.IsNullOrWhiteSpace(userName) || string.IsNullOrWhiteSpace(password))
-            {
-                throw new ArgumentException("Invalid Elastic Search credentials");
-            }
+            this.connectionDataLock = new object();
+            OnConfigurationChanged(configurationProvider, EventArgs.Empty);
 
             Sender = new ConcurrentEventSender<EventData>(
-                contextInfo: contextInfo,
                 eventBufferSize: 1000,
                 maxConcurrency: 2,
                 batchSize: 100,
                 noEventsDelay: TimeSpan.FromMilliseconds(1000),
                 transmitterProc: SendEventsAsync);
 
-            this.contextInfo = contextInfo;
+            configurationProvider.ConfigurationChanged += OnConfigurationChanged;
+        }
 
-            this.indexNamePrefix = string.IsNullOrWhiteSpace(indexNamePrefix) ? string.Empty : indexNamePrefix + Dash;
-            this.lastIndexName = null;
+        private ElasticClient CreateElasticClient(IConfigurationProvider configurationProvider)
+        {
+            string esServiceUriString = configurationProvider.GetValue("serviceUri");
+            Uri esServiceUri;
+            bool serviceUriIsValid = Uri.TryCreate(esServiceUriString, UriKind.Absolute, out esServiceUri);
+            if (!serviceUriIsValid)
+            {
+                throw new ConfigurationErrorsException("serviceUri must be a valid, absolute URI");
+            }
 
-            var config = new ConnectionSettings(serverUri).SetBasicAuthentication(userName, password);
-            this.esClient = new ElasticClient(config);
+            string userName = configurationProvider.GetValue("userName");
+            string password = configurationProvider.GetValue("password");
+            if (string.IsNullOrWhiteSpace(userName) || string.IsNullOrWhiteSpace(password))
+            {
+                throw new ConfigurationErrorsException("Invalid Elastic Search credentials");
+            }
+
+            var config = new ConnectionSettings(esServiceUri).SetBasicAuthentication(userName, password);
+            return new ElasticClient(config);
+        }
+
+        private void OnConfigurationChanged(object sender, EventArgs e)
+        {
+            var configurationProvider = (IConfigurationProvider)sender;
+
+            lock(this.connectionDataLock)
+            {
+                this.connectionData = new ElasticSearchConnectionData();
+                this.connectionData.Client = CreateElasticClient(configurationProvider);
+                this.connectionData.LastIndexName = null;
+                var indexNamePrefix = configurationProvider.GetValue("indexNamePrefix");
+                this.connectionData.IndexNamePrefix = string.IsNullOrWhiteSpace(indexNamePrefix) ? string.Empty : indexNamePrefix + Dash;
+            }
         }
 
         private async Task SendEventsAsync(IEnumerable<EventData> events, long transmissionSequenceNumber, CancellationToken cancellationToken)
@@ -63,11 +95,18 @@ namespace Microsoft.Diagnostics.EventListeners
 
             try
             {
-                string currentIndexName = GetIndexName();
-                if (!string.Equals(currentIndexName, this.lastIndexName, StringComparison.Ordinal))
+                ElasticSearchConnectionData cachedConnectionData;
+
+                lock (this.connectionDataLock)
                 {
-                    await EnsureIndexExists(currentIndexName);
-                    this.lastIndexName = currentIndexName;
+                    cachedConnectionData = this.connectionData;
+                }
+
+                string currentIndexName = GetIndexName(cachedConnectionData);
+                if (!string.Equals(currentIndexName, cachedConnectionData.LastIndexName, StringComparison.Ordinal))
+                {
+                    await EnsureIndexExists(currentIndexName, cachedConnectionData.Client);
+                    cachedConnectionData.LastIndexName = currentIndexName;
                 }
 
                 var request = new BulkRequest();
@@ -93,7 +132,7 @@ namespace Microsoft.Diagnostics.EventListeners
                 // Note: the NEST client is documented to be thread-safe so it should be OK to just reuse the this.esClient instance
                 // between different SendEventsAsync callbacks.
                 // Reference: https://www.elastic.co/blog/nest-and-elasticsearch-net-1-3
-                IBulkResponse response = await this.esClient.BulkAsync(request);
+                IBulkResponse response = await cachedConnectionData.Client.BulkAsync(request);
                 if (!response.IsValid)
                 {
                     ReportEsRequestError(response, "Bulk upload");
@@ -105,9 +144,9 @@ namespace Microsoft.Diagnostics.EventListeners
             }
         }
 
-        private async Task EnsureIndexExists(string currentIndexName)
+        private async Task EnsureIndexExists(string currentIndexName, ElasticClient esClient)
         {
-            var existsResult = await this.esClient.IndexExistsAsync(currentIndexName);
+            var existsResult = await esClient.IndexExistsAsync(currentIndexName);
             if (!existsResult.IsValid)
             {
                 ReportEsRequestError(existsResult, "Index exists check");
@@ -124,7 +163,7 @@ namespace Microsoft.Diagnostics.EventListeners
             indexSettings.NumberOfShards = 5;
             indexSettings.Settings.Add("refresh_interval", "15s");
 
-            var createIndexResult = await this.esClient.CreateIndexAsync(c => c.Index(currentIndexName).InitializeUsing(indexSettings));
+            var createIndexResult = await esClient.CreateIndexAsync(c => c.Index(currentIndexName).InitializeUsing(indexSettings));
 
             if (!createIndexResult.IsValid)
             {
@@ -138,10 +177,10 @@ namespace Microsoft.Diagnostics.EventListeners
             }
         }
 
-        private string GetIndexName()
+        private string GetIndexName(ElasticSearchConnectionData connectionData)
         {
             var now = DateTimeOffset.UtcNow;
-            var retval = this.indexNamePrefix + now.Year.ToString() + Dot + now.Month.ToString() + Dot + now.Day.ToString();
+            var retval = connectionData.IndexNamePrefix + now.Year.ToString() + Dot + now.Month.ToString() + Dot + now.Day.ToString();
             return retval;
         }
 

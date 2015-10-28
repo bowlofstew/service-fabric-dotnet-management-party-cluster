@@ -22,11 +22,10 @@ namespace Microsoft.Diagnostics.EventListeners
         private int batchSize;
         private TimeSpan noEventsDelay;
         private Func<IEnumerable<EventDataType>, long, CancellationToken, Task> TransmitterProc;
-        private string contextInfo;
         private TimeSpanThrottle eventLossThrottle;
         private readonly int capacityWarningThreshold;
 
-        public ConcurrentEventSender(string contextInfo, int eventBufferSize, uint maxConcurrency, int batchSize, TimeSpan noEventsDelay,
+        public ConcurrentEventSender(int eventBufferSize, uint maxConcurrency, int batchSize, TimeSpan noEventsDelay,
             Func<IEnumerable<EventDataType>, long, CancellationToken, Task> transmitterProc)
         {
             this.events = new BlockingCollection<EventDataType>(eventBufferSize);
@@ -36,7 +35,6 @@ namespace Microsoft.Diagnostics.EventListeners
             this.batchSize = batchSize;
             this.noEventsDelay = noEventsDelay;
             this.TransmitterProc = transmitterProc;
-            this.contextInfo = contextInfo;
             this.capacityWarningThreshold = (int) Math.Ceiling(0.9m * eventBufferSize);
 
             // Probably does not make sense to report event loss more often than once per second.
