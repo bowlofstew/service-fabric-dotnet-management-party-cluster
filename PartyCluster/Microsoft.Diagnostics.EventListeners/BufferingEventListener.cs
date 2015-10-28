@@ -4,6 +4,7 @@
 // ------------------------------------------------------------
 
 using Microsoft.Diagnostics.Tracing;
+using System;
 
 namespace Microsoft.Diagnostics.EventListeners
 {
@@ -16,6 +17,18 @@ namespace Microsoft.Diagnostics.EventListeners
             get { return Sender.ApproachingBufferCapacity; }
         }
 
+        public bool Disabled { get; private set; }
+
+        public BufferingEventListener(IConfigurationProvider configurationProvider)
+        {
+            if (configurationProvider == null)
+            {
+                throw new ArgumentNullException("configurationProvider");
+            }
+
+            this.Disabled = !configurationProvider.HasConfiguration;
+        }
+
         protected override void OnEventWritten(EventWrittenEventArgs eventArgs)
         {
             Sender.SubmitEvent(eventArgs.ToEventData());
@@ -23,7 +36,10 @@ namespace Microsoft.Diagnostics.EventListeners
 
         protected override void OnEventSourceCreated(EventSource eventSource)
         {
-            EnableEvents(eventSource, EventLevel.LogAlways, (EventKeywords)~0);
+            if (!this.Disabled)
+            {
+                EnableEvents(eventSource, EventLevel.LogAlways, (EventKeywords)~0);
+            }
         }
 
         public override void Dispose()

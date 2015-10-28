@@ -10,7 +10,7 @@ namespace Microsoft.Diagnostics.EventListeners
     
     public interface IConfigurationProvider
     {
+        bool HasConfiguration { get; }
         string GetValue(string name);
-        event EventHandler ConfigurationChanged;
     }
 }

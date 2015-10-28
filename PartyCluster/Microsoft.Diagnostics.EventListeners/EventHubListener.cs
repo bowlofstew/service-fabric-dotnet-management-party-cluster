@@ -8,6 +8,7 @@ using Microsoft.ServiceBus.Messaging;
 using System;
 using System.Collections.Generic;
 using System.Configuration;
+using System.Diagnostics;
 using System.Threading;
 using System.Threading.Tasks;
 using MessagingEventData = Microsoft.ServiceBus.Messaging.EventData;
@@ -25,12 +26,16 @@ namespace Microsoft.Diagnostics.EventListeners
         }
 
         private EventHubConnectionData connectionData;
-        private object connectionDataLock;
 
-        public EventHubListener(IConfigurationProvider configurationProvider)
+        public EventHubListener(IConfigurationProvider configurationProvider): base(configurationProvider)
         {
-            this.connectionDataLock = new object();
-            OnConfigurationChanged(configurationProvider, EventArgs.Empty);
+            if (this.Disabled)
+            {
+                return;
+            }
+
+            Debug.Assert(configurationProvider != null);
+            CreateConnectionData(configurationProvider);
 
             Sender = new ConcurrentEventSender<EventData>(
                 eventBufferSize: 1000,
@@ -38,38 +43,33 @@ namespace Microsoft.Diagnostics.EventListeners
                 batchSize: 50,
                 noEventsDelay: TimeSpan.FromMilliseconds(1000),
                 transmitterProc: SendEventsAsync);
-
-            configurationProvider.ConfigurationChanged += OnConfigurationChanged;
         }
 
-        private void OnConfigurationChanged(object sender, EventArgs e)
+        private void CreateConnectionData(object sender)
         {
             var configurationProvider = (IConfigurationProvider)sender;
 
-            lock (this.connectionDataLock)
+            string serviceBusConnectionString = configurationProvider.GetValue("serviceBusConnectionString");
+            if (string.IsNullOrWhiteSpace(serviceBusConnectionString))
             {
-                string serviceBusConnectionString = configurationProvider.GetValue("serviceBusConnectionString");
-                if (string.IsNullOrWhiteSpace(serviceBusConnectionString))
-                {
-                    throw new ConfigurationErrorsException("Configuraiton parameter 'serviceBusConnectionString' must be set to a valid Service Bus connection string");
-                }
+                throw new ConfigurationErrorsException("Configuraiton parameter 'serviceBusConnectionString' must be set to a valid Service Bus connection string");
+            }
 
-                string eventHubName = configurationProvider.GetValue("eventHubName");
-                if (string.IsNullOrWhiteSpace(eventHubName))
-                {
-                    throw new ConfigurationErrorsException("Configuration parameter 'eventHubName' must not be empty");
-                }
+            string eventHubName = configurationProvider.GetValue("eventHubName");
+            if (string.IsNullOrWhiteSpace(eventHubName))
+            {
+                throw new ConfigurationErrorsException("Configuration parameter 'eventHubName' must not be empty");
+            }
 
-                this.connectionData = new EventHubConnectionData();
-                this.connectionData.EventHubName = eventHubName;
+            this.connectionData = new EventHubConnectionData();
+            this.connectionData.EventHubName = eventHubName;
 
-                var connStringBuilder = new ServiceBusConnectionStringBuilder(serviceBusConnectionString);
-                connStringBuilder.TransportType = TransportType.Amqp;
-                this.connectionData.MessagingFactories = new MessagingFactory[ConcurrentConnections];
-                for (uint i = 0; i < ConcurrentConnections; i++)
-                {
-                    this.connectionData.MessagingFactories[i] = MessagingFactory.CreateFromConnectionString(connStringBuilder.ToString());
-                }
+            var connStringBuilder = new ServiceBusConnectionStringBuilder(serviceBusConnectionString);
+            connStringBuilder.TransportType = TransportType.Amqp;
+            this.connectionData.MessagingFactories = new MessagingFactory[ConcurrentConnections];
+            for (uint i = 0; i < ConcurrentConnections; i++)
+            {
+                this.connectionData.MessagingFactories[i] = MessagingFactory.CreateFromConnectionString(connStringBuilder.ToString());
             }
         }
 
@@ -96,17 +96,11 @@ namespace Microsoft.Diagnostics.EventListeners
                     return;
                 }
 
-                EventHubConnectionData cachedConnectionData;
-                lock (this.connectionDataLock)
-                {
-                    cachedConnectionData = this.connectionData;
-                }
-
-                var factory = cachedConnectionData.MessagingFactories[transmissionSequenceNumber % ConcurrentConnections];
+                var factory = this.connectionData.MessagingFactories[transmissionSequenceNumber % ConcurrentConnections];
                 EventHubClient hubClient;
                 lock(factory)
                 {
-                    hubClient = factory.CreateEventHubClient(cachedConnectionData.EventHubName);
+                    hubClient = factory.CreateEventHubClient(this.connectionData.EventHubName);
                 }
 
                 await hubClient.SendBatchAsync(batch);

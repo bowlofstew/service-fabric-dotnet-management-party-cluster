@@ -18,10 +18,15 @@ namespace Microsoft.Diagnostics.EventListeners.Fabric
 {
     public class FabricConfigurationProvider : IConfigurationProvider
     {
-        public event EventHandler ConfigurationChanged;
-
         private KeyedCollection<string, ConfigurationProperty> configurationProperties;
-        private string configurationSectionName;
+
+        public bool HasConfiguration
+        {
+            get
+            {
+                return this.configurationProperties != null;
+            }
+        }
 
         public FabricConfigurationProvider(string configurationSectionName)
         {
@@ -29,12 +34,10 @@ namespace Microsoft.Diagnostics.EventListeners.Fabric
             {
                 throw new ArgumentNullException("configurationSectionName");
             }
-            this.configurationSectionName = configurationSectionName;
 
             CodePackageActivationContext activationContext = FabricRuntime.GetActivationContext();
-            activationContext.ConfigurationPackageModifiedEvent += OnFabricConfigurationChanged;
             ConfigurationPackage configPackage = activationContext.GetConfigurationPackageObject("Config");
-            UseConfiguration(configPackage);
+            UseConfiguration(configPackage, configurationSectionName);
         }
 
         public string GetValue(string name)
@@ -55,25 +58,15 @@ namespace Microsoft.Diagnostics.EventListeners.Fabric
             }
         }
 
-        private void UseConfiguration(ConfigurationPackage configPackage)
+        private void UseConfiguration(ConfigurationPackage configPackage, string configurationSectionName)
         {
-            if (!configPackage.Settings.Sections.Contains(this.configurationSectionName))
+            if (!configPackage.Settings.Sections.Contains(configurationSectionName))
             {
                 this.configurationProperties = null;
             }
             else
             {
-                this.configurationProperties = configPackage.Settings.Sections[this.configurationSectionName].Parameters;
-            }
-        }
-
-        private void OnFabricConfigurationChanged(object sender, PackageModifiedEventArgs<ConfigurationPackage> e)
-        {
-            UseConfiguration(e.NewPackage);
-            var configurationChanged = this.ConfigurationChanged;
-            if (configurationChanged != null)
-            {
-                configurationChanged(this, EventArgs.Empty);
+                this.configurationProperties = configPackage.Settings.Sections[configurationSectionName].Parameters;
             }
         }
     }

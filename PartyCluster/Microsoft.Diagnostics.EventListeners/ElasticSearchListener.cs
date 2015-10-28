@@ -28,18 +28,17 @@ namespace Microsoft.Diagnostics.EventListeners
         private const string EventDocumentTypeName = "event";
 
         private ElasticSearchConnectionData connectionData;
-        private object connectionDataLock;
 
         // TODO: support for multiple ES nodes/connection pools, for failover and load-balancing
-        public ElasticSearchListener(IConfigurationProvider configurationProvider)
+        public ElasticSearchListener(IConfigurationProvider configurationProvider): base(configurationProvider)
         {
-            if (configurationProvider == null)
+            if (this.Disabled)
             {
-                throw new ArgumentNullException("configurationProvider");
+                return;
             }
 
-            this.connectionDataLock = new object();
-            OnConfigurationChanged(configurationProvider, EventArgs.Empty);
+            Debug.Assert(configurationProvider != null);
+            CreateConnectionData(configurationProvider);
 
             Sender = new ConcurrentEventSender<EventData>(
                 eventBufferSize: 1000,
@@ -47,8 +46,6 @@ namespace Microsoft.Diagnostics.EventListeners
                 batchSize: 100,
                 noEventsDelay: TimeSpan.FromMilliseconds(1000),
                 transmitterProc: SendEventsAsync);
-
-            configurationProvider.ConfigurationChanged += OnConfigurationChanged;
         }
 
         private ElasticClient CreateElasticClient(IConfigurationProvider configurationProvider)
@@ -72,18 +69,15 @@ namespace Microsoft.Diagnostics.EventListeners
             return new ElasticClient(config);
         }
 
-        private void OnConfigurationChanged(object sender, EventArgs e)
+        private void CreateConnectionData(object sender)
         {
             var configurationProvider = (IConfigurationProvider)sender;
 
-            lock(this.connectionDataLock)
-            {
-                this.connectionData = new ElasticSearchConnectionData();
-                this.connectionData.Client = CreateElasticClient(configurationProvider);
-                this.connectionData.LastIndexName = null;
-                var indexNamePrefix = configurationProvider.GetValue("indexNamePrefix");
-                this.connectionData.IndexNamePrefix = string.IsNullOrWhiteSpace(indexNamePrefix) ? string.Empty : indexNamePrefix + Dash;
-            }
+            this.connectionData = new ElasticSearchConnectionData();
+            this.connectionData.Client = CreateElasticClient(configurationProvider);
+            this.connectionData.LastIndexName = null;
+            var indexNamePrefix = configurationProvider.GetValue("indexNamePrefix");
+            this.connectionData.IndexNamePrefix = string.IsNullOrWhiteSpace(indexNamePrefix) ? string.Empty : indexNamePrefix + Dash;
         }
 
         private async Task SendEventsAsync(IEnumerable<EventData> events, long transmissionSequenceNumber, CancellationToken cancellationToken)
@@ -95,18 +89,11 @@ namespace Microsoft.Diagnostics.EventListeners
 
             try
             {
-                ElasticSearchConnectionData cachedConnectionData;
-
-                lock (this.connectionDataLock)
+                string currentIndexName = GetIndexName(this.connectionData);
+                if (!string.Equals(currentIndexName, this.connectionData.LastIndexName, StringComparison.Ordinal))
                 {
-                    cachedConnectionData = this.connectionData;
-                }
-
-                string currentIndexName = GetIndexName(cachedConnectionData);
-                if (!string.Equals(currentIndexName, cachedConnectionData.LastIndexName, StringComparison.Ordinal))
-                {
-                    await EnsureIndexExists(currentIndexName, cachedConnectionData.Client);
-                    cachedConnectionData.LastIndexName = currentIndexName;
+                    await EnsureIndexExists(currentIndexName, this.connectionData.Client);
+                    this.connectionData.LastIndexName = currentIndexName;
                 }
 
                 var request = new BulkRequest();
@@ -132,7 +119,7 @@ namespace Microsoft.Diagnostics.EventListeners
                 // Note: the NEST client is documented to be thread-safe so it should be OK to just reuse the this.esClient instance
                 // between different SendEventsAsync callbacks.
                 // Reference: https://www.elastic.co/blog/nest-and-elasticsearch-net-1-3
-                IBulkResponse response = await cachedConnectionData.Client.BulkAsync(request);
+                IBulkResponse response = await this.connectionData.Client.BulkAsync(request);
                 if (!response.IsValid)
                 {
                     ReportEsRequestError(response, "Bulk upload");
