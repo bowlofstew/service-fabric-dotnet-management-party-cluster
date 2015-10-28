@@ -152,6 +152,14 @@
       <Project>{af0bb737-6977-4f24-824a-c5a92eb683a5}</Project>
       <Name>Domain</Name>
     </ProjectReference>
+    <ProjectReference Include="..\Microsoft.Diagnostics.EventListeners.Fabric\Microsoft.Diagnostics.EventListeners.Fabric.csproj">
+      <Project>{2d19bf76-04e1-4969-ad66-984160d38e2c}</Project>
+      <Name>Microsoft.Diagnostics.EventListeners.Fabric</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\Microsoft.Diagnostics.EventListeners\Microsoft.Diagnostics.EventListeners.csproj">
+      <Project>{5f87e027-ba54-469c-ad4d-ea52f9d8ceab}</Project>
+      <Name>Microsoft.Diagnostics.EventListeners</Name>
+    </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <Target Name="AfterBuild">
