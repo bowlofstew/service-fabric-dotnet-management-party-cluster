@@ -6,7 +6,7 @@
 namespace WebService
 {
     using System;
-    using System.Diagnostics.Tracing;
+    using Microsoft.Diagnostics.Tracing;
     using System.Fabric;
     using Microsoft.ServiceFabric.Services;
 
