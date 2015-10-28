@@ -13,7 +13,7 @@ namespace Mocks
         {
             return (ConditionalResult<T>)Activator.CreateInstance(
                     typeof(ConditionalResult<T>),
-                    System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance,
+                    System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Instance,
                     null,
                     new object[] { result, value },
                     null);

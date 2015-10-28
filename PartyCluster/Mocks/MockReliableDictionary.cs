@@ -231,5 +231,20 @@ namespace Mocks
         {
             return Task.FromResult((long)this.dictionary.Count);
         }
+
+        public IEnumerable<KeyValuePair<TKey, TValue>> CreateEnumerable(ITransaction txn)
+        {
+            throw new NotImplementedException();
+        }
+
+        public IEnumerable<KeyValuePair<TKey, TValue>> CreateEnumerable(ITransaction txn, EnumerationMode enumerationMode)
+        {
+            throw new NotImplementedException();
+        }
+
+        public IEnumerable<KeyValuePair<TKey, TValue>> CreateEnumerable(ITransaction txn, Func<TKey, bool> filter, EnumerationMode enumerationMode)
+        {
+            throw new NotImplementedException();
+        }
     }
 }
