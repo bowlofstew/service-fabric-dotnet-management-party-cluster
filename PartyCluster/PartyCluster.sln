@@ -17,6 +17,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Mocks", "Mocks\Mocks.csproj
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Microsoft.Diagnostics.EventListeners", "Microsoft.Diagnostics.EventListeners\Microsoft.Diagnostics.EventListeners.csproj", "{5F87E027-BA54-469C-AD4D-EA52F9D8CEAB}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Microsoft.Diagnostics.EventListeners.Fabric", "Microsoft.Diagnostics.EventListeners.Fabric\Microsoft.Diagnostics.EventListeners.Fabric.csproj", "{2D19BF76-04E1-4969-AD66-984160D38E2C}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -71,6 +73,14 @@ Global
 		{5F87E027-BA54-469C-AD4D-EA52F9D8CEAB}.Release|Any CPU.Build.0 = Release|Any CPU
 		{5F87E027-BA54-469C-AD4D-EA52F9D8CEAB}.Release|x64.ActiveCfg = Release|Any CPU
 		{5F87E027-BA54-469C-AD4D-EA52F9D8CEAB}.Release|x64.Build.0 = Release|Any CPU
+		{2D19BF76-04E1-4969-AD66-984160D38E2C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{2D19BF76-04E1-4969-AD66-984160D38E2C}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{2D19BF76-04E1-4969-AD66-984160D38E2C}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{2D19BF76-04E1-4969-AD66-984160D38E2C}.Debug|x64.Build.0 = Debug|Any CPU
+		{2D19BF76-04E1-4969-AD66-984160D38E2C}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{2D19BF76-04E1-4969-AD66-984160D38E2C}.Release|Any CPU.Build.0 = Release|Any CPU
+		{2D19BF76-04E1-4969-AD66-984160D38E2C}.Release|x64.ActiveCfg = Release|Any CPU
+		{2D19BF76-04E1-4969-AD66-984160D38E2C}.Release|x64.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
