@@ -25,5 +25,11 @@ namespace Microsoft.Diagnostics.EventListeners
         {
             EnableEvents(eventSource, EventLevel.LogAlways, (EventKeywords)~0);
         }
+
+        public override void Dispose()
+        {
+            base.Dispose();
+            Sender.Dispose();
+        }
     }
 }
