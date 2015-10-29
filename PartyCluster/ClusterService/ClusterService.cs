@@ -67,7 +67,7 @@ namespace ClusterService
 
         public async Task JoinClusterAsync(int clusterId, UserView user)
         {
-            if (user == null || String.IsNullOrWhiteSpace(user.UserName) || String.IsNullOrWhiteSpace(user.UserEmail))
+            if (user == null || String.IsNullOrWhiteSpace(user.UserEmail))
             {
                 throw new ArgumentNullException(nameof(user));
             }
@@ -86,7 +86,12 @@ namespace ClusterService
 
                 if (!result.HasValue)
                 {
-                    throw new KeyNotFoundException();
+                    ServiceEventSource.Current.ServiceMessage(
+                        this,
+                        "Join cluster request failed. Cluster does not exist. Cluster ID: {0}.",
+                        clusterId);
+
+                    throw new JoinClusterFailedException(JoinClusterFailedReason.ClusterDoesNotExist);
                 }
 
                 Cluster cluster = result.Value;
@@ -99,6 +104,7 @@ namespace ClusterService
                         "Join cluster request failed. Cluster is not ready. Cluster: {0}. Status: {1}",
                         clusterId,
                         cluster.Status);
+
                     throw new JoinClusterFailedException(JoinClusterFailedReason.ClusterNotReady);
                 }
 
@@ -110,6 +116,7 @@ namespace ClusterService
                         "Join cluster request failed. Cluster has expired. Cluster: {0}. Cluster creation time: {1}",
                         clusterId,
                         cluster.CreatedOn.ToUniversalTime());
+
                     throw new JoinClusterFailedException(JoinClusterFailedReason.ClusterExpired);
                 }
 
@@ -120,12 +127,17 @@ namespace ClusterService
                         "Join cluster request failed. Cluster is full. Cluster: {0}. Users: {1}",
                         clusterId,
                         cluster.Users.Count);
+
                     throw new JoinClusterFailedException(JoinClusterFailedReason.ClusterFull);
                 }
 
                 if (cluster.Users.Any(x => String.Equals(x.Email, user.UserEmail, StringComparison.OrdinalIgnoreCase)))
                 {
-                    ServiceEventSource.Current.ServiceMessage(this, "Join cluster request failed. User already exists. Cluster: {0}.", clusterId);
+                    ServiceEventSource.Current.ServiceMessage(
+                        this, 
+                        "Join cluster request failed. User already exists. Cluster: {0}.", 
+                        clusterId);
+
                     throw new JoinClusterFailedException(JoinClusterFailedReason.UserAlreadyJoined);
                 }
 
@@ -141,6 +153,7 @@ namespace ClusterService
                         clusterId,
                         cluster.Users.Count,
                         cluster.Ports.Count());
+
                     throw new JoinClusterFailedException(JoinClusterFailedReason.NoPortsAvailable);
                 }
 

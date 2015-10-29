@@ -781,7 +781,7 @@ namespace ClusterService.UnitTests
                 await tx.CommitAsync();
             }
 
-            await target.JoinClusterAsync(id, new UserView("name", email));
+            await target.JoinClusterAsync(id, new UserView(email));
 
             Assert.AreEqual(1, cluster.Users.Count(x => x.Email == email));
         }
@@ -814,7 +814,7 @@ namespace ClusterService.UnitTests
 
             try
             {
-                await target.JoinClusterAsync(id, new UserView("name", "email"));
+                await target.JoinClusterAsync(id, new UserView("email"));
                 Assert.Fail("JoinClusterFailedException not thrown.");
             }
             catch (JoinClusterFailedException result)
@@ -850,7 +850,7 @@ namespace ClusterService.UnitTests
 
             try
             {
-                await target.JoinClusterAsync(id, new UserView("name", "email"));
+                await target.JoinClusterAsync(id, new UserView("email"));
                 Assert.Fail("JoinClusterFailedException not thrown.");
             }
             catch (JoinClusterFailedException result)
@@ -888,7 +888,7 @@ namespace ClusterService.UnitTests
 
             try
             {
-                await target.JoinClusterAsync(id, new UserView("name", email));
+                await target.JoinClusterAsync(id, new UserView(email));
                 Assert.Fail("JoinClusterFailedException not thrown.");
             }
             catch (JoinClusterFailedException result)
@@ -926,7 +926,7 @@ namespace ClusterService.UnitTests
 
             try
             {
-                await target.JoinClusterAsync(id, new UserView("name", "email"));
+                await target.JoinClusterAsync(id, new UserView("email"));
                 Assert.Fail("JoinClusterFailedException not thrown.");
             }
             catch (JoinClusterFailedException result)
@@ -964,7 +964,7 @@ namespace ClusterService.UnitTests
 
             try
             {
-                await target.JoinClusterAsync(id, new UserView("name", "test"));
+                await target.JoinClusterAsync(id, new UserView("test"));
                 Assert.Fail("JoinClusterFailedException not thrown.");
             }
             catch (JoinClusterFailedException result)

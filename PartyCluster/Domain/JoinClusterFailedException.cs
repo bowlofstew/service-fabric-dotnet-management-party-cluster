@@ -7,8 +7,8 @@ namespace Domain
 {
     using System;
     using System.Runtime.Serialization;
-
-    [DataContract]
+    
+    [Serializable]
     public class JoinClusterFailedException : Exception
     {
         public JoinClusterFailedException(JoinClusterFailedReason reason)
@@ -20,22 +20,16 @@ namespace Domain
         public JoinClusterFailedException(SerializationInfo info, StreamingContext context)
             : base(info, context)
         {
+            Reason = (JoinClusterFailedReason)info.GetByte("Reason");
         }
 
-        [DataMember]
+        public override void GetObjectData(SerializationInfo info, StreamingContext context)
+        {
+            base.GetObjectData(info, context);
+            info.AddValue("Reason", this.Reason);
+        }
+
         public JoinClusterFailedReason Reason { get; private set; }
     }
 
-    public enum JoinClusterFailedReason
-    {
-        ClusterFull,
-
-        ClusterExpired,
-
-        ClusterNotReady,
-
-        UserAlreadyJoined,
-
-        NoPortsAvailable
-    }
 }

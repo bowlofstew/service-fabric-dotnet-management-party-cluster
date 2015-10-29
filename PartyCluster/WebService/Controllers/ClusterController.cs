@@ -7,9 +7,12 @@ namespace WebService.Controllers
 {
     using System;
     using System.Collections.Generic;
+    using System.Net;
+    using System.Net.Http;
     using System.Threading.Tasks;
     using System.Web.Http;
     using Domain;
+    using ViewModels;
     using Microsoft.ServiceFabric.Services;
 
     [RoutePrefix("api")]
@@ -26,16 +29,16 @@ namespace WebService.Controllers
         }
 
         [HttpPost]
-        [Route("clusters/join")]
-        public Task JoinRandom([FromBody] string user)
-        {
-            throw new NotImplementedException();
-        }
-
-        [HttpPost]
         [Route("clusters/join/{clusterId}")]
-        public async Task<IHttpActionResult> Join(int clusterId, [FromBody] UserView user)
+        public async Task<HttpResponseMessage> Join(int clusterId, [FromBody] UserView user)
         {
+            if (user == null || String.IsNullOrWhiteSpace(user.UserEmail))
+            {
+                return Request.CreateResponse(
+                    HttpStatusCode.BadRequest,
+                    new BadRequestViewModel("InvalidArguments", "Please provide an email address."));
+            }
+
             ServiceUriBuilder builder = new ServiceUriBuilder("ClusterService");
             IClusterService clusterService = ServiceProxy.Create<IClusterService>(1, builder.ToUri());
 
@@ -43,20 +46,35 @@ namespace WebService.Controllers
             {
                 await clusterService.JoinClusterAsync(clusterId, user);
 
-                return this.Ok();
+                return Request.CreateResponse(HttpStatusCode.Accepted);
             }
             catch (AggregateException ae)
             {
-                if (ae.InnerException is ArgumentException)
+                ArgumentException argumentEx = ae.InnerException as ArgumentException;
+                if (argumentEx != null)
                 {
-                    return this.BadRequest();
+                    return Request.CreateResponse(
+                        HttpStatusCode.BadRequest,
+                        new BadRequestViewModel("InvalidArguments", argumentEx.Message));
                 }
 
-                return this.InternalServerError(ae.InnerException);
+                JoinClusterFailedException joinFailedEx = ae.InnerException as JoinClusterFailedException;
+                if (joinFailedEx != null)
+                {
+                    return Request.CreateResponse(
+                        HttpStatusCode.BadRequest, 
+                        new BadRequestViewModel(joinFailedEx.Reason.ToString(), joinFailedEx.Message));
+                }
+
+                return Request.CreateResponse(
+                    HttpStatusCode.InternalServerError,
+                    new BadRequestViewModel("ServerError", ae.InnerException.Message));
             }
             catch (Exception e)
             {
-                return this.InternalServerError(e);
+                return Request.CreateResponse(
+                    HttpStatusCode.InternalServerError,
+                    new BadRequestViewModel("ServerError", e.Message));
             }
         }
     }
