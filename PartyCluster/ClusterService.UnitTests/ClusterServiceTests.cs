@@ -352,7 +352,7 @@ namespace ClusterService.UnitTests
                     tx,
                     dictionary,
                     withUsers,
-                    () => new Cluster()
+                    () => new Cluster("test")
                 {
                         Users = new List<ClusterUser>() {new ClusterUser()},
                     Status = ClusterStatus.Ready
@@ -394,7 +394,7 @@ namespace ClusterService.UnitTests
                     tx,
                     dictionary,
                     clusterCount,
-                    () => new Cluster()
+                    () => new Cluster("test")
                 {
                         Users =
                             new List<ClusterUser>(
@@ -407,7 +407,7 @@ namespace ClusterService.UnitTests
                     tx,
                     dictionary,
                     5,
-                    () => new Cluster()
+                    () => new Cluster("test")
                 {
                     Status = ClusterStatus.Remove,
                     Users = new List<ClusterUser>(Enumerable.Repeat(new ClusterUser(), config.MaximumUsersPerCluster))
@@ -449,7 +449,7 @@ namespace ClusterService.UnitTests
                     tx,
                     dictionary,
                     clusterCount,
-                    () => new Cluster()
+                    () => new Cluster("test")
                 {
                         Users =
                             new List<ClusterUser>(
@@ -462,7 +462,7 @@ namespace ClusterService.UnitTests
                     tx,
                     dictionary,
                     5,
-                    () => new Cluster()
+                    () => new Cluster("test")
                 {
                     Status = ClusterStatus.Remove,
                     Users = new List<ClusterUser>(Enumerable.Repeat(new ClusterUser(), config.MaximumUsersPerCluster))
@@ -501,7 +501,7 @@ namespace ClusterService.UnitTests
                     tx,
                     dictionary,
                     clusterCount,
-                    () => new Cluster()
+                    () => new Cluster("test")
                 {
                         Users =
                             new List<ClusterUser>(
@@ -514,7 +514,7 @@ namespace ClusterService.UnitTests
                     tx,
                     dictionary,
                     5,
-                    () => new Cluster()
+                    () => new Cluster("test")
                 {
                     Status = ClusterStatus.Remove,
                     Users = new List<ClusterUser>(Enumerable.Repeat(new ClusterUser(), config.MaximumUsersPerCluster))
@@ -554,7 +554,7 @@ namespace ClusterService.UnitTests
                     tx,
                     dictionary,
                     clusterCount,
-                    () => new Cluster()
+                    () => new Cluster("test")
                 {
                         Users =
                             new List<ClusterUser>(
@@ -596,7 +596,7 @@ namespace ClusterService.UnitTests
 
             ClusterService target = new ClusterService(clusterOperator, stateManager);
 
-            Cluster cluster = new Cluster()
+            Cluster cluster = new Cluster("test")
             {
                 Status = ClusterStatus.New
             };
@@ -622,7 +622,7 @@ namespace ClusterService.UnitTests
             };
 
             ClusterService target = new ClusterService(clusterOperator, stateManager);
-            Cluster cluster = new Cluster()
+            Cluster cluster = new Cluster("test")
             {
                 Status = ClusterStatus.Creating
             };
@@ -635,7 +635,7 @@ namespace ClusterService.UnitTests
         }
 
         /// <summary>
-        /// A creating cluster should revert to "new" status if creation failed so that it can be retried.
+        /// A creating cluster should set the status to "remove" if creation failed so that the failed deployment can be deleted.
         /// </summary>
         /// <returns></returns>
         [TestMethod]
@@ -648,14 +648,14 @@ namespace ClusterService.UnitTests
             };
 
             ClusterService target = new ClusterService(clusterOperator, stateManager);
-            Cluster cluster = new Cluster()
+            Cluster cluster = new Cluster("test")
             {
                 Status = ClusterStatus.Creating
             };
 
             await target.ProcessClusterStatusAsync(cluster);
 
-            Assert.AreEqual(ClusterStatus.New, cluster.Status);
+            Assert.AreEqual(ClusterStatus.Remove, cluster.Status);
             Assert.AreEqual(0, cluster.Ports.Count());
             Assert.AreEqual(0, cluster.Users.Count());
         }
@@ -683,7 +683,7 @@ namespace ClusterService.UnitTests
 
             ClusterService target = new ClusterService(clusterOperator, stateManager);
 
-            Cluster cluster = new Cluster()
+            Cluster cluster = new Cluster("test")
             {
                 Status = ClusterStatus.Remove
             };
@@ -709,7 +709,7 @@ namespace ClusterService.UnitTests
 
             ClusterService target = new ClusterService(clusterOperator, stateManager);
 
-            Cluster cluster = new Cluster()
+            Cluster cluster = new Cluster("test")
             {
                 Status = ClusterStatus.Deleting
             };
@@ -720,44 +720,33 @@ namespace ClusterService.UnitTests
         }
 
         /// <summary>
-        /// A cluster should be removed when its time limit has elapsed.
+        /// A cluster should be marked for removal when its time limit has elapsed.
         /// </summary>
         /// <returns></returns>
         [TestMethod]
         public async Task ProcessRemoveTimeLimit()
         {
-            bool calledActual = false;
-
             ClusterConfig config = new ClusterConfig()
             {
                 MaximumClusterUptime = TimeSpan.FromHours(2)
             };
              
             MockReliableStateManager stateManager = new MockReliableStateManager();
-            MockClusterOperator clusterOperator = new MockClusterOperator()
-            {
-                DeleteClusterAsyncFunc = name =>
-                {
-                    calledActual = true;
-                    return Task.FromResult(true);
-                }
-            };
 
-            ClusterService target = new ClusterService(clusterOperator, stateManager)
+            ClusterService target = new ClusterService(null, stateManager)
             {
                 Config = config
             };
 
-            Cluster cluster = new Cluster()
+            Cluster cluster = new Cluster("test")
             {
                 Status = ClusterStatus.Ready,
                 CreatedOn = DateTimeOffset.UtcNow - config.MaximumClusterUptime
             };
 
             await target.ProcessClusterStatusAsync(cluster);
-
-            Assert.IsTrue(calledActual);
-            Assert.AreEqual(ClusterStatus.Deleting, cluster.Status);
+            
+            Assert.AreEqual(ClusterStatus.Remove, cluster.Status);
         }
 
         [TestMethod]
@@ -772,7 +761,7 @@ namespace ClusterService.UnitTests
 
             int id = 5;
             string email = "test@test.com";
-            Cluster cluster = new Cluster() {Status = ClusterStatus.Ready, Ports = new[] {80}};
+            Cluster cluster = new Cluster("test") {Status = ClusterStatus.Ready, Ports = new[] {80}};
             IReliableDictionary<int, Cluster> dictionary =
                 await stateManager.GetOrAddAsync<IReliableDictionary<int, Cluster>>(ClusterService.ClusterDictionaryName);
             using (ITransaction tx = stateManager.CreateTransaction())
@@ -797,7 +786,7 @@ namespace ClusterService.UnitTests
             };
 
             int id = 5;
-            Cluster cluster = new Cluster()
+            Cluster cluster = new Cluster("test")
             {
                 Status = ClusterStatus.Ready,
                 Users = new[] {new ClusterUser()},
@@ -834,7 +823,7 @@ namespace ClusterService.UnitTests
             };
 
             int id = 5;
-            Cluster cluster = new Cluster()
+            Cluster cluster = new Cluster("test")
             {
                 Status = ClusterStatus.Creating,
                 Ports = new[] {80}
@@ -871,7 +860,7 @@ namespace ClusterService.UnitTests
 
             int id = 5;
             string email = "test@test.com";
-            Cluster cluster = new Cluster()
+            Cluster cluster = new Cluster("test")
             {
                 Status = ClusterStatus.Ready,
                 Users = new[] {new ClusterUser(email, 80)},
@@ -909,7 +898,7 @@ namespace ClusterService.UnitTests
             };
 
             int id = 5;
-            Cluster cluster = new Cluster()
+            Cluster cluster = new Cluster("test")
             {
                 CreatedOn = DateTimeOffset.UtcNow - (config.MaximumClusterUptime + TimeSpan.FromSeconds(1)),
                 Status = ClusterStatus.Ready,
@@ -947,7 +936,7 @@ namespace ClusterService.UnitTests
 
             int id = 5;
             string email = "test@test.com";
-            Cluster cluster = new Cluster()
+            Cluster cluster = new Cluster("test")
             {
                 Status = ClusterStatus.Ready,
                 Users = new[] {new ClusterUser(email, 80)},
@@ -992,7 +981,7 @@ namespace ClusterService.UnitTests
 
         private Task AddClusters(ITransaction tx, IReliableDictionary<int, Cluster> dictionary, int count, ClusterStatus status)
         {
-            return this.AddClusters(tx, dictionary, count, () => new Cluster() {Status = status});
+            return this.AddClusters(tx, dictionary, count, () => new Cluster("test") {Status = status});
         }
     }
 }

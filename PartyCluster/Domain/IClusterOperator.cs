@@ -28,20 +28,20 @@ namespace Domain
         /// </remarks>
         /// <param name="domain"></param>
         /// <returns></returns>
-        Task DeleteClusterAsync(string domain);
+        Task DeleteClusterAsync(string name);
 
         /// <summary>
         /// Gets the status of a cluster. If the cluster does not a exist, an exception should be thrown.
         /// </summary>
         /// <param name="domain"></param>
         /// <returns></returns>
-        Task<ClusterOperationStatus> GetClusterStatusAsync(string domain);
+        Task<ClusterOperationStatus> GetClusterStatusAsync(string name);
 
         /// <summary>
         /// Gets a list of input ports available on the cluster.
         /// </summary>
         /// <param name="domain"></param>
         /// <returns></returns>
-        Task<IEnumerable<int>> GetClusterPortsAsync(string domain);
+        Task<IEnumerable<int>> GetClusterPortsAsync(string name);
     }
 }

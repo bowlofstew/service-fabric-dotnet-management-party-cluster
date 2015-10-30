@@ -35,6 +35,11 @@ namespace Domain
         /// <summary>
         /// The cluster doesn't exist.
         /// </summary>
-        ClusterNotFound
+        ClusterNotFound,
+
+        /// <summary>
+        /// Current status is unknown.
+        /// </summary>
+        Unknown
     }
 }

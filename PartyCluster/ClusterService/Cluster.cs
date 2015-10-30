@@ -12,8 +12,11 @@ namespace ClusterService
     [DataContract]
     internal class Cluster
     {
-        public Cluster()
+        private static Random random = new Random();
+
+        public Cluster(string internalName)
         {
+            this.InternalName = internalName;
             this.Status = ClusterStatus.New;
             this.AppCount = 0;
             this.ServiceCount = 0;
@@ -22,6 +25,9 @@ namespace ClusterService
             this.Users = new List<ClusterUser>();
             this.CreatedOn = DateTimeOffset.MaxValue;
         }
+
+        [DataMember]
+        public string InternalName { get; private set; }
 
         [DataMember]
         public ClusterStatus Status { get; set; }

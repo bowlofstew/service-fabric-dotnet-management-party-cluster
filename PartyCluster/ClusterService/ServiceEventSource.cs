@@ -39,7 +39,7 @@ namespace ClusterService
         [NonEvent]
         public void ServiceMessage(StatelessService service, string message, params object[] args)
         {
-            if (this.IsEnabled())
+            if (this.IsEnabled() && service != null && service.ServiceInitializationParameters != null)
             {
                 string finalMessage = string.Format(message, args);
                 this.ServiceMessage(
@@ -57,7 +57,7 @@ namespace ClusterService
         [NonEvent]
         public void ServiceMessage(StatefulService service, string message, params object[] args)
         {
-            if (this.IsEnabled())
+            if (this.IsEnabled() && service != null && service.ServiceInitializationParameters != null)
             {
                 string finalMessage = string.Format(message, args);
                 this.ServiceMessage(

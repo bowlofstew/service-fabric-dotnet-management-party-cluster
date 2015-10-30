@@ -33,19 +33,19 @@ namespace Mocks
             return this.CreateClusterAsyncFunc(name);
         }
 
-        public Task DeleteClusterAsync(string domain)
+        public Task DeleteClusterAsync(string name)
         {
-            return this.DeleteClusterAsyncFunc(domain);
+            return this.DeleteClusterAsyncFunc(name);
         }
 
-        public Task<IEnumerable<int>> GetClusterPortsAsync(string domain)
+        public Task<IEnumerable<int>> GetClusterPortsAsync(string name)
         {
-            return this.GetClusterPortsAsyncFunc(domain);
+            return this.GetClusterPortsAsyncFunc(name);
         }
 
-        public Task<ClusterOperationStatus> GetClusterStatusAsync(string domain)
+        public Task<ClusterOperationStatus> GetClusterStatusAsync(string name)
         {
-            return this.GetClusterStatusAsyncFunc(domain);
+            return this.GetClusterStatusAsyncFunc(name);
         }
     }
 }
