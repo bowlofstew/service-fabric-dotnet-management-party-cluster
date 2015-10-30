@@ -14,7 +14,7 @@ namespace Domain
         {
             this.UserEmail = userEmail;
         }
-        
+
         [DataMember]
         public string UserEmail { get; private set; }
     }

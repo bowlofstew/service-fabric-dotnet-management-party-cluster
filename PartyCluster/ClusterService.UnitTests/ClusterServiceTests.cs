@@ -118,9 +118,9 @@ namespace ClusterService.UnitTests
                 config.MinimumClusterCount,
                 dictionary.Count(
                     x =>
-                        x.Value.Status == ClusterStatus.Ready ||
-                        x.Value.Status == ClusterStatus.New ||
-                        x.Value.Status == ClusterStatus.Creating));
+                x.Value.Status == ClusterStatus.Ready ||
+                x.Value.Status == ClusterStatus.New ||
+                x.Value.Status == ClusterStatus.Creating));
         }
 
         /// <summary>
@@ -353,10 +353,10 @@ namespace ClusterService.UnitTests
                     dictionary,
                     withUsers,
                     () => new Cluster()
-                    {
+                {
                         Users = new List<ClusterUser>() {new ClusterUser()},
-                        Status = ClusterStatus.Ready
-                    });
+                    Status = ClusterStatus.Ready
+                });
 
                 await this.AddClusters(tx, dictionary, withoutUsers, ClusterStatus.Ready);
 
@@ -395,26 +395,26 @@ namespace ClusterService.UnitTests
                     dictionary,
                     clusterCount,
                     () => new Cluster()
-                    {
+                {
                         Users =
                             new List<ClusterUser>(
                                 Enumerable.Repeat(
                                     new ClusterUser(),
                                     (int) Math.Ceiling((double) config.MaximumUsersPerCluster*config.UserCapacityHighPercentThreshold)))
-                    });
+                });
 
                 await this.AddClusters(
                     tx,
                     dictionary,
                     5,
                     () => new Cluster()
-                    {
-                        Status = ClusterStatus.Remove,
-                        Users = new List<ClusterUser>(Enumerable.Repeat(new ClusterUser(), config.MaximumUsersPerCluster))
-                    });
+                {
+                    Status = ClusterStatus.Remove,
+                    Users = new List<ClusterUser>(Enumerable.Repeat(new ClusterUser(), config.MaximumUsersPerCluster))
+                });
 
                 await this.AddClusters(tx, dictionary, 5, ClusterStatus.Deleting);
-
+                
                 await tx.CommitAsync();
             }
 
@@ -450,27 +450,27 @@ namespace ClusterService.UnitTests
                     dictionary,
                     clusterCount,
                     () => new Cluster()
-                    {
+                {
                         Users =
                             new List<ClusterUser>(
                                 Enumerable.Repeat(
                                     new ClusterUser(),
                                     (int) Math.Ceiling((double) config.MaximumUsersPerCluster*config.UserCapacityHighPercentThreshold)))
-                    });
+                });
 
                 await this.AddClusters(
                     tx,
                     dictionary,
                     5,
                     () => new Cluster()
-                    {
-                        Status = ClusterStatus.Remove,
-                        Users = new List<ClusterUser>(Enumerable.Repeat(new ClusterUser(), config.MaximumUsersPerCluster))
-                    });
+                {
+                    Status = ClusterStatus.Remove,
+                    Users = new List<ClusterUser>(Enumerable.Repeat(new ClusterUser(), config.MaximumUsersPerCluster))
+                });
 
                 await tx.CommitAsync();
             }
-
+            
             int actual = await target.GetTargetClusterCapacityAsync();
 
             Assert.AreEqual(config.MaximumClusterCount, actual);
@@ -502,23 +502,23 @@ namespace ClusterService.UnitTests
                     dictionary,
                     clusterCount,
                     () => new Cluster()
-                    {
+                {
                         Users =
                             new List<ClusterUser>(
                                 Enumerable.Repeat(
                                     new ClusterUser(),
                                     (int) Math.Floor((double) config.MaximumUsersPerCluster*config.UserCapacityLowPercentThreshold)))
-                    });
+                });
 
                 await this.AddClusters(
                     tx,
                     dictionary,
                     5,
                     () => new Cluster()
-                    {
-                        Status = ClusterStatus.Remove,
-                        Users = new List<ClusterUser>(Enumerable.Repeat(new ClusterUser(), config.MaximumUsersPerCluster))
-                    });
+                {
+                    Status = ClusterStatus.Remove,
+                    Users = new List<ClusterUser>(Enumerable.Repeat(new ClusterUser(), config.MaximumUsersPerCluster))
+                });
 
                 await tx.CommitAsync();
             }
@@ -555,14 +555,14 @@ namespace ClusterService.UnitTests
                     dictionary,
                     clusterCount,
                     () => new Cluster()
-                    {
+                {
                         Users =
                             new List<ClusterUser>(
                                 Enumerable.Repeat(
                                     new ClusterUser(),
                                     (int) Math.Floor((double) config.MaximumUsersPerCluster*config.UserCapacityLowPercentThreshold)))
-                    });
-
+                });
+                
                 await tx.CommitAsync();
             }
 
@@ -607,7 +607,7 @@ namespace ClusterService.UnitTests
             Assert.AreEqual(ClusterStatus.Creating, cluster.Status);
             Assert.AreEqual(String.Format(nameTemplate, nameActual), cluster.Address);
         }
-
+        
         /// <summary>
         /// A creating cluster should set its status to ready and populate fields when the cluster creation has completed.
         /// </summary>
@@ -628,7 +628,7 @@ namespace ClusterService.UnitTests
             };
 
             await target.ProcessClusterStatusAsync(cluster);
-
+            
             Assert.AreEqual(ClusterStatus.Ready, cluster.Status);
             Assert.IsTrue(cluster.CreatedOn.ToUniversalTime() <= DateTimeOffset.UtcNow);
             cluster.Ports.SequenceEqual(await clusterOperator.GetClusterPortsAsync(""));
@@ -715,7 +715,7 @@ namespace ClusterService.UnitTests
             };
 
             await target.ProcessClusterStatusAsync(cluster);
-
+            
             Assert.AreEqual(ClusterStatus.Deleted, cluster.Status);
         }
 
@@ -732,7 +732,7 @@ namespace ClusterService.UnitTests
             {
                 MaximumClusterUptime = TimeSpan.FromHours(2)
             };
-
+             
             MockReliableStateManager stateManager = new MockReliableStateManager();
             MockClusterOperator clusterOperator = new MockClusterOperator()
             {

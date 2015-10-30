@@ -5,19 +5,19 @@
 
 namespace Mocks
 {
-    using System;
-    using Microsoft.ServiceFabric.Data;
+using System;
+using Microsoft.ServiceFabric.Data;
 
     internal static class ConditionalResultActivator
     {
         public static ConditionalResult<T> Create<T>(bool result, T value)
         {
             return (ConditionalResult<T>) Activator.CreateInstance(
-                typeof(ConditionalResult<T>),
-                System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance,
-                null,
+                    typeof(ConditionalResult<T>),
+                    System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Instance,
+                    null,
                 new object[] {result, value},
-                null);
+                    null);
         }
     }
 }

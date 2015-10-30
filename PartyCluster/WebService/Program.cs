@@ -9,6 +9,8 @@ namespace WebService
     using System.Diagnostics;
     using System.Fabric;
     using System.Threading;
+    using Microsoft.Diagnostics.EventListeners;
+    using FabricEventListeners = Microsoft.Diagnostics.EventListeners.Fabric;
 
     public class Program
     {
@@ -18,6 +20,13 @@ namespace WebService
             {
                 using (FabricRuntime fabricRuntime = FabricRuntime.Create())
                 {
+                    var configProvider = new FabricEventListeners.FabricConfigurationProvider("ElasticSearchEventListener");
+                    ElasticSearchListener esListener = null;
+                    if (configProvider.HasConfiguration)
+                    {
+                        esListener = new ElasticSearchListener(configProvider);
+                    }
+
                     // This is the name of the ServiceType that is registered with FabricRuntime. 
                     // This name must match the name defined in the ServiceManifest. If you change
                     // this name, please change the name of the ServiceType in the ServiceManifest.
@@ -26,6 +35,7 @@ namespace WebService
                     ServiceEventSource.Current.ServiceTypeRegistered(Process.GetCurrentProcess().Id, typeof(WebService).Name);
 
                     Thread.Sleep(Timeout.Infinite);
+                    GC.KeepAlive(esListener);
                 }
             }
             catch (Exception e)

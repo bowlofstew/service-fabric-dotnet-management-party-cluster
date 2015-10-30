@@ -27,7 +27,7 @@ namespace Mocks
             {
                 throw new InvalidOperationException("key already exists: " + key.ToString());
             }
-
+            
 
             return Task.FromResult(true);
         }
@@ -230,6 +230,21 @@ namespace Mocks
         public Task<long> GetCountAsync()
         {
             return Task.FromResult((long) this.dictionary.Count);
+        }
+
+        public IEnumerable<KeyValuePair<TKey, TValue>> CreateEnumerable(ITransaction txn)
+        {
+            throw new NotImplementedException();
+        }
+
+        public IEnumerable<KeyValuePair<TKey, TValue>> CreateEnumerable(ITransaction txn, EnumerationMode enumerationMode)
+        {
+            throw new NotImplementedException();
+        }
+
+        public IEnumerable<KeyValuePair<TKey, TValue>> CreateEnumerable(ITransaction txn, Func<TKey, bool> filter, EnumerationMode enumerationMode)
+        {
+            throw new NotImplementedException();
         }
     }
 }

@@ -62,25 +62,24 @@ function Dialog($modal) {
 function PartyClusters(api) {
     var self = this;
     this.api = api;
+    this.refreshRate = 5000;
     this.selectedClusterId = 0;
     this.autoRetry = false;
     this.joinClusterDialog = new Dialog($('.join-cluster'));
-    1
+
     this.Initialize = function () {
         this.PopulateClusterList();
 
         $('.join-now', self.joinClusterDialog.Window).click(function () {
-           
+            self.JoinCluster();
         });
 
         $('.partynow').click(function () {
-            try
-            {
+            try {
                 var id = self.SelectRandomCluster();
                 self.ShowJoinClusterDialog(id, 'Join now!', true);
             }
-            catch
-            {
+            catch (exception) {
                 alert('no clusters available. Come back later');
             }
         });
@@ -88,19 +87,16 @@ function PartyClusters(api) {
         setInterval(this.PopulateClusterList, self.refreshRate);
     };
 
-    this.JoinCluster()
-    {
+    this.JoinCluster = function () {
         var email = $('#join-useremail', self.joinClusterDialog.Window).val();
-			
+
         self.api.JoinCluster(self.selectedClusterId, email,
-			function(data){
-				
+			function (data) {
+
 			},
-			function(data){
-			    if (self.autoRetry)
-			    {
-			        switch(data.Code)
-			        {
+			function (data) {
+			    if (self.autoRetry) {
+			        switch (data.Code) {
 			            case "ClusterFull":
 			            case "ClusterExpired":
 			            case "ClusterNotReady":
@@ -111,77 +107,79 @@ function PartyClusters(api) {
 			                break;
 			        }
 			    }
-		);
-			};
-	
-        this.SelectRandomCluster = function()
-        {
-            var tableRows = $('.cluster-list table tr');
-            var clusterId = 0;
-            var clusterName = '';
-            for (var i = 0; i < tableRows.length; ++i) {
-                var $row = $(tableRows[i]);
-                if ($row.attr('data-users') < $row.attr('data-capacity')) {
-                    return $row.attr('data-id');
-                }
+			}
+        );
+    }
+
+
+
+    this.SelectRandomCluster = function () {
+        var tableRows = $('.cluster-list table tr');
+        var clusterId = 0;
+        var clusterName = '';
+        for (var i = 0; i < tableRows.length; ++i) {
+            var $row = $(tableRows[i]);
+            if ($row.attr('data-users') < $row.attr('data-capacity')) {
+                return $row.attr('data-id');
             }
-            throw "No clusters currently available";
-        };
-	
-        this.ShowJoinClusterDialog = function (clusterId, clusterName, autoretry) {
-            self.selectedClusterId = clusterId;
-            self.autoRetry = autoretry;
-            $('.join-cluster-name', self.joinClusterDialog.Window).text(clusterName);
-            self.joinClusterDialog.Show();
-        };
-
-        this.PopulateClusterList = function () {
-            self.api.GetClusters(function (data) {
-                var clusterTable = $('.cluster-list table');
-                clusterTable.empty();
-
-                $('<thead/>')
-                   .append(
-                       $('<tr/>')
-                           .append(
-                               $('<th/>').text('Name'))
-                           .append(
-                               $('<th/>').text('Users'))
-                           .append(
-                               $('<th/>').text('Applications'))
-                           .append(
-                               $('<th/>').text('Services'))
-                           .append(
-                               $('<th/>').text('Time left'))
-                           .append(
-                               $('<th/>').text(''))
-                           )
-                   .appendTo(clusterTable);
-
-                $('<tbody>')
-                    .appendTo(clusterTable);
-
-                $.each(data, function (id, jObject) {
-                    $('<tr data-id="' + jObject.ClusterId + '" data-users="' + jObject.UserCount + '" data-capacity="' + jObject.Capacity + '" />')
-                        .append(
-                            $('<td/>').text(jObject.Name))
-                        .append(
-                            $('<td/>').text(jObject.UserCount))
-                        .append(
-                            $('<td/>').text(jObject.AppCount))
-                        .append(
-                            $('<td/>').text(jObject.ServiceCount))
-                        .append(
-                            $('<td/>').text(jObject.TimeRemaining))
-                        .append(
-                            $('<td/>')
-                                .append(
-                                    $('<a href="javascript:void(0);" class="button">')
-                                        .text('Join!')
-                                        .click(function () { self.ShowJoinClusterDialog(jObject.ClusterId, jObject.Name, false); })))
-                    .appendTo(clusterTable);
-
-                });
-            });
-        };
+        }
+        throw "No clusters currently available";
     };
+
+    this.ShowJoinClusterDialog = function (clusterId, clusterName, autoretry) {
+        self.selectedClusterId = clusterId;
+        self.autoRetry = autoretry;
+        $('.join-cluster-name', self.joinClusterDialog.Window).text(clusterName);
+        self.joinClusterDialog.Show();
+    };
+
+    this.PopulateClusterList = function () {
+        self.api.GetClusters(function (data) {
+            var clusterTable = $('.cluster-list table');
+            clusterTable.empty();
+
+            $('<thead/>')
+               .append(
+                   $('<tr/>')
+                       .append(
+                           $('<th/>').text('Name'))
+                       .append(
+                           $('<th/>').text('Users'))
+                       .append(
+                           $('<th/>').text('Applications'))
+                       .append(
+                           $('<th/>').text('Services'))
+                       .append(
+                           $('<th/>').text('Time left'))
+                       .append(
+                           $('<th/>').text(''))
+                       )
+               .appendTo(clusterTable);
+
+            $('<tbody>')
+				.appendTo(clusterTable);
+
+            $.each(data, function (id, jObject) {
+                $('<tr data-id="' + jObject.ClusterId + '" data-users="' + jObject.UserCount + '" data-capacity="' + jObject.Capacity + '" />')
+                .append(
+                    $('<td/>').text(jObject.Name))
+                .append(
+                    $('<td/>').text(jObject.UserCount))
+                .append(
+                    $('<td/>').text(jObject.AppCount))
+                .append(
+                    $('<td/>').text(jObject.ServiceCount))
+                .append(
+                    $('<td/>').text(jObject.TimeRemaining))
+                .append(
+                    $('<td/>')
+                        .append(
+                            $('<a href="javascript:void(0);" class="button">')
+                                .text('Join!')
+                                    .click(function () { self.ShowJoinClusterDialog(jObject.ClusterId, jObject.Name, false); })))
+            .appendTo(clusterTable);
+
+            });
+        });
+    };
+};

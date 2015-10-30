@@ -5,15 +5,15 @@
 
 namespace WebService.Controllers
 {
-    using System;
-    using System.Collections.Generic;
+using System;
+using System.Collections.Generic;
     using System.Net;
     using System.Net.Http;
-    using System.Threading.Tasks;
-    using System.Web.Http;
-    using Domain;
+using System.Threading.Tasks;
+using System.Web.Http;
+using Domain;
     using ViewModels;
-    using Microsoft.ServiceFabric.Services;
+using Microsoft.ServiceFabric.Services;
 
     [RoutePrefix("api")]
     public class ClusterController : ApiController
@@ -37,7 +37,7 @@ namespace WebService.Controllers
                 return Request.CreateResponse(
                     HttpStatusCode.BadRequest,
                     new BadRequestViewModel("InvalidArguments", "Please provide an email address."));
-            }
+        }
 
             ServiceUriBuilder builder = new ServiceUriBuilder("ClusterService");
             IClusterService clusterService = ServiceProxy.Create<IClusterService>(1, builder.ToUri());

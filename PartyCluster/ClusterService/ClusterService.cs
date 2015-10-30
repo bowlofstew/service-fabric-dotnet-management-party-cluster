@@ -53,14 +53,14 @@ namespace ClusterService
                 await this.reliableStateManager.GetOrAddAsync<IReliableDictionary<int, Cluster>>(ClusterDictionaryName);
 
             return from cluster in clusterDictionary
-                where cluster.Value.Status == ClusterStatus.Ready
+                   where cluster.Value.Status == ClusterStatus.Ready
                 orderby cluster.Value.CreatedOn descending
-                select new ClusterView(
-                    cluster.Key,
-                    "Party Cluster " + cluster.Key,
-                    cluster.Value.AppCount,
-                    cluster.Value.ServiceCount,
-                    cluster.Value.Users.Count,
+                   select new ClusterView(
+                       cluster.Key,
+                       "Party Cluster " + cluster.Key,
+                       cluster.Value.AppCount,
+                       cluster.Value.ServiceCount,
+                       cluster.Value.Users.Count,
                     this.Config.MaximumUsersPerCluster,
                     this.Config.MaximumClusterUptime - (DateTimeOffset.UtcNow - cluster.Value.CreatedOn.ToUniversalTime()));
         }
@@ -324,7 +324,7 @@ namespace ClusterService
             double totalCapacity = activeClusterCount*this.Config.MaximumUsersPerCluster;
 
             double totalUsers = activeClusters
-                .Aggregate(0, (total, next) => total += next.Value.Users.Count);
+                    .Aggregate(0, (total, next) => total += next.Value.Users.Count);
 
             double percentFull = totalUsers/totalCapacity;
 
@@ -465,9 +465,9 @@ namespace ClusterService
         {
             return clusterDictionary.Where(
                 x =>
-                    x.Value.Status == ClusterStatus.New ||
-                    x.Value.Status == ClusterStatus.Creating ||
-                    x.Value.Status == ClusterStatus.Ready);
+                x.Value.Status == ClusterStatus.New ||
+                x.Value.Status == ClusterStatus.Creating ||
+                x.Value.Status == ClusterStatus.Ready);
         }
     }
 }

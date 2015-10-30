@@ -5,10 +5,10 @@
 
 namespace ClusterService
 {
-    using System;
-    using System.Collections.Generic;
-    using System.Threading.Tasks;
-    using Domain;
+using System;
+using System.Collections.Generic;
+using System.Threading.Tasks;
+using Domain;
 
     internal class FakeClusterOperator : IClusterOperator
     {

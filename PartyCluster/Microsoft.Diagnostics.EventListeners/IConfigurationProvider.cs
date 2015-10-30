@@ -3,20 +3,14 @@
 //  Licensed under the MIT License (MIT). See License.txt in the repo root for license information.
 // ------------------------------------------------------------
 
-namespace ClusterService
+using System;
+
+namespace Microsoft.Diagnostics.EventListeners
 {
-    internal enum ClusterStatus
+    
+    public interface IConfigurationProvider
     {
-        New,
-
-        Creating,
-
-        Ready,
-
-        Remove, 
-
-        Deleting,
-
-        Deleted
+        bool HasConfiguration { get; }
+        string GetValue(string name);
     }
 }

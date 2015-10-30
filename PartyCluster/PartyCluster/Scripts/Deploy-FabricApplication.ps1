@@ -29,6 +29,12 @@ Indicates whether to force an upgrade to occur with hard-coded settings, ignorin
 .PARAMETER UseExistingClusterConnection
 Indicates that the script should make use of an existing cluster connection that has already been established in the PowerShell session.  The cluster connection parameters configured in the publish profile are ignored.
 
+.PARAMETER OverwriteBehavior
+Overwrite Behavior if an application exists in the cluster with the same name. Available Options are Never, Always, SameAppTypeAndVersion. This setting is not applicable when upgrading an application.
+Never will not remove the existing application. This is the default behavior.
+Always will remove the existing application even if its Application type and Version is different from the application being created. 
+SameAppTypeAndVersion will remove the existing application only if its Application type and Version is same as the application being created.
+
 .EXAMPLE
 . Scripts\Deploy-FabricApplication.ps1 -ApplicationPackagePath 'pkg\Debug'
 
@@ -66,7 +72,11 @@ Param
     $ForceUpgrade,
 
     [Switch]
-    $UseExistingClusterConnection
+    $UseExistingClusterConnection,
+
+    [String]
+    [ValidateSet('Never','Always','SameAppTypeAndVersion')]
+    $OverwriteBehavior
 )
 
 function Read-XmlElementAsHashtable
@@ -155,20 +165,19 @@ if (-not $UseExistingClusterConnection)
 }
 
 $RegKey = "HKLM:\SOFTWARE\Microsoft\Service Fabric SDK"
-$ScriptFolderPath = (Get-ItemProperty -Path $RegKey -Name FabricSDKScriptsPath).FabricSDKScriptsPath
+$ModuleFolderPath = (Get-ItemProperty -Path $RegKey -Name FabricSDKPSModulePath).FabricSDKPSModulePath
+Import-Module "$ModuleFolderPath\ServiceFabricSDK.psm1"
 
 $IsUpgrade = ($publishProfile.UpgradeDeployment -and $publishProfile.UpgradeDeployment.Enabled) -or $ForceUpgrade
 
 if ($IsUpgrade)
 {
-    $Action = "DeployAndUpgrade"
+    $Action = "RegisterAndUpgrade"
     if ($DeployOnly)
     {
-        $Action = "DeployOnly"
+        $Action = "Register"
     }
     
-    $UpgradeScriptPath = "$ScriptFolderPath\Upgrade-FabricApplication.ps1"
-
     $UpgradeParameters = $publishProfile.UpgradeDeployment.Parameters
 
     if ($ForceUpgrade)
@@ -177,17 +186,15 @@ if ($IsUpgrade)
         $UpgradeParameters = @{ UnmonitoredAuto = $true; Force = $true }
     }
 
-    . $UpgradeScriptPath -ApplicationPackagePath $ApplicationPackagePath -ApplicationParameterFilePath $publishProfile.ApplicationParameterFile -Action $Action -UpgradeParameters $UpgradeParameters -ApplicationParameter $ApplicationParameter -UnregisterOtherVersions $UnregisterUnusedApplicationVersionsAfterUpgrade -ErrorAction Stop
+    Publish-UpgradedServiceFabricApplication -ApplicationPackagePath $ApplicationPackagePath -ApplicationParameterFilePath $publishProfile.ApplicationParameterFile -Action $Action -UpgradeParameters $UpgradeParameters -ApplicationParameter $ApplicationParameter -UnregisterUnusedVersions:$UnregisterUnusedApplicationVersionsAfterUpgrade -ErrorAction Stop
 }
 else
 {
-    $Action = "DeployAndCreate"
+    $Action = "RegisterAndCreate"
     if ($DeployOnly)
     {
-        $Action = "DeployOnly"
+        $Action = "Register"
     }
     
-    $DeployScriptPath = "$ScriptFolderPath\DeployCreate-FabricApplication.ps1"
-
-    . $DeployScriptPath -ApplicationPackagePath $ApplicationPackagePath -ApplicationParameterFilePath $publishProfile.ApplicationParameterFile -Action $Action -ApplicationParameter $ApplicationParameter -ErrorAction Stop
+    Publish-NewServiceFabricApplication -ApplicationPackagePath $ApplicationPackagePath -ApplicationParameterFilePath $publishProfile.ApplicationParameterFile -Action $Action -ApplicationParameter $ApplicationParameter -OverwriteBehavior $OverwriteBehavior -ErrorAction Stop
 }
