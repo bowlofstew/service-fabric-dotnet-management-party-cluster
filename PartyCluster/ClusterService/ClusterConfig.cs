@@ -18,7 +18,6 @@ namespace ClusterService
             this.MaximumClusterUptime = TimeSpan.FromHours(2);
             this.UserCapacityHighPercentThreshold = 0.75;
             this.UserCapacityLowPercentThreshold = 0.25;
-            this.CapacityThresholdIncrement = 10;
         }
 
         public TimeSpan RefreshInterval { get; set; }

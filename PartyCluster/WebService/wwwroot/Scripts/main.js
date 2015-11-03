@@ -45,12 +45,17 @@
 
 function Dialog($modal) {
     var overlay = $('.overlay');
-
+    var self = this;
     this.Window = $modal;
 
     this.Show = function () {
         overlay.fadeIn(300);
         $modal.fadeIn(300);
+    };
+
+    this.Hide = function () {
+        overlay.fadeOut(200);
+        $modal.fadeOut(200);
     };
 
     overlay.click(function () {
@@ -72,6 +77,8 @@ function PartyClusters(api) {
 
         $('.join-now', self.joinClusterDialog.Window).click(function () {
             self.JoinCluster();
+            alert('joined!');
+            self.joinClusterDialog.Hide();
         });
 
         $('.partynow').click(function () {

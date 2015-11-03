@@ -7,7 +7,11 @@ namespace ClusterService
 {
     using System;
     using System.Collections.Generic;
+    using System.Collections.ObjectModel;
+    using System.Fabric;
+    using System.Fabric.Description;
     using System.Linq;
+    using System.Net.Mail;
     using System.Threading;
     using System.Threading.Tasks;
     using Domain;
@@ -19,23 +23,27 @@ namespace ClusterService
     {
         internal const string ClusterDictionaryName = "clusterDictionary";
         internal const string SickClusterDictionaryName = "sickClusterDictionary";
-        private readonly Random random = new Random();
 
-        private IClusterOperator clusterOperator;
+        private readonly Random random = new Random();
+        private readonly IClusterOperator clusterOperator;
+        private readonly ISendMail mailer;
         private IReliableStateManager reliableStateManager;
 
+        internal ClusterConfig Config { get; set; }
 
         public ClusterService()
         {
-            this.Config = new ClusterConfig()
-            {
-                MaximumClusterUptime = TimeSpan.FromMinutes(3),
-                MinimumClusterCount = 2,
-                MaximumClusterCount = 3,
-                RefreshInterval = TimeSpan.FromSeconds(10),
-                MaximumUsersPerCluster = 5
-            };
-            this.clusterOperator = new ArmClusterOperator();
+            this.Config = new ClusterConfig();
+            this.clusterOperator = new ArmClusterOperator(this.ServiceInitializationParameters);
+            this.mailer = new SendGridMailer(this.ServiceInitializationParameters);
+
+            ConfigurationPackage configPackage = this.ServiceInitializationParameters.CodePackageActivationContext.GetConfigurationPackageObject("Config");
+
+            this.UpdateClusterConfigSettings(configPackage.Settings);
+
+            this.ServiceInitializationParameters.CodePackageActivationContext.ConfigurationPackageModifiedEvent
+                += CodePackageActivationContext_ConfigurationPackageModifiedEvent;
+
         }
 
         /// <summary>
@@ -51,7 +59,6 @@ namespace ClusterService
             this.reliableStateManager = stateManager;
         }
 
-        internal ClusterConfig Config { get; set; }
 
         public async Task<IEnumerable<ClusterView>> GetClusterListAsync()
         {
@@ -85,6 +92,7 @@ namespace ClusterService
 
             int userPort;
             string clusterAddress;
+            TimeSpan clusterTimeRemaining;
 
             using (ITransaction tx = this.reliableStateManager.CreateTransaction())
             {
@@ -163,12 +171,43 @@ namespace ClusterService
                     throw new JoinClusterFailedException(JoinClusterFailedReason.NoPortsAvailable);
                 }
 
+                clusterTimeRemaining = this.Config.MaximumClusterUptime - (DateTimeOffset.UtcNow - cluster.CreatedOn);
                 clusterAddress = cluster.Address;
                 cluster.Users.Add(new ClusterUser(user.UserEmail, userPort));
 
                 await clusterDictionary.SetAsync(tx, clusterId, cluster);
 
                 await tx.CommitAsync();
+            }
+            
+            ServiceEventSource.Current.ServiceMessage(this, "Sending join mail. Cluster: {0}.", clusterId);
+
+            try
+            {
+                await this.mailer.SendMessageAsync(
+                    new MailAddress("partycluster@azure.com", "Service Fabric Party Cluster Team"),
+                    user.UserEmail,
+                    "Thanks for trying out Service Fabric",
+                    String.Format(
+                        "Hello,"
+                        + "<br/><br/>"
+                        + "Thanks for trying out Service Fabric. The endpoint which you can use to connect and deploy your applications is {0}:19000. A port has been allocated for your applications: {1} The cluster is available for {2}."
+                        + "<br/><br/>"
+                        + "To connect to the cluster and deploy applications, please refer to the guides <here> and <here>. Please familiarize yourself with the rules < TBD:link > and the terms < TBD:link > of using this service. This is a shared cluster meaning all your applications will be publicly visible and can be deleted at any time by other users. Furthermore, the cluster can be reset earlier than the prescribed time per Microsoft’s discretion. Please refer to the full terms of the service < TBD - link > for more details."
+                        + "<br/><br/>"
+                        + "Thanks,"
+                        + "<br/>"
+                        + "The Service Fabric Team",
+                        clusterAddress,
+                        userPort,
+                        clusterTimeRemaining)
+                    );
+            }
+            catch (Exception e)
+            {
+                ServiceEventSource.Current.ServiceMessage(this, "Failed to send join mail. {0}.", e.Message);
+
+                throw new JoinClusterFailedException(JoinClusterFailedReason.InvalidEmail);
             }
 
             ServiceEventSource.Current.ServiceMessage(this, "Join cluster request completed. Cluster: {0}.", clusterId);
@@ -212,16 +251,6 @@ namespace ClusterService
 
                 await Task.Delay(this.Config.RefreshInterval, cancellationToken);
             }
-        }
-
-        private int CreateClusterId()
-        {
-            return this.random.Next();
-        }
-
-        private string CreateClusterInternalName()
-        {
-            return "party" + (ushort)this.random.Next();
         }
 
         /// <summary>
@@ -304,8 +333,9 @@ namespace ClusterService
             IReliableDictionary<int, Cluster> clusterDictionary =
                 await this.reliableStateManager.GetOrAddAsync<IReliableDictionary<int, Cluster>>(ClusterDictionaryName);
 
-            IReliableDictionary<int, int> sickClusters =
-                await this.reliableStateManager.GetOrAddAsync<IReliableDictionary<int, int>>(SickClusterDictionaryName);
+            //TODO: process sick clusters with multiple failures.
+            //IReliableDictionary<int, int> sickClusters =
+            //    await this.reliableStateManager.GetOrAddAsync<IReliableDictionary<int, int>>(SickClusterDictionaryName);
 
             foreach (KeyValuePair<int, Cluster> cluster in clusterDictionary)
             {
@@ -413,10 +443,10 @@ namespace ClusterService
                             break;
 
                         case ClusterOperationStatus.Ready:
-                            ServiceEventSource.Current.ServiceMessage(this, "Cluster is ready: {0}", cluster.Address);
                             cluster.Ports = await this.clusterOperator.GetClusterPortsAsync(cluster.InternalName);
                             cluster.CreatedOn = DateTimeOffset.UtcNow;
                             cluster.Status = ClusterStatus.Ready;
+                            ServiceEventSource.Current.ServiceMessage(this, "Cluster is ready: {0} with ports: {1}", cluster.Address, String.Join(",", cluster.Ports));
                             break;
 
                         case ClusterOperationStatus.CreateFailed:
@@ -507,5 +537,33 @@ namespace ClusterService
                 x.Value.Status == ClusterStatus.Creating ||
                 x.Value.Status == ClusterStatus.Ready);
         }
+
+        private void UpdateClusterConfigSettings(ConfigurationSettings settings)
+        {
+            KeyedCollection<string, ConfigurationProperty> clusterConfigParameters = settings.Sections["ClusterConfigSettings"].Parameters;
+
+            this.Config.MinimumClusterCount = Int32.Parse(clusterConfigParameters["MinimumClusterCount"].Value);
+            this.Config.MaximumClusterCount = Int32.Parse(clusterConfigParameters["MaximumClusterCount"].Value);
+            this.Config.MaximumUsersPerCluster = Int32.Parse(clusterConfigParameters["MaximumUsersPerCluster"].Value);
+            this.Config.MaximumClusterUptime = TimeSpan.Parse(clusterConfigParameters["MaximumClusterUptime"].Value);
+            this.Config.UserCapacityHighPercentThreshold = Double.Parse(clusterConfigParameters["UserCapacityHighPercentThreshold"].Value);
+            this.Config.UserCapacityLowPercentThreshold = Int32.Parse(clusterConfigParameters["UserCapacityLowPercentThreshold"].Value);
+        }
+
+        private void CodePackageActivationContext_ConfigurationPackageModifiedEvent(object sender, PackageModifiedEventArgs<ConfigurationPackage> e)
+        {
+            this.UpdateClusterConfigSettings(e.NewPackage.Settings);
+        }
+
+        private int CreateClusterId()
+        {
+            return this.random.Next();
+        }
+
+        private string CreateClusterInternalName()
+        {
+            return "party" + (ushort)this.random.Next();
+        }
+
     }
 }

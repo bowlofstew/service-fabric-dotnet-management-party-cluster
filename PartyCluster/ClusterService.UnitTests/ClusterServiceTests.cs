@@ -748,7 +748,7 @@ namespace ClusterService.UnitTests
             
             Assert.AreEqual(ClusterStatus.Remove, cluster.Status);
         }
-
+        
         [TestMethod]
         public async Task JoinClusterSuccessful()
         {

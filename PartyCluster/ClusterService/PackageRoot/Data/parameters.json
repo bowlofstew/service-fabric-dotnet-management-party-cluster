@@ -1,0 +1,5 @@
+﻿{
+    "clusterName": { "value": "_CLUSTER_NAME_" },
+    "adminUserName": { "value": "_USER_" },
+    "adminPassword": { "value": "_PWD_" } 
+}

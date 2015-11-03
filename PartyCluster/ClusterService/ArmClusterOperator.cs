@@ -1,10 +1,13 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Threading.Tasks;
+﻿
 
 namespace ClusterService
 {
-    using System.Configuration;
+    using System;
+    using System.Collections.Generic;
+    using System.Threading.Tasks;
+    using System.Collections.ObjectModel;
+    using System.Fabric;
+    using System.Fabric.Description;
     using System.IO;
     using System.Net;
     using Domain;
@@ -15,48 +18,32 @@ namespace ClusterService
 
     internal class ArmClusterOperator : IClusterOperator
     {
-   
+        private ArmClusterOperatorSettings settings;
+
+        private string armTemplate;
+
+        private string armParameters;
+
+        public ArmClusterOperator(ServiceInitializationParameters serviceParameters)
+        {
+            ConfigurationPackage configPackage = serviceParameters.CodePackageActivationContext.GetConfigurationPackageObject("Config");
+            DataPackage dataPackage = serviceParameters.CodePackageActivationContext.GetDataPackageObject("Data");
+
+            this.UpdateClusterOperatorSettings(configPackage.Settings);
+            this.UpdateArmTemplateContent(dataPackage.Path);
+            this.UpdateArmParameterContent(dataPackage.Path);
+
+            serviceParameters.CodePackageActivationContext.ConfigurationPackageModifiedEvent
+                += CodePackageActivationContext_ConfigurationPackageModifiedEvent;
+
+            serviceParameters.CodePackageActivationContext.DataPackageModifiedEvent 
+                += CodePackageActivationContext_DataPackageModifiedEvent;
+        }
+
         public Task<IEnumerable<int>> GetClusterPortsAsync(string domain)
         {
             //Hardcoding this with template values for now.
             return Task.FromResult<IEnumerable<int>>(new[] { 80, 8505, 8506, 8507, 8081, 8086 });
-        }
-
-        public static async Task<string> GetAuthorizationTokenAsync()
-        {
-            ClientCredential cc = new ClientCredential(ConfigurationManager.AppSettings["clientID"].ToString(), ConfigurationManager.AppSettings["clientSecret"].ToString());
-
-            AuthenticationContext context = new AuthenticationContext(ConfigurationManager.AppSettings["authority"].ToString());
-            AuthenticationResult result = await context.AcquireTokenAsync("https://management.azure.com/", cc);
-
-            if (result == null)
-            {
-                throw new InvalidOperationException("Failed to obtain the JWT token");
-            }
-
-            string token = result.AccessToken;
-
-            return token;
-        }
-
-
-
-        private async Task<string> CreateResourceGroupAsync(TokenCloudCredentials credential, string rgName)
-        {
-            ResourceGroup resourceGroup = new ResourceGroup { Location = "westus" };
-
-            using (ResourceManagementClient resourceManagementClient = new ResourceManagementClient(credential))
-            {
-                ResourceGroupExistsResult exists = await resourceManagementClient.ResourceGroups.CheckExistenceAsync(rgName);
-
-                if (exists.Exists)
-                    return "Exists";
-
-
-                ResourceGroupCreateOrUpdateResult rgResult = await resourceManagementClient.ResourceGroups.CreateOrUpdateAsync(rgName, resourceGroup);
-
-                return rgResult.StatusCode.ToString();
-            }
         }
 
         /// <summary>
@@ -69,23 +56,25 @@ namespace ClusterService
         /// <returns>The FQDN of the new cluster.</returns>
         public async Task<string> CreateClusterAsync(string name)
         {
-            string rgName = name;
-            string parameterContent;
-            string templateContent;
             string token = await GetAuthorizationTokenAsync();
-            TokenCloudCredentials credential = new TokenCloudCredentials(ConfigurationManager.AppSettings["subscriptionID"].ToString(), token);
+            TokenCloudCredentials credential = new TokenCloudCredentials(this.settings.SubscriptionID, token);
 
-            string rgStatus = await this.CreateResourceGroupAsync(credential, rgName);
+            string rgStatus = await this.CreateResourceGroupAsync(credential, name);
 
             if (rgStatus == "Exists")
             {
                 throw new System.InvalidOperationException("ResourceGroup/Cluster already exists. Please try passing a different name, or delete the ResourceGroup/Cluster first.");
             }
 
-            this.GetTemplates(rgName, out templateContent, out parameterContent);
+            string templateContent = this.armTemplate;
+            string parameterContent = this.armParameters
+                .Replace("_CLUSTER_NAME_", name)
+                .Replace("_USER_", this.settings.Username)
+                .Replace("_PWD_", this.settings.Password);
+            
             await this.CreateTemplateDeploymentAsync(credential, name, templateContent, parameterContent);
 
-            return (rgName + ".westus.cloudapp.azure.com");
+            return (name + ".westus.cloudapp.azure.com");
         }
 
        public async Task DeleteClusterAsync(string name)
@@ -93,7 +82,7 @@ namespace ClusterService
             string rgName = name;
 
             string token = await GetAuthorizationTokenAsync();
-            TokenCloudCredentials credential = new TokenCloudCredentials(ConfigurationManager.AppSettings["subscriptionID"].ToString(), token);
+            TokenCloudCredentials credential = new TokenCloudCredentials(this.settings.SubscriptionID, token);
 
             using (ResourceManagementClient resourceGroupClient = new ResourceManagementClient(credential))
             {
@@ -105,7 +94,7 @@ namespace ClusterService
         public async Task<ClusterOperationStatus> GetClusterStatusAsync(string name)
         {
             string token = await GetAuthorizationTokenAsync();
-            TokenCloudCredentials credential = new TokenCloudCredentials(ConfigurationManager.AppSettings["subscriptionID"].ToString(), token);
+            TokenCloudCredentials credential = new TokenCloudCredentials(this.settings.SubscriptionID, token);
 
             DeploymentGetResult dpResult;
             ResourceGroupGetResult rgResult;
@@ -146,37 +135,39 @@ namespace ClusterService
 
             return ClusterOperationStatus.Unknown;
         }
- 
-
-        private void GetTemplates(string name, out string templateContent, out string parameterContent)
+        
+        private async Task<string> GetAuthorizationTokenAsync()
         {
-            string rgName = name;
+            ClientCredential cc = new ClientCredential(this.settings.ClientID, this.settings.ClientSecret);
 
-            string username = ConfigurationManager.AppSettings["username"].ToString();
-            string adminpwd = ConfigurationManager.AppSettings["adminpwd"].ToString();//This needs to have three types of character groups. PRovisioning will fail otherwise.
+            AuthenticationContext context = new AuthenticationContext(this.settings.Authority);
+            AuthenticationResult result = await context.AcquireTokenAsync("https://management.azure.com/", cc);
 
-            HttpWebRequest req = (HttpWebRequest)WebRequest.Create(ConfigurationManager.AppSettings["templateLoc"].ToString());
-            
-            using (HttpWebResponse resp = (HttpWebResponse) req.GetResponse())
+            if (result == null)
             {
-                StreamReader sr = new StreamReader(resp.GetResponseStream());
-                templateContent = sr.ReadToEnd();
-                sr.Close();
+                throw new InvalidOperationException("Failed to obtain the JWT token");
             }
 
-            HttpWebRequest req2 = (HttpWebRequest)WebRequest.Create(ConfigurationManager.AppSettings["parametersLoc"].ToString());
+            return result.AccessToken;
+        }
 
+        private async Task<string> CreateResourceGroupAsync(TokenCloudCredentials credential, string rgName)
+        {
+            ResourceGroup resourceGroup = new ResourceGroup { Location = this.settings.Region };
 
-            using (HttpWebResponse resp2 = (HttpWebResponse) req2.GetResponse())
+            using (ResourceManagementClient resourceManagementClient = new ResourceManagementClient(credential))
             {
-                StreamReader sr2 = new StreamReader(resp2.GetResponseStream());
-                parameterContent = sr2.ReadToEnd();
-                sr2.Close();
-            }
+                ResourceGroupExistsResult exists = await resourceManagementClient.ResourceGroups.CheckExistenceAsync(rgName);
 
-            parameterContent = parameterContent.Replace("_CLUSTER_NAME_", name);
-            parameterContent = parameterContent.Replace("_USER_", username);
-            parameterContent = parameterContent.Replace("_PWD_", adminpwd);
+                if (exists.Exists)
+                {
+                    return "Exists";
+                }
+
+                ResourceGroupCreateOrUpdateResult rgResult = await resourceManagementClient.ResourceGroups.CreateOrUpdateAsync(rgName, resourceGroup);
+
+                return rgResult.StatusCode.ToString();
+            }
         }
 
         private async Task CreateTemplateDeploymentAsync(TokenCloudCredentials credential, string rgName, string templateContent, string parameterContent)
@@ -204,6 +195,47 @@ namespace ClusterService
 
                     throw;
                 }
+            }
+        }
+
+        private void CodePackageActivationContext_ConfigurationPackageModifiedEvent(object sender, PackageModifiedEventArgs<ConfigurationPackage> e)
+        {
+            this.UpdateClusterOperatorSettings(e.NewPackage.Settings);
+        }
+
+        private void CodePackageActivationContext_DataPackageModifiedEvent(object sender, PackageModifiedEventArgs<DataPackage> e)
+        {
+            this.UpdateArmTemplateContent(e.NewPackage.Path);
+            this.UpdateArmParameterContent(e.NewPackage.Path);
+        }
+
+        private void UpdateClusterOperatorSettings(ConfigurationSettings settings)
+        {
+            KeyedCollection<string, ConfigurationProperty> clusterConfigParameters = settings.Sections["AzureSubscriptionSettings"].Parameters;
+
+            this.settings = new ArmClusterOperatorSettings(
+                clusterConfigParameters["Region"].Value,
+                clusterConfigParameters["ClientID"].Value,
+                clusterConfigParameters["ClientSecret"].Value,
+                clusterConfigParameters["Authority"].Value,
+                clusterConfigParameters["SubscriptionID"].Value,
+                clusterConfigParameters["Username"].Value,
+                clusterConfigParameters["Password"].Value);
+        }
+
+        private void UpdateArmTemplateContent(string templateDataPath)
+        {
+            using (StreamReader reader = new StreamReader(Path.Combine(templateDataPath, "ArmTemplate-Full-5xVM-NonSecure_new.json")))
+            {
+                this.armTemplate = reader.ReadToEnd();
+            }
+        }
+
+        private void UpdateArmParameterContent(string templateDataPath)
+        {
+            using (StreamReader reader = new StreamReader(Path.Combine(templateDataPath, "parameters.json")))
+            {
+                this.armParameters = reader.ReadToEnd();
             }
         }
     }

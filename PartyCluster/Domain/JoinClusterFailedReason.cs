@@ -18,6 +18,8 @@ namespace Domain
 
         UserAlreadyJoined,
 
-        NoPortsAvailable
+        NoPortsAvailable,
+
+        InvalidEmail
     }
 }
