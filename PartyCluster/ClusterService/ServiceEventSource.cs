@@ -9,7 +9,7 @@ namespace ClusterService
     using Microsoft.Diagnostics.Tracing;
     using System.Fabric;
     using Microsoft.ServiceFabric.Services;
-
+    using Microsoft.ServiceFabric.Services.Runtime;
     [EventSource(Name = "MyCompany-PartyCluster-ClusterService")]
     internal sealed class ServiceEventSource : EventSource
     {
@@ -33,24 +33,6 @@ namespace ClusterService
             if (this.IsEnabled())
             {
                 this.WriteEvent(MessageEventId, message);
-            }
-        }
-
-        [NonEvent]
-        public void ServiceMessage(StatelessService service, string message, params object[] args)
-        {
-            if (this.IsEnabled() && service != null && service.ServiceInitializationParameters != null)
-            {
-                string finalMessage = string.Format(message, args);
-                this.ServiceMessage(
-                    service.ServiceInitializationParameters.ServiceName.ToString(),
-                    service.ServiceInitializationParameters.ServiceTypeName,
-                    service.ServiceInitializationParameters.InstanceId,
-                    service.ServiceInitializationParameters.PartitionId,
-                    service.ServiceInitializationParameters.CodePackageActivationContext.ApplicationName,
-                    service.ServiceInitializationParameters.CodePackageActivationContext.ApplicationTypeName,
-                    FabricRuntime.GetNodeContext().NodeName,
-                    finalMessage);
             }
         }
 

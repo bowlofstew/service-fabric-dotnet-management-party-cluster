@@ -17,7 +17,9 @@ namespace ClusterService
     using Domain;
     using Microsoft.ServiceFabric.Data;
     using Microsoft.ServiceFabric.Data.Collections;
-    using Microsoft.ServiceFabric.Services;
+    using Microsoft.ServiceFabric.Services.Communication.Runtime;
+    using Microsoft.ServiceFabric.Services.Remoting.Runtime;
+    using Microsoft.ServiceFabric.Services.Runtime;
 
     public class ClusterService : StatefulService, IClusterService
     {
@@ -34,7 +36,8 @@ namespace ClusterService
         public ClusterService()
         {
             this.Config = new ClusterConfig();
-            this.clusterOperator = new ArmClusterOperator(this.ServiceInitializationParameters);
+            this.clusterOperator = new FakeClusterOperator(this.Config);
+            //this.clusterOperator = new ArmClusterOperator(this.ServiceInitializationParameters);
             this.mailer = new SendGridMailer(this.ServiceInitializationParameters);
 
             ConfigurationPackage configPackage = this.ServiceInitializationParameters.CodePackageActivationContext.GetConfigurationPackageObject("Config");
@@ -229,7 +232,7 @@ namespace ClusterService
 
         protected override IEnumerable<ServiceReplicaListener> CreateServiceReplicaListeners()
         {
-            return new[] { new ServiceReplicaListener(parameters => new ServiceCommunicationListener<IClusterService>(parameters, this)) };
+            return new[] { new ServiceReplicaListener(parameters => new ServiceRemotingListener<IClusterService>(parameters, this)) };
         }
 
         protected override async Task RunAsync(CancellationToken cancellationToken)

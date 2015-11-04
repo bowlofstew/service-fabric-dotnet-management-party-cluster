@@ -9,7 +9,7 @@ namespace WebService
     using Microsoft.Diagnostics.Tracing;
     using System.Fabric;
     using Microsoft.ServiceFabric.Services;
-
+    using Microsoft.ServiceFabric.Services.Runtime;
     [EventSource(Name = "MyCompany-PartyCluster-WebService")]
     internal sealed class ServiceEventSource : EventSource
     {
@@ -46,24 +46,6 @@ namespace WebService
                     service.ServiceInitializationParameters.ServiceName.ToString(),
                     service.ServiceInitializationParameters.ServiceTypeName,
                     service.ServiceInitializationParameters.InstanceId,
-                    service.ServiceInitializationParameters.PartitionId,
-                    service.ServiceInitializationParameters.CodePackageActivationContext.ApplicationName,
-                    service.ServiceInitializationParameters.CodePackageActivationContext.ApplicationTypeName,
-                    FabricRuntime.GetNodeContext().NodeName,
-                    finalMessage);
-            }
-        }
-
-        [NonEvent]
-        public void ServiceMessage(StatefulService service, string message, params object[] args)
-        {
-            if (this.IsEnabled())
-            {
-                string finalMessage = string.Format(message, args);
-                this.ServiceMessage(
-                    service.ServiceInitializationParameters.ServiceName.ToString(),
-                    service.ServiceInitializationParameters.ServiceTypeName,
-                    service.ServiceInitializationParameters.ReplicaId,
                     service.ServiceInitializationParameters.PartitionId,
                     service.ServiceInitializationParameters.CodePackageActivationContext.ApplicationName,
                     service.ServiceInitializationParameters.CodePackageActivationContext.ApplicationTypeName,

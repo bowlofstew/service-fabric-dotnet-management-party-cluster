@@ -7,6 +7,8 @@ namespace WebService
 {
     using System.Collections.Generic;
     using Microsoft.ServiceFabric.Services;
+    using Microsoft.ServiceFabric.Services.Communication.Runtime;
+    using Microsoft.ServiceFabric.Services.Runtime;
 
     public class WebService : StatelessService
     {

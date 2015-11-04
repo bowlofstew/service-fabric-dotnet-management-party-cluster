@@ -5,16 +5,17 @@
 
 namespace WebService.Controllers
 {
-using System;
-using System.Collections.Generic;
+    using System;
+    using System.Collections.Generic;
     using System.Net;
     using System.Net.Http;
-using System.Threading.Tasks;
-using System.Web.Http;
-using Domain;
+    using System.Threading.Tasks;
+    using System.Web.Http;
+    using Domain;
     using ViewModels;
-using Microsoft.ServiceFabric.Services;
-
+    using Microsoft.ServiceFabric.Services;
+    using Microsoft.ServiceFabric.Services.Remoting.Client;
+    
     [RoutePrefix("api")]
     public class ClusterController : ApiController
     {
