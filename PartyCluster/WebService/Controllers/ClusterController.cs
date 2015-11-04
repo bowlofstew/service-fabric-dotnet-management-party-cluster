@@ -12,10 +12,9 @@ namespace WebService.Controllers
     using System.Threading.Tasks;
     using System.Web.Http;
     using Domain;
-    using ViewModels;
-    using Microsoft.ServiceFabric.Services;
+    using global::WebService.ViewModels;
     using Microsoft.ServiceFabric.Services.Remoting.Client;
-    
+
     [RoutePrefix("api")]
     public class ClusterController : ApiController
     {
@@ -35,10 +34,10 @@ namespace WebService.Controllers
         {
             if (user == null || String.IsNullOrWhiteSpace(user.UserEmail))
             {
-                return Request.CreateResponse(
+                return this.Request.CreateResponse(
                     HttpStatusCode.BadRequest,
                     new BadRequestViewModel("InvalidArguments", "Please provide an email address."));
-        }
+            }
 
             ServiceUriBuilder builder = new ServiceUriBuilder("ClusterService");
             IClusterService clusterService = ServiceProxy.Create<IClusterService>(1, builder.ToUri());
@@ -47,14 +46,14 @@ namespace WebService.Controllers
             {
                 await clusterService.JoinClusterAsync(clusterId, user);
 
-                return Request.CreateResponse(HttpStatusCode.Accepted);
+                return this.Request.CreateResponse(HttpStatusCode.Accepted);
             }
             catch (AggregateException ae)
             {
                 ArgumentException argumentEx = ae.InnerException as ArgumentException;
                 if (argumentEx != null)
                 {
-                    return Request.CreateResponse(
+                    return this.Request.CreateResponse(
                         HttpStatusCode.BadRequest,
                         new BadRequestViewModel("InvalidArguments", argumentEx.Message));
                 }
@@ -62,18 +61,18 @@ namespace WebService.Controllers
                 JoinClusterFailedException joinFailedEx = ae.InnerException as JoinClusterFailedException;
                 if (joinFailedEx != null)
                 {
-                    return Request.CreateResponse(
-                        HttpStatusCode.BadRequest, 
+                    return this.Request.CreateResponse(
+                        HttpStatusCode.BadRequest,
                         new BadRequestViewModel(joinFailedEx.Reason.ToString(), joinFailedEx.Message));
                 }
 
-                return Request.CreateResponse(
+                return this.Request.CreateResponse(
                     HttpStatusCode.InternalServerError,
                     new BadRequestViewModel("ServerError", ae.InnerException.Message));
             }
             catch (Exception e)
             {
-                return Request.CreateResponse(
+                return this.Request.CreateResponse(
                     HttpStatusCode.InternalServerError,
                     new BadRequestViewModel("ServerError", e.Message));
             }

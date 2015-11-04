@@ -13,7 +13,7 @@ namespace ClusterService
 
         Ready,
 
-        Remove, 
+        Remove,
 
         Deleting,
 

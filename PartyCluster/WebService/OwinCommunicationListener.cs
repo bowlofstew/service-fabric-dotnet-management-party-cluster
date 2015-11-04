@@ -12,7 +12,6 @@ namespace WebService
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Owin.Hosting;
-    using Microsoft.ServiceFabric.Services;
     using Microsoft.ServiceFabric.Services.Communication.Runtime;
 
     public class OwinCommunicationListener : ICommunicationListener

@@ -2,35 +2,26 @@
 //  Copyright (c) Microsoft Corporation.  All rights reserved.
 //  Licensed under the MIT License (MIT). See License.txt in the repo root for license information.
 // ------------------------------------------------------------
-using Nest;
-using System;
-using System.Collections.Generic;
-using System.Configuration;
-using System.Diagnostics;
-using System.Threading;
-using System.Threading.Tasks;
 
 namespace Microsoft.Diagnostics.EventListeners
 {
+    using System;
+    using System.Collections.Generic;
+    using System.Configuration;
+    using System.Diagnostics;
+    using System.Threading;
+    using System.Threading.Tasks;
+    using Nest;
+
     public class ElasticSearchListener : BufferingEventListener, IDisposable
     {
-        private class ElasticSearchConnectionData
-        {
-            public ElasticClient Client { get; set; }
-            public string IndexNamePrefix { get; set; }
-            public string LastIndexName { get; set; }
-        }
-
         private const string Dot = ".";
         private const string Dash = "-";
-
         // TODO: make it a (configuration) property of the listener
         private const string EventDocumentTypeName = "event";
-
         private ElasticSearchConnectionData connectionData;
-
         // TODO: support for multiple ES nodes/connection pools, for failover and load-balancing
-        public ElasticSearchListener(IConfigurationProvider configurationProvider): base(configurationProvider)
+        public ElasticSearchListener(IConfigurationProvider configurationProvider) : base(configurationProvider)
         {
             if (this.Disabled)
             {
@@ -38,14 +29,14 @@ namespace Microsoft.Diagnostics.EventListeners
             }
 
             Debug.Assert(configurationProvider != null);
-            CreateConnectionData(configurationProvider);
+            this.CreateConnectionData(configurationProvider);
 
-            Sender = new ConcurrentEventSender<EventData>(
+            this.Sender = new ConcurrentEventSender<EventData>(
                 eventBufferSize: 1000,
                 maxConcurrency: 2,
                 batchSize: 100,
                 noEventsDelay: TimeSpan.FromMilliseconds(1000),
-                transmitterProc: SendEventsAsync);
+                transmitterProc: this.SendEventsAsync);
         }
 
         private ElasticClient CreateElasticClient(IConfigurationProvider configurationProvider)
@@ -65,18 +56,18 @@ namespace Microsoft.Diagnostics.EventListeners
                 throw new ConfigurationErrorsException("Invalid Elastic Search credentials");
             }
 
-            var config = new ConnectionSettings(esServiceUri).SetBasicAuthentication(userName, password);
+            ConnectionSettings config = new ConnectionSettings(esServiceUri).SetBasicAuthentication(userName, password);
             return new ElasticClient(config);
         }
 
         private void CreateConnectionData(object sender)
         {
-            var configurationProvider = (IConfigurationProvider)sender;
+            IConfigurationProvider configurationProvider = (IConfigurationProvider) sender;
 
             this.connectionData = new ElasticSearchConnectionData();
-            this.connectionData.Client = CreateElasticClient(configurationProvider);
+            this.connectionData.Client = this.CreateElasticClient(configurationProvider);
             this.connectionData.LastIndexName = null;
-            var indexNamePrefix = configurationProvider.GetValue("indexNamePrefix");
+            string indexNamePrefix = configurationProvider.GetValue("indexNamePrefix");
             this.connectionData.IndexNamePrefix = string.IsNullOrWhiteSpace(indexNamePrefix) ? string.Empty : indexNamePrefix + Dash;
         }
 
@@ -89,20 +80,20 @@ namespace Microsoft.Diagnostics.EventListeners
 
             try
             {
-                string currentIndexName = GetIndexName(this.connectionData);
+                string currentIndexName = this.GetIndexName(this.connectionData);
                 if (!string.Equals(currentIndexName, this.connectionData.LastIndexName, StringComparison.Ordinal))
                 {
-                    await EnsureIndexExists(currentIndexName, this.connectionData.Client);
+                    await this.EnsureIndexExists(currentIndexName, this.connectionData.Client);
                     this.connectionData.LastIndexName = currentIndexName;
                 }
 
-                var request = new BulkRequest();
+                BulkRequest request = new BulkRequest();
                 request.Refresh = true;
 
-                var operations = new List<IBulkOperation>();
+                List<IBulkOperation> operations = new List<IBulkOperation>();
                 foreach (EventData eventData in events)
                 {
-                    var operation = new BulkCreateOperation<EventData>(eventData);
+                    BulkCreateOperation<EventData> operation = new BulkCreateOperation<EventData>(eventData);
                     operation.Index = currentIndexName;
                     operation.Type = EventDocumentTypeName;
                     operations.Add(operation);
@@ -122,7 +113,7 @@ namespace Microsoft.Diagnostics.EventListeners
                 IBulkResponse response = await this.connectionData.Client.BulkAsync(request);
                 if (!response.IsValid)
                 {
-                    ReportEsRequestError(response, "Bulk upload");
+                    this.ReportEsRequestError(response, "Bulk upload");
                 }
             }
             catch (Exception)
@@ -133,10 +124,10 @@ namespace Microsoft.Diagnostics.EventListeners
 
         private async Task EnsureIndexExists(string currentIndexName, ElasticClient esClient)
         {
-            var existsResult = await esClient.IndexExistsAsync(currentIndexName);
+            IExistsResponse existsResult = await esClient.IndexExistsAsync(currentIndexName);
             if (!existsResult.IsValid)
             {
-                ReportEsRequestError(existsResult, "Index exists check");
+                this.ReportEsRequestError(existsResult, "Index exists check");
             }
 
             if (existsResult.Exists)
@@ -145,29 +136,30 @@ namespace Microsoft.Diagnostics.EventListeners
             }
 
             // TODO: allow the consumer to fine-tune index settings
-            var indexSettings = new IndexSettings();
+            IndexSettings indexSettings = new IndexSettings();
             indexSettings.NumberOfReplicas = 1;
             indexSettings.NumberOfShards = 5;
             indexSettings.Settings.Add("refresh_interval", "15s");
 
-            var createIndexResult = await esClient.CreateIndexAsync(c => c.Index(currentIndexName).InitializeUsing(indexSettings));
+            IIndicesOperationResponse createIndexResult = await esClient.CreateIndexAsync(c => c.Index(currentIndexName).InitializeUsing(indexSettings));
 
             if (!createIndexResult.IsValid)
             {
-                if (createIndexResult.ServerError != null && string.Equals(createIndexResult.ServerError.ExceptionType, "IndexAlreadyExistsException", StringComparison.OrdinalIgnoreCase))
+                if (createIndexResult.ServerError != null &&
+                    string.Equals(createIndexResult.ServerError.ExceptionType, "IndexAlreadyExistsException", StringComparison.OrdinalIgnoreCase))
                 {
                     // This is fine, someone just beat us to create a new index.
                     return;
                 }
 
-                ReportEsRequestError(createIndexResult, "Create index");
+                this.ReportEsRequestError(createIndexResult, "Create index");
             }
         }
 
         private string GetIndexName(ElasticSearchConnectionData connectionData)
         {
-            var now = DateTimeOffset.UtcNow;
-            var retval = connectionData.IndexNamePrefix + now.Year.ToString() + Dot + now.Month.ToString() + Dot + now.Day.ToString();
+            DateTimeOffset now = DateTimeOffset.UtcNow;
+            string retval = connectionData.IndexNamePrefix + now.Year.ToString() + Dot + now.Month.ToString() + Dot + now.Day.ToString();
             return retval;
         }
 
@@ -183,6 +175,15 @@ namespace Microsoft.Diagnostics.EventListeners
             {
                 // TODO: report unknown ES communication error                
             }
+        }
+
+        private class ElasticSearchConnectionData
+        {
+            public ElasticClient Client { get; set; }
+
+            public string IndexNamePrefix { get; set; }
+
+            public string LastIndexName { get; set; }
         }
     }
 }

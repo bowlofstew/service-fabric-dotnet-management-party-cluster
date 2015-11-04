@@ -1,12 +1,13 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Net.Mail;
-using System.Text;
-using System.Threading.Tasks;
+﻿// ------------------------------------------------------------
+//  Copyright (c) Microsoft Corporation.  All rights reserved.
+//  Licensed under the MIT License (MIT). See License.txt in the repo root for license information.
+// ------------------------------------------------------------
 
 namespace Domain
 {
+    using System.Net.Mail;
+    using System.Threading.Tasks;
+
     public interface ISendMail
     {
         Task SendMessageAsync(MailAddress from, string to, string subject, string htmlBody);

@@ -3,30 +3,16 @@
 //  Licensed under the MIT License (MIT). See License.txt in the repo root for license information.
 // ------------------------------------------------------------
 
-using System;
-using System.Fabric;
-using System.Fabric.Description;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-using Microsoft.Diagnostics.EventListeners;
-using System.Collections.ObjectModel;
-
 namespace Microsoft.Diagnostics.EventListeners.Fabric
 {
+    using System;
+    using System.Collections.ObjectModel;
+    using System.Fabric;
+    using System.Fabric.Description;
+
     public class FabricConfigurationProvider : IConfigurationProvider
     {
         private KeyedCollection<string, ConfigurationProperty> configurationProperties;
-
-        public bool HasConfiguration
-        {
-            get
-            {
-                return this.configurationProperties != null;
-            }
-        }
 
         public FabricConfigurationProvider(string configurationSectionName)
         {
@@ -37,7 +23,12 @@ namespace Microsoft.Diagnostics.EventListeners.Fabric
 
             CodePackageActivationContext activationContext = FabricRuntime.GetActivationContext();
             ConfigurationPackage configPackage = activationContext.GetConfigurationPackageObject("Config");
-            UseConfiguration(configPackage, configurationSectionName);
+            this.UseConfiguration(configPackage, configurationSectionName);
+        }
+
+        public bool HasConfiguration
+        {
+            get { return this.configurationProperties != null; }
         }
 
         public string GetValue(string name)
@@ -47,7 +38,7 @@ namespace Microsoft.Diagnostics.EventListeners.Fabric
                 return null;
             }
 
-            var cachedConfigurationProperties = this.configurationProperties;
+            KeyedCollection<string, ConfigurationProperty> cachedConfigurationProperties = this.configurationProperties;
             if (cachedConfigurationProperties == null || !cachedConfigurationProperties.Contains(name))
             {
                 return null;

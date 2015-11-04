@@ -6,10 +6,10 @@
 namespace ClusterService
 {
     using System;
-    using Microsoft.Diagnostics.Tracing;
     using System.Fabric;
-    using Microsoft.ServiceFabric.Services;
+    using Microsoft.Diagnostics.Tracing;
     using Microsoft.ServiceFabric.Services.Runtime;
+
     [EventSource(Name = "MyCompany-PartyCluster-ClusterService")]
     internal sealed class ServiceEventSource : EventSource
     {

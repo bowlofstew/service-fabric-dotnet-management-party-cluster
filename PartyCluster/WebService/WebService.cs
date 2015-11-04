@@ -6,7 +6,6 @@
 namespace WebService
 {
     using System.Collections.Generic;
-    using Microsoft.ServiceFabric.Services;
     using Microsoft.ServiceFabric.Services.Communication.Runtime;
     using Microsoft.ServiceFabric.Services.Runtime;
 
@@ -14,7 +13,7 @@ namespace WebService
     {
         protected override IEnumerable<ServiceInstanceListener> CreateServiceInstanceListeners()
         {
-            return new[] 
+            return new[]
             {
                 new ServiceInstanceListener(parameters => new OwinCommunicationListener("partyclusters", new Startup(), parameters))
             };

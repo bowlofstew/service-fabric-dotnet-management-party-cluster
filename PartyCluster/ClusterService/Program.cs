@@ -20,7 +20,8 @@ namespace ClusterService
             {
                 using (FabricRuntime fabricRuntime = FabricRuntime.Create())
                 {
-                    var configProvider = new FabricEventListeners.FabricConfigurationProvider("ElasticSearchEventListener");
+                    FabricEventListeners.FabricConfigurationProvider configProvider =
+                        new FabricEventListeners.FabricConfigurationProvider("ElasticSearchEventListener");
                     ElasticSearchListener esListener = null;
                     if (configProvider.HasConfiguration)
                     {
@@ -31,7 +32,7 @@ namespace ClusterService
                     // This name must match the name defined in the ServiceManifest. If you change
                     // this name, please change the name of the ServiceType in the ServiceManifest.
                     fabricRuntime.RegisterServiceType("ClusterServiceType", typeof(ClusterService));
-                    
+
                     ServiceEventSource.Current.ServiceTypeRegistered(Process.GetCurrentProcess().Id, typeof(ClusterService).Name);
 
                     Thread.Sleep(Timeout.Infinite);
@@ -47,9 +48,6 @@ namespace ClusterService
 
         private void SetUpDiagnosticListeners()
         {
-            
-            
-
         }
     }
 }

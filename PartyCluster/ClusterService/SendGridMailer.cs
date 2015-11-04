@@ -1,18 +1,19 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Collections.ObjectModel;
-using System.Fabric;
-using System.Fabric.Description;
-using System.Linq;
-using System.Net;
-using System.Net.Mail;
-using System.Text;
-using System.Threading.Tasks;
-using Domain;
-using SendGrid;
+﻿// ------------------------------------------------------------
+//  Copyright (c) Microsoft Corporation.  All rights reserved.
+//  Licensed under the MIT License (MIT). See License.txt in the repo root for license information.
+// ------------------------------------------------------------
 
 namespace ClusterService
 {
+    using System.Collections.ObjectModel;
+    using System.Fabric;
+    using System.Fabric.Description;
+    using System.Net;
+    using System.Net.Mail;
+    using System.Threading.Tasks;
+    using Domain;
+    using SendGrid;
+
     internal class SendGridMailer : ISendMail
     {
         private NetworkCredential credentials;
@@ -23,18 +24,19 @@ namespace ClusterService
 
             this.UpdateSendMailSettings(configPackage.Settings);
 
-            serviceParameters.CodePackageActivationContext.ConfigurationPackageModifiedEvent += CodePackageActivationContext_ConfigurationPackageModifiedEvent;
+            serviceParameters.CodePackageActivationContext.ConfigurationPackageModifiedEvent +=
+                this.CodePackageActivationContext_ConfigurationPackageModifiedEvent;
         }
 
         public Task SendMessageAsync(MailAddress from, string to, string subject, string htmlBody)
         {
             // Create an Web transport for sending email.
-            Web transportWeb = new Web(credentials);
+            Web transportWeb = new Web(this.credentials);
 
             SendGridMessage myMessage = new SendGridMessage();
 
             // Add the message properties.
-            myMessage.From = from;// new MailAddress("partycluster@azure.com", "Service Fabric Party Cluster Team");
+            myMessage.From = from; // new MailAddress("partycluster@azure.com", "Service Fabric Party Cluster Team");
             myMessage.AddTo(to);
 
             myMessage.Subject = subject;

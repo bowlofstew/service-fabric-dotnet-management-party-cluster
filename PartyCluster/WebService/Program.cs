@@ -20,7 +20,8 @@ namespace WebService
             {
                 using (FabricRuntime fabricRuntime = FabricRuntime.Create())
                 {
-                    var configProvider = new FabricEventListeners.FabricConfigurationProvider("ElasticSearchEventListener");
+                    FabricEventListeners.FabricConfigurationProvider configProvider =
+                        new FabricEventListeners.FabricConfigurationProvider("ElasticSearchEventListener");
                     ElasticSearchListener esListener = null;
                     if (configProvider.HasConfiguration)
                     {

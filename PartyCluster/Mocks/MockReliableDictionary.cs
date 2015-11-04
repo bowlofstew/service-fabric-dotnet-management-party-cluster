@@ -27,7 +27,7 @@ namespace Mocks
             {
                 throw new InvalidOperationException("key already exists: " + key.ToString());
             }
-            
+
 
             return Task.FromResult(true);
         }

@@ -3,24 +3,25 @@
 //  Licensed under the MIT License (MIT). See License.txt in the repo root for license information.
 // ------------------------------------------------------------
 
-using Microsoft.Diagnostics.Tracing;
-using Newtonsoft.Json;
-using System;
-using System.Collections.Generic;
-using System.Globalization;
-using System.Linq;
-using System.Text;
 using MessagingEventData = Microsoft.ServiceBus.Messaging.EventData;
 
 namespace Microsoft.Diagnostics.EventListeners
 {
+    using System;
+    using System.Collections.Generic;
+    using System.Globalization;
+    using System.Linq;
+    using System.Text;
+    using Microsoft.Diagnostics.Tracing;
+    using Newtonsoft.Json;
+
     internal static class EventDataExtensions
     {
         private static string HexadecimalNumberPrefix = "0x";
-
         // Micro-optimization: Enum.ToString() uses type information and does a binary search for the value,
         // which is kind of slow. We are going to to the conversion manually instead.
-        private static readonly string[] EventLevelNames = new string[] {
+        private static readonly string[] EventLevelNames = new string[]
+        {
             "Always",
             "Critical",
             "Error",
@@ -36,8 +37,8 @@ namespace Microsoft.Diagnostics.EventListeners
                 ProviderName = eventSourceEvent.EventSource.GetType().FullName,
                 Timestamp = DateTime.UtcNow,
                 EventId = eventSourceEvent.EventId,
-                Level = EventLevelNames[(int)eventSourceEvent.Level],
-                Keywords = HexadecimalNumberPrefix + ((ulong)eventSourceEvent.Keywords).ToString("X16", CultureInfo.InvariantCulture),
+                Level = EventLevelNames[(int) eventSourceEvent.Level],
+                Keywords = HexadecimalNumberPrefix + ((ulong) eventSourceEvent.Keywords).ToString("X16", CultureInfo.InvariantCulture),
                 EventName = eventSourceEvent.EventName,
             };
 
@@ -49,7 +50,9 @@ namespace Microsoft.Diagnostics.EventListeners
                     eventData.Message = string.Format(CultureInfo.InvariantCulture, eventSourceEvent.Message, eventSourceEvent.Payload.ToArray());
                 }
             }
-            catch { }
+            catch
+            {
+            }
 
             eventData.Payload = eventSourceEvent.GetPayloadData();
 
@@ -59,13 +62,13 @@ namespace Microsoft.Diagnostics.EventListeners
         public static MessagingEventData ToMessagingEventData(this EventData eventData)
         {
             string eventDataSerialized = JsonConvert.SerializeObject(eventData);
-            var messagingEventData = new MessagingEventData(Encoding.UTF8.GetBytes(eventDataSerialized));
+            MessagingEventData messagingEventData = new MessagingEventData(Encoding.UTF8.GetBytes(eventDataSerialized));
             return messagingEventData;
         }
 
         private static IDictionary<string, object> GetPayloadData(this EventWrittenEventArgs eventSourceEvent)
         {
-            var payloadData = new Dictionary<string, object>();
+            Dictionary<string, object> payloadData = new Dictionary<string, object>();
 
             if (eventSourceEvent.Payload == null || eventSourceEvent.PayloadNames == null)
             {

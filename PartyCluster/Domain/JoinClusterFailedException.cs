@@ -7,7 +7,7 @@ namespace Domain
 {
     using System;
     using System.Runtime.Serialization;
-    
+
     [Serializable]
     public class JoinClusterFailedException : Exception
     {
@@ -20,16 +20,15 @@ namespace Domain
         public JoinClusterFailedException(SerializationInfo info, StreamingContext context)
             : base(info, context)
         {
-            Reason = (JoinClusterFailedReason)info.GetByte("Reason");
+            this.Reason = (JoinClusterFailedReason) info.GetByte("Reason");
         }
+
+        public JoinClusterFailedReason Reason { get; }
 
         public override void GetObjectData(SerializationInfo info, StreamingContext context)
         {
             base.GetObjectData(info, context);
             info.AddValue("Reason", this.Reason);
         }
-
-        public JoinClusterFailedReason Reason { get; private set; }
     }
-
 }

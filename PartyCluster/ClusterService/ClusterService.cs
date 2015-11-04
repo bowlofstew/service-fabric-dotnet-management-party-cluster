@@ -25,13 +25,10 @@ namespace ClusterService
     {
         internal const string ClusterDictionaryName = "clusterDictionary";
         internal const string SickClusterDictionaryName = "sickClusterDictionary";
-
         private readonly Random random = new Random();
         private readonly IClusterOperator clusterOperator;
         private readonly ISendMail mailer;
         private IReliableStateManager reliableStateManager;
-
-        internal ClusterConfig Config { get; set; }
 
         public ClusterService()
         {
@@ -45,8 +42,7 @@ namespace ClusterService
             this.UpdateClusterConfigSettings(configPackage.Settings);
 
             this.ServiceInitializationParameters.CodePackageActivationContext.ConfigurationPackageModifiedEvent
-                += CodePackageActivationContext_ConfigurationPackageModifiedEvent;
-
+                += this.CodePackageActivationContext_ConfigurationPackageModifiedEvent;
         }
 
         /// <summary>
@@ -62,6 +58,7 @@ namespace ClusterService
             this.reliableStateManager = stateManager;
         }
 
+        internal ClusterConfig Config { get; set; }
 
         public async Task<IEnumerable<ClusterView>> GetClusterListAsync()
         {
@@ -69,14 +66,14 @@ namespace ClusterService
                 await this.reliableStateManager.GetOrAddAsync<IReliableDictionary<int, Cluster>>(ClusterDictionaryName);
 
             return from item in clusterDictionary
-                   where item.Value.Status == ClusterStatus.Ready
-                   orderby item.Value.CreatedOn descending
-                   select new ClusterView(
-                       item.Key,
-                       "Party Cluster " + item.Key,
-                       item.Value.AppCount,
-                       item.Value.ServiceCount,
-                       item.Value.Users.Count,
+                where item.Value.Status == ClusterStatus.Ready
+                orderby item.Value.CreatedOn descending
+                select new ClusterView(
+                    item.Key,
+                    "Party Cluster " + item.Key,
+                    item.Value.AppCount,
+                    item.Value.ServiceCount,
+                    item.Value.Users.Count,
                     this.Config.MaximumUsersPerCluster,
                     this.Config.MaximumClusterUptime - (DateTimeOffset.UtcNow - item.Value.CreatedOn.ToUniversalTime()));
         }
@@ -182,7 +179,7 @@ namespace ClusterService
 
                 await tx.CommitAsync();
             }
-            
+
             ServiceEventSource.Current.ServiceMessage(this, "Sending join mail. Cluster: {0}.", clusterId);
 
             try
@@ -194,9 +191,11 @@ namespace ClusterService
                     String.Format(
                         "Hello,"
                         + "<br/><br/>"
-                        + "Thanks for trying out Service Fabric. The endpoint which you can use to connect and deploy your applications is {0}:19000. A port has been allocated for your applications: {1} The cluster is available for {2}."
+                        +
+                        "Thanks for trying out Service Fabric. The endpoint which you can use to connect and deploy your applications is {0}:19000. A port has been allocated for your applications: {1} The cluster is available for {2}."
                         + "<br/><br/>"
-                        + "To connect to the cluster and deploy applications, please refer to the guides <here> and <here>. Please familiarize yourself with the rules < TBD:link > and the terms < TBD:link > of using this service. This is a shared cluster meaning all your applications will be publicly visible and can be deleted at any time by other users. Furthermore, the cluster can be reset earlier than the prescribed time per Microsoft’s discretion. Please refer to the full terms of the service < TBD - link > for more details."
+                        +
+                        "To connect to the cluster and deploy applications, please refer to the guides <here> and <here>. Please familiarize yourself with the rules < TBD:link > and the terms < TBD:link > of using this service. This is a shared cluster meaning all your applications will be publicly visible and can be deleted at any time by other users. Furthermore, the cluster can be reset earlier than the prescribed time per Microsoft’s discretion. Please refer to the full terms of the service < TBD - link > for more details."
                         + "<br/><br/>"
                         + "Thanks,"
                         + "<br/>"
@@ -232,7 +231,7 @@ namespace ClusterService
 
         protected override IEnumerable<ServiceReplicaListener> CreateServiceReplicaListeners()
         {
-            return new[] { new ServiceReplicaListener(parameters => new ServiceRemotingListener<IClusterService>(parameters, this)) };
+            return new[] {new ServiceReplicaListener(parameters => new ServiceRemotingListener<IClusterService>(parameters, this))};
         }
 
         protected override async Task RunAsync(CancellationToken cancellationToken)
@@ -263,7 +262,6 @@ namespace ClusterService
         /// <returns></returns>
         internal async Task BalanceClustersAsync(int target)
         {
-
             IReliableDictionary<int, Cluster> clusterDictionary =
                 await this.reliableStateManager.GetOrAddAsync<IReliableDictionary<int, Cluster>>(ClusterDictionaryName);
 
@@ -282,7 +280,8 @@ namespace ClusterService
                     target = this.Config.MaximumClusterCount;
                 }
 
-                ServiceEventSource.Current.ServiceMessage(this,
+                ServiceEventSource.Current.ServiceMessage(
+                    this,
                     "Balancing clusters started. Target: {0} Total active: {1}. New: {2}. Creating: {3}. Ready: {4}.",
                     target,
                     activeClusterCount,
@@ -323,7 +322,6 @@ namespace ClusterService
 
                     ServiceEventSource.Current.ServiceMessage(this, "Balancing clusters completed. Marked for removal: {0}", ix);
                 }
-
             }
         }
 
@@ -386,18 +384,18 @@ namespace ClusterService
             IEnumerable<KeyValuePair<int, Cluster>> activeClusters = this.GetActiveClusters(clusterDictionary);
             int activeClusterCount = activeClusters.Count();
 
-            double totalCapacity = activeClusterCount * this.Config.MaximumUsersPerCluster;
+            double totalCapacity = activeClusterCount*this.Config.MaximumUsersPerCluster;
 
             double totalUsers = activeClusters
-                    .Aggregate(0, (total, next) => total += next.Value.Users.Count);
+                .Aggregate(0, (total, next) => total += next.Value.Users.Count);
 
-            double percentFull = totalUsers / totalCapacity;
+            double percentFull = totalUsers/totalCapacity;
 
             if (percentFull >= this.Config.UserCapacityHighPercentThreshold)
             {
                 return Math.Min(
                     this.Config.MaximumClusterCount,
-                    activeClusterCount + (int)Math.Ceiling(activeClusterCount * (1 - this.Config.UserCapacityHighPercentThreshold)));
+                    activeClusterCount + (int) Math.Ceiling(activeClusterCount*(1 - this.Config.UserCapacityHighPercentThreshold)));
             }
 
             if (percentFull <= this.Config.UserCapacityLowPercentThreshold)
@@ -405,7 +403,7 @@ namespace ClusterService
                 return Math.Max(
                     this.Config.MinimumClusterCount,
                     activeClusterCount -
-                    (int)Math.Floor(activeClusterCount * (this.Config.UserCapacityHighPercentThreshold - this.Config.UserCapacityLowPercentThreshold)));
+                    (int) Math.Floor(activeClusterCount*(this.Config.UserCapacityHighPercentThreshold - this.Config.UserCapacityLowPercentThreshold)));
             }
 
             return activeClusterCount;
@@ -449,7 +447,11 @@ namespace ClusterService
                             cluster.Ports = await this.clusterOperator.GetClusterPortsAsync(cluster.InternalName);
                             cluster.CreatedOn = DateTimeOffset.UtcNow;
                             cluster.Status = ClusterStatus.Ready;
-                            ServiceEventSource.Current.ServiceMessage(this, "Cluster is ready: {0} with ports: {1}", cluster.Address, String.Join(",", cluster.Ports));
+                            ServiceEventSource.Current.ServiceMessage(
+                                this,
+                                "Cluster is ready: {0} with ports: {1}",
+                                cluster.Address,
+                                String.Join(",", cluster.Ports));
                             break;
 
                         case ClusterOperationStatus.CreateFailed:
@@ -536,9 +538,9 @@ namespace ClusterService
         {
             return clusterDictionary.Where(
                 x =>
-                x.Value.Status == ClusterStatus.New ||
-                x.Value.Status == ClusterStatus.Creating ||
-                x.Value.Status == ClusterStatus.Ready);
+                    x.Value.Status == ClusterStatus.New ||
+                    x.Value.Status == ClusterStatus.Creating ||
+                    x.Value.Status == ClusterStatus.Ready);
         }
 
         private void UpdateClusterConfigSettings(ConfigurationSettings settings)
@@ -565,8 +567,7 @@ namespace ClusterService
 
         private string CreateClusterInternalName()
         {
-            return "party" + (ushort)this.random.Next();
+            return "party" + (ushort) this.random.Next();
         }
-
     }
 }
