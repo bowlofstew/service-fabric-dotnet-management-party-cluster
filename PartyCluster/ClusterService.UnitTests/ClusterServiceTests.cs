@@ -21,6 +21,11 @@ namespace ClusterService.UnitTests
         private Random random = new Random(7);
         private object locker = new object();
 
+        private StatefulServiceParameters CreateServiceParameters()
+        {
+            return new StatefulServiceParameters(null, null, Guid.NewGuid(), null, null, 0);
+        }
+
         /// <summary>
         /// The cluster list should filter out any clusters that are not ready.
         /// </summary>
@@ -30,7 +35,7 @@ namespace ClusterService.UnitTests
         {
             ClusterConfig config = new ClusterConfig();
             MockReliableStateManager stateManager = new MockReliableStateManager();
-            ClusterService target = new ClusterService(null, stateManager)
+            ClusterService target = new ClusterService(null, null, stateManager, CreateServiceParameters())
             {
                 Config = config
             };
@@ -66,7 +71,7 @@ namespace ClusterService.UnitTests
         {
             ClusterConfig config = new ClusterConfig();
             MockReliableStateManager stateManager = new MockReliableStateManager();
-            ClusterService target = new ClusterService(null, stateManager)
+            ClusterService target = new ClusterService(null, null, stateManager, this.CreateServiceParameters())
             {
                 Config = config
             };
@@ -91,7 +96,7 @@ namespace ClusterService.UnitTests
         {
             ClusterConfig config = new ClusterConfig();
             MockReliableStateManager stateManager = new MockReliableStateManager();
-            ClusterService target = new ClusterService(null, stateManager)
+            ClusterService target = new ClusterService(null, null, stateManager, this.CreateServiceParameters())
             {
                 Config = config
             };
@@ -133,7 +138,7 @@ namespace ClusterService.UnitTests
         {
             ClusterConfig config = new ClusterConfig();
             MockReliableStateManager stateManager = new MockReliableStateManager();
-            ClusterService target = new ClusterService(null, stateManager)
+            ClusterService target = new ClusterService(null, null, stateManager, this.CreateServiceParameters())
             {
                 Config = config
             };
@@ -164,7 +169,7 @@ namespace ClusterService.UnitTests
         {
             ClusterConfig config = new ClusterConfig();
             MockReliableStateManager stateManager = new MockReliableStateManager();
-            ClusterService target = new ClusterService(null, stateManager)
+            ClusterService target = new ClusterService(null, null, stateManager, this.CreateServiceParameters())
             {
                 Config = config
             };
@@ -194,7 +199,7 @@ namespace ClusterService.UnitTests
         {
             ClusterConfig config = new ClusterConfig();
             MockReliableStateManager stateManager = new MockReliableStateManager();
-            ClusterService target = new ClusterService(null, stateManager)
+            ClusterService target = new ClusterService(null, null, stateManager, this.CreateServiceParameters())
             {
                 Config = config
             };
@@ -228,7 +233,7 @@ namespace ClusterService.UnitTests
         {
             ClusterConfig config = new ClusterConfig();
             MockReliableStateManager stateManager = new MockReliableStateManager();
-            ClusterService target = new ClusterService(null, stateManager)
+            ClusterService target = new ClusterService(null, null, stateManager, this.CreateServiceParameters())
             {
                 Config = config
             };
@@ -263,7 +268,7 @@ namespace ClusterService.UnitTests
         {
             ClusterConfig config = new ClusterConfig();
             MockReliableStateManager stateManager = new MockReliableStateManager();
-            ClusterService target = new ClusterService(null, stateManager)
+            ClusterService target = new ClusterService(null, null, stateManager, this.CreateServiceParameters())
             {
                 Config = config
             };
@@ -297,7 +302,7 @@ namespace ClusterService.UnitTests
         {
             ClusterConfig config = new ClusterConfig();
             MockReliableStateManager stateManager = new MockReliableStateManager();
-            ClusterService target = new ClusterService(null, stateManager)
+            ClusterService target = new ClusterService(null, null, stateManager, this.CreateServiceParameters())
             {
                 Config = config
             };
@@ -334,7 +339,7 @@ namespace ClusterService.UnitTests
         {
             ClusterConfig config = new ClusterConfig();
             MockReliableStateManager stateManager = new MockReliableStateManager();
-            ClusterService target = new ClusterService(null, stateManager)
+            ClusterService target = new ClusterService(null, null, stateManager, this.CreateServiceParameters())
             {
                 Config = config
             };
@@ -379,7 +384,7 @@ namespace ClusterService.UnitTests
         {
             ClusterConfig config = new ClusterConfig();
             MockReliableStateManager stateManager = new MockReliableStateManager();
-            ClusterService target = new ClusterService(null, stateManager)
+            ClusterService target = new ClusterService(null, null, stateManager, this.CreateServiceParameters())
             {
                 Config = config
             };
@@ -434,7 +439,7 @@ namespace ClusterService.UnitTests
         {
             ClusterConfig config = new ClusterConfig();
             MockReliableStateManager stateManager = new MockReliableStateManager();
-            ClusterService target = new ClusterService(null, stateManager)
+            ClusterService target = new ClusterService(null, null, stateManager, this.CreateServiceParameters())
             {
                 Config = config
             };
@@ -486,7 +491,7 @@ namespace ClusterService.UnitTests
         {
             ClusterConfig config = new ClusterConfig();
             MockReliableStateManager stateManager = new MockReliableStateManager();
-            ClusterService target = new ClusterService(null, stateManager)
+            ClusterService target = new ClusterService(null, null, stateManager, this.CreateServiceParameters())
             {
                 Config = config
             };
@@ -539,7 +544,7 @@ namespace ClusterService.UnitTests
         {
             ClusterConfig config = new ClusterConfig();
             MockReliableStateManager stateManager = new MockReliableStateManager();
-            ClusterService target = new ClusterService(null, stateManager)
+            ClusterService target = new ClusterService(null, null, stateManager, this.CreateServiceParameters())
             {
                 Config = config
             };
@@ -594,7 +599,7 @@ namespace ClusterService.UnitTests
                 }
             };
 
-            ClusterService target = new ClusterService(clusterOperator, stateManager);
+            ClusterService target = new ClusterService(clusterOperator, null, stateManager, this.CreateServiceParameters());
 
             Cluster cluster = new Cluster("test")
             {
@@ -621,7 +626,7 @@ namespace ClusterService.UnitTests
                 GetClusterStatusAsyncFunc = name => Task.FromResult(ClusterOperationStatus.Ready)
             };
 
-            ClusterService target = new ClusterService(clusterOperator, stateManager);
+            ClusterService target = new ClusterService(clusterOperator, null, stateManager, this.CreateServiceParameters());
             Cluster cluster = new Cluster("test")
             {
                 Status = ClusterStatus.Creating
@@ -647,7 +652,7 @@ namespace ClusterService.UnitTests
                 GetClusterStatusAsyncFunc = name => Task.FromResult(ClusterOperationStatus.CreateFailed)
             };
 
-            ClusterService target = new ClusterService(clusterOperator, stateManager);
+            ClusterService target = new ClusterService(clusterOperator, null, stateManager, this.CreateServiceParameters());
             Cluster cluster = new Cluster("test")
             {
                 Status = ClusterStatus.Creating
@@ -681,7 +686,7 @@ namespace ClusterService.UnitTests
                 }
             };
 
-            ClusterService target = new ClusterService(clusterOperator, stateManager);
+            ClusterService target = new ClusterService(clusterOperator, null, stateManager, this.CreateServiceParameters());
 
             Cluster cluster = new Cluster("test")
             {
@@ -707,7 +712,7 @@ namespace ClusterService.UnitTests
                 GetClusterStatusAsyncFunc = domain => Task.FromResult(ClusterOperationStatus.ClusterNotFound)
             };
 
-            ClusterService target = new ClusterService(clusterOperator, stateManager);
+            ClusterService target = new ClusterService(clusterOperator, null, stateManager, this.CreateServiceParameters());
 
             Cluster cluster = new Cluster("test")
             {
@@ -733,7 +738,7 @@ namespace ClusterService.UnitTests
 
             MockReliableStateManager stateManager = new MockReliableStateManager();
 
-            ClusterService target = new ClusterService(null, stateManager)
+            ClusterService target = new ClusterService(null, null, stateManager, this.CreateServiceParameters())
             {
                 Config = config
             };
@@ -754,7 +759,7 @@ namespace ClusterService.UnitTests
         {
             ClusterConfig config = new ClusterConfig();
             MockReliableStateManager stateManager = new MockReliableStateManager();
-            ClusterService target = new ClusterService(null, stateManager)
+            ClusterService target = new ClusterService(null, null, stateManager, this.CreateServiceParameters())
             {
                 Config = config
             };
@@ -780,7 +785,7 @@ namespace ClusterService.UnitTests
         {
             ClusterConfig config = new ClusterConfig() {MaximumUsersPerCluster = 1};
             MockReliableStateManager stateManager = new MockReliableStateManager();
-            ClusterService target = new ClusterService(null, stateManager)
+            ClusterService target = new ClusterService(null, null, stateManager, this.CreateServiceParameters())
             {
                 Config = config
             };
@@ -817,7 +822,7 @@ namespace ClusterService.UnitTests
         {
             ClusterConfig config = new ClusterConfig() {MaximumUsersPerCluster = 2};
             MockReliableStateManager stateManager = new MockReliableStateManager();
-            ClusterService target = new ClusterService(null, stateManager)
+            ClusterService target = new ClusterService(null, null, stateManager, this.CreateServiceParameters())
             {
                 Config = config
             };
@@ -853,7 +858,7 @@ namespace ClusterService.UnitTests
         {
             ClusterConfig config = new ClusterConfig() {MaximumUsersPerCluster = 2};
             MockReliableStateManager stateManager = new MockReliableStateManager();
-            ClusterService target = new ClusterService(null, stateManager)
+            ClusterService target = new ClusterService(null, null, stateManager, this.CreateServiceParameters())
             {
                 Config = config
             };
@@ -891,7 +896,7 @@ namespace ClusterService.UnitTests
         {
             ClusterConfig config = new ClusterConfig() {MaximumUsersPerCluster = 2};
             MockReliableStateManager stateManager = new MockReliableStateManager();
-            ClusterService target = new ClusterService(null, stateManager)
+            ClusterService target = new ClusterService(null, null, stateManager, this.CreateServiceParameters())
             {
                 Config = config
             };
@@ -928,7 +933,7 @@ namespace ClusterService.UnitTests
         {
             ClusterConfig config = new ClusterConfig() {MaximumUsersPerCluster = 2};
             MockReliableStateManager stateManager = new MockReliableStateManager();
-            ClusterService target = new ClusterService(null, stateManager)
+            ClusterService target = new ClusterService(null, null, stateManager, this.CreateServiceParameters())
             {
                 Config = config
             };

@@ -160,6 +160,7 @@
     <Compile Include="Cluster.cs" />
     <Compile Include="ClusterConfig.cs" />
     <Compile Include="ArmClusterOperatorSettings.cs" />
+    <Compile Include="ClusterServiceFactory.cs" />
     <Compile Include="ClusterStatus.cs" />
     <Compile Include="ClusterUser.cs" />
     <Compile Include="ArmClusterOperator.cs" />
@@ -169,6 +170,7 @@
     <Compile Include="Program.cs" />
     <Compile Include="SendGridMailer.cs" />
     <Compile Include="ServiceEventSource.cs" />
+    <Compile Include="StatefulServiceParameters.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="PackageRoot\Config\Settings.xml" />

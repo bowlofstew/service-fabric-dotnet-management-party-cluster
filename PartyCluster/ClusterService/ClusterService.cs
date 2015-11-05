@@ -21,45 +21,41 @@ namespace ClusterService
     using Microsoft.ServiceFabric.Services.Remoting.Runtime;
     using Microsoft.ServiceFabric.Services.Runtime;
 
-    public class ClusterService : StatefulService, IClusterService
+    internal class ClusterService : StatefulService, IClusterService
     {
         internal const string ClusterDictionaryName = "clusterDictionary";
         internal const string SickClusterDictionaryName = "sickClusterDictionary";
         private readonly Random random = new Random();
         private readonly IClusterOperator clusterOperator;
         private readonly ISendMail mailer;
-        private IReliableStateManager reliableStateManager;
-
-        public ClusterService()
+        private readonly IReliableStateManager reliableStateManager;
+        private readonly StatefulServiceParameters serviceParameters;
+        
+        /// <summary>
+        /// Creates a new instance of the service class.
+        /// </summary>
+        /// <param name="clusterOperator"></param>
+        /// <param name="mailer"></param>
+        /// <param name="stateManager"></param>
+        /// <param name="serviceParameters"></param>
+        public ClusterService(
+            IClusterOperator clusterOperator, 
+            ISendMail mailer, 
+            IReliableStateManager stateManager, 
+            StatefulServiceParameters serviceParameters)
         {
             this.Config = new ClusterConfig();
-            this.clusterOperator = new FakeClusterOperator(this.Config);
-            //this.clusterOperator = new ArmClusterOperator(this.ServiceInitializationParameters);
-            this.mailer = new SendGridMailer(this.ServiceInitializationParameters);
-
-            ConfigurationPackage configPackage = this.ServiceInitializationParameters.CodePackageActivationContext.GetConfigurationPackageObject("Config");
-
-            this.UpdateClusterConfigSettings(configPackage.Settings);
-
-            this.ServiceInitializationParameters.CodePackageActivationContext.ConfigurationPackageModifiedEvent
-                += this.CodePackageActivationContext_ConfigurationPackageModifiedEvent;
-        }
-
-        /// <summary>
-        /// Poor-man's dependency injection for now until the API supports proper injection of IReliableStateManager.
-        /// This constructor is used in unit tests to inject a different state manager.
-        /// </summary>
-        /// <param name="stateManager"></param>
-        /// <param name="clusterOperator"></param>
-        public ClusterService(IClusterOperator clusterOperator, IReliableStateManager stateManager)
-            : this()
-        {
             this.clusterOperator = clusterOperator;
             this.reliableStateManager = stateManager;
+            this.mailer = mailer;
+            this.StateManager = stateManager;
+            this.serviceParameters = serviceParameters;
+
+            this.ConfigureService();
         }
 
         internal ClusterConfig Config { get; set; }
-
+        
         public async Task<IEnumerable<ClusterView>> GetClusterListAsync()
         {
             IReliableDictionary<int, Cluster> clusterDictionary =
@@ -215,20 +211,7 @@ namespace ClusterService
             ServiceEventSource.Current.ServiceMessage(this, "Join cluster request completed. Cluster: {0}.", clusterId);
             // send email to user with cluster info
         }
-
-        /// <summary>
-        /// Poor-man's dependency injection for now until the API supports proper injection of IReliableStateManager.
-        /// </summary>
-        /// <returns></returns>
-        protected override IReliableStateManager CreateReliableStateManager()
-        {
-            if (this.reliableStateManager == null)
-            {
-                this.reliableStateManager = base.CreateReliableStateManager();
-            }
-            return this.reliableStateManager;
-        }
-
+        
         protected override IEnumerable<ServiceReplicaListener> CreateServiceReplicaListeners()
         {
             return new[] {new ServiceReplicaListener(parameters => new ServiceRemotingListener<IClusterService>(parameters, this))};
@@ -543,16 +526,30 @@ namespace ClusterService
                     x.Value.Status == ClusterStatus.Ready);
         }
 
+        private void ConfigureService()
+        {
+            if (this.serviceParameters.CodePackageActivationContext != null)
+            {
+                serviceParameters.CodePackageActivationContext.ConfigurationPackageModifiedEvent
+                    += this.CodePackageActivationContext_ConfigurationPackageModifiedEvent;
+
+                ConfigurationPackage configPackage = serviceParameters.CodePackageActivationContext.GetConfigurationPackageObject("Config");
+
+                this.UpdateClusterConfigSettings(configPackage.Settings);
+            }
+        }
+
         private void UpdateClusterConfigSettings(ConfigurationSettings settings)
         {
             KeyedCollection<string, ConfigurationProperty> clusterConfigParameters = settings.Sections["ClusterConfigSettings"].Parameters;
 
+            this.Config.RefreshInterval = TimeSpan.Parse(clusterConfigParameters["RefreshInterval"].Value);
             this.Config.MinimumClusterCount = Int32.Parse(clusterConfigParameters["MinimumClusterCount"].Value);
             this.Config.MaximumClusterCount = Int32.Parse(clusterConfigParameters["MaximumClusterCount"].Value);
             this.Config.MaximumUsersPerCluster = Int32.Parse(clusterConfigParameters["MaximumUsersPerCluster"].Value);
             this.Config.MaximumClusterUptime = TimeSpan.Parse(clusterConfigParameters["MaximumClusterUptime"].Value);
             this.Config.UserCapacityHighPercentThreshold = Double.Parse(clusterConfigParameters["UserCapacityHighPercentThreshold"].Value);
-            this.Config.UserCapacityLowPercentThreshold = Int32.Parse(clusterConfigParameters["UserCapacityLowPercentThreshold"].Value);
+            this.Config.UserCapacityLowPercentThreshold = Double.Parse(clusterConfigParameters["UserCapacityLowPercentThreshold"].Value);
         }
 
         private void CodePackageActivationContext_ConfigurationPackageModifiedEvent(object sender, PackageModifiedEventArgs<ConfigurationPackage> e)

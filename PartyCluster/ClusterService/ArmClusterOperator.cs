@@ -25,7 +25,7 @@ namespace ClusterService
         private string armTemplate;
         private string armParameters;
 
-        public ArmClusterOperator(ServiceInitializationParameters serviceParameters)
+        public ArmClusterOperator(StatefulServiceParameters serviceParameters)
         {
             ConfigurationPackage configPackage = serviceParameters.CodePackageActivationContext.GetConfigurationPackageObject("Config");
             DataPackage dataPackage = serviceParameters.CodePackageActivationContext.GetDataPackageObject("Data");
@@ -76,7 +76,7 @@ namespace ClusterService
 
             await this.CreateTemplateDeploymentAsync(credential, name, templateContent, parameterContent);
 
-            return (name + ".westus.cloudapp.azure.com");
+            return (name + "." + this.settings.Region + ".cloudapp.azure.com");
         }
 
         public async Task DeleteClusterAsync(string name)

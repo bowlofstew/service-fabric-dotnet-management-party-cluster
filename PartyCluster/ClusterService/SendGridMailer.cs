@@ -18,7 +18,7 @@ namespace ClusterService
     {
         private NetworkCredential credentials;
 
-        public SendGridMailer(ServiceInitializationParameters serviceParameters)
+        public SendGridMailer(StatefulServiceParameters serviceParameters)
         {
             ConfigurationPackage configPackage = serviceParameters.CodePackageActivationContext.GetConfigurationPackageObject("Config");
 

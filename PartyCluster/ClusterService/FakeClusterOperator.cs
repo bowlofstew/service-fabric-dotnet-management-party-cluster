@@ -9,44 +9,58 @@ namespace ClusterService
     using System.Collections.Generic;
     using System.Threading.Tasks;
     using Domain;
-
+    using Microsoft.ServiceFabric.Data;
+    using Microsoft.ServiceFabric.Data.Collections;
     internal class FakeClusterOperator : IClusterOperator
     {
-        private Dictionary<string, ClusterOperationStatus> clusters = new Dictionary<string, ClusterOperationStatus>();
-        private Dictionary<string, DateTimeOffset> clusterCreateDelay = new Dictionary<string, DateTimeOffset>();
+        private readonly IReliableStateManager stateManager;
         private string addressFormat = "cluster-{0}.westus.cloudapp.azure.com";
-        private ClusterConfig config;
         private Random random = new Random();
 
-        public FakeClusterOperator(ClusterConfig config)
+        public FakeClusterOperator(IReliableStateManager stateManager)
         {
-            this.config = config;
+            this.stateManager = stateManager;
         }
 
         public async Task<string> CreateClusterAsync(string name)
         {
+            IReliableDictionary<string, ClusterOperationStatus> clusters =
+                 await this.stateManager.GetOrAddAsync<IReliableDictionary<string, ClusterOperationStatus>>(new Uri("fakeclusterops:/clusters"));
+
+            IReliableDictionary<string, DateTimeOffset> clusterCreateDelay =
+                 await this.stateManager.GetOrAddAsync<IReliableDictionary<string, DateTimeOffset>>(new Uri("fakeclusterops:/clusterCreateDelay"));
+
             string domain = String.Format(this.addressFormat, name);
 
-            this.clusters[domain] = ClusterOperationStatus.Creating;
-            this.clusterCreateDelay[domain] = DateTimeOffset.UtcNow + TimeSpan.FromSeconds(this.random.Next(2, 20));
+            using (ITransaction tx = this.stateManager.CreateTransaction())
+            {
+                await clusters.SetAsync(tx, name, ClusterOperationStatus.Creating);
+                await clusterCreateDelay.SetAsync(tx, name, DateTimeOffset.UtcNow + TimeSpan.FromSeconds(this.random.Next(2, 20)));
+                await tx.CommitAsync();
+            }
 
             await Task.Delay(TimeSpan.FromMilliseconds(this.random.Next(200, 1000)));
 
             return domain;
         }
 
-        public Task DeleteClusterAsync(string domain)
+        public async Task DeleteClusterAsync(string name)
         {
-            this.clusters[domain] = ClusterOperationStatus.Deleting;
+            IReliableDictionary<string, ClusterOperationStatus> clusters =
+                 await this.stateManager.GetOrAddAsync<IReliableDictionary<string, ClusterOperationStatus>>(new Uri("fakeclusterops:/clusters"));
 
-            return Task.FromResult(true);
+            using (ITransaction tx = this.stateManager.CreateTransaction())
+            {
+                await clusters.SetAsync(tx, name, ClusterOperationStatus.Deleting);
+                await tx.CommitAsync();
+            }
         }
 
-        public Task<IEnumerable<int>> GetClusterPortsAsync(string domain)
+        public Task<IEnumerable<int>> GetClusterPortsAsync(string name)
         {
             Random random = new Random();
-            List<int> ports = new List<int>(this.config.MaximumUsersPerCluster);
-            for (int i = 0; i < this.config.MaximumUsersPerCluster; ++i)
+            List<int> ports = new List<int>(5);
+            for (int i = 0; i < 5; ++i)
             {
                 ports.Add(80 + i);
             }
@@ -54,27 +68,41 @@ namespace ClusterService
             return Task.FromResult((IEnumerable<int>) ports);
         }
 
-        public Task<ClusterOperationStatus> GetClusterStatusAsync(string domain)
+        public async Task<ClusterOperationStatus> GetClusterStatusAsync(string name)
         {
-            ClusterOperationStatus status = this.clusters[domain];
+            IReliableDictionary<string, ClusterOperationStatus> clusters =
+                 await this.stateManager.GetOrAddAsync<IReliableDictionary<string, ClusterOperationStatus>>(new Uri("fakeclusterops:/clusters"));
 
-            switch (status)
+            IReliableDictionary<string, DateTimeOffset> clusterCreateDelay =
+                 await this.stateManager.GetOrAddAsync<IReliableDictionary<string, DateTimeOffset>>(new Uri("fakeclusterops:/clusterCreateDelay"));
+
+            using (ITransaction tx = this.stateManager.CreateTransaction())
             {
-                case ClusterOperationStatus.Creating:
-                    if (DateTimeOffset.UtcNow > this.clusterCreateDelay[domain])
-                    {
-                        this.clusters[domain] = ClusterOperationStatus.Ready;
-                    }
-                    break;
-                case ClusterOperationStatus.Ready:
-                    this.clusters[domain] = ClusterOperationStatus.Ready;
-                    break;
-                case ClusterOperationStatus.Deleting:
-                    this.clusters[domain] = ClusterOperationStatus.ClusterNotFound;
-                    break;
-            }
+                ClusterOperationStatus status = (await clusters.TryGetValueAsync(tx, name)).Value;
+                DateTimeOffset clusterDelay = (await clusterCreateDelay.TryGetValueAsync(tx, name)).Value;
+                ClusterOperationStatus newStatus = ClusterOperationStatus.Ready;
 
-            return Task.FromResult(this.clusters[domain]);
+                switch (status)
+                {
+                    case ClusterOperationStatus.Creating:
+                        if (DateTimeOffset.UtcNow > clusterDelay)
+                        {
+                            newStatus = ClusterOperationStatus.Ready;
+                        }
+                        break;
+                    case ClusterOperationStatus.Ready:
+                        newStatus = ClusterOperationStatus.Ready;
+                        break;
+                    case ClusterOperationStatus.Deleting:
+                        newStatus = ClusterOperationStatus.ClusterNotFound;
+                        break;
+                }
+
+                await clusters.SetAsync(tx, name, newStatus);
+                await tx.CommitAsync();
+
+                return newStatus;
+            }
         }
     }
 }
