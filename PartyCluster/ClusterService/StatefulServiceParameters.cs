@@ -1,12 +1,13 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Fabric;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿// ------------------------------------------------------------
+//  Copyright (c) Microsoft Corporation.  All rights reserved.
+//  Licensed under the MIT License (MIT). See License.txt in the repo root for license information.
+// ------------------------------------------------------------
 
 namespace ClusterService
 {
+    using System;
+    using System.Fabric;
+
     internal class StatefulServiceParameters
     {
         public StatefulServiceParameters(
