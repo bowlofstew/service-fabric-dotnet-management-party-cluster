@@ -18,13 +18,11 @@ namespace Domain
             this.ApplicationCount = appCount;
             this.ServiceCount = serviceCount;
             this.UserCount = userCount;
-            this.TimeRemaining = timeRemaining;
             this.Capacity = capacity;
 
-            if (this.TimeRemaining < TimeSpan.Zero)
-            {
-                this.TimeRemaining = TimeSpan.Zero;
-            }
+            this.TimeRemaining = timeRemaining > TimeSpan.Zero ?
+                String.Format("{0:hh\\:mm\\:ss}", timeRemaining) :
+                "expired";
         }
 
         [DataMember]
@@ -46,6 +44,6 @@ namespace Domain
         public int Capacity { get; private set; }
 
         [DataMember]
-        public TimeSpan TimeRemaining { get; private set; }
+        public string TimeRemaining { get; private set; }
     }
 }

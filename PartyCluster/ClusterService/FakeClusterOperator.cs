@@ -14,7 +14,7 @@ namespace ClusterService
     internal class FakeClusterOperator : IClusterOperator
     {
         private readonly IReliableStateManager stateManager;
-        private string addressFormat = "cluster-{0}.westus.cloudapp.azure.com";
+        private string addressFormat = "{0}.westus.cloudapp.azure.com";
         private Random random = new Random();
 
         public FakeClusterOperator(IReliableStateManager stateManager)

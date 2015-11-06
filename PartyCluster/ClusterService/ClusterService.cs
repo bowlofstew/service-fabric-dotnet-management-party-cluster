@@ -10,6 +10,7 @@ namespace ClusterService
     using System.Collections.ObjectModel;
     using System.Fabric;
     using System.Fabric.Description;
+    using System.IO;
     using System.Linq;
     using System.Net.Mail;
     using System.Threading;
@@ -25,6 +26,9 @@ namespace ClusterService
     {
         internal const string ClusterDictionaryName = "clusterDictionary";
         internal const string SickClusterDictionaryName = "sickClusterDictionary";
+
+        private string joinMailTemplate;
+
         private readonly Random random = new Random();
         private readonly IClusterOperator clusterOperator;
         private readonly ISendMail mailer;
@@ -89,6 +93,7 @@ namespace ClusterService
             int userPort;
             string clusterAddress;
             TimeSpan clusterTimeRemaining;
+            DateTimeOffset clusterExpiration;
 
             using (ITransaction tx = this.reliableStateManager.CreateTransaction())
             {
@@ -167,8 +172,38 @@ namespace ClusterService
                     throw new JoinClusterFailedException(JoinClusterFailedReason.NoPortsAvailable);
                 }
 
+                clusterExpiration = cluster.CreatedOn + this.Config.MaximumClusterUptime;
                 clusterTimeRemaining = this.Config.MaximumClusterUptime - (DateTimeOffset.UtcNow - cluster.CreatedOn);
                 clusterAddress = cluster.Address;
+
+                ServiceEventSource.Current.ServiceMessage(this, "Sending join mail. Cluster: {0}.", clusterId);
+
+                try
+                {
+                    string time = String.Format("{0} hour{1}, ", clusterTimeRemaining.Hours, clusterTimeRemaining.Hours == 1 ? "" : "s")
+                                  + String.Format("{0} minute{1}, ", clusterTimeRemaining.Minutes, clusterTimeRemaining.Minutes == 1 ? "" : "s")
+                                  + String.Format("and {0} second{1}", clusterTimeRemaining.Seconds, clusterTimeRemaining.Seconds == 1 ? "" : "s");
+
+                    string date = String.Format("on {0:MMMM dd} at {1:H:mm:ss UTC}", clusterExpiration, clusterExpiration);
+
+                    await this.mailer.SendMessageAsync(
+                        new MailAddress("partycluster@azure.com", "Service Fabric Party Cluster Team"),
+                        user.UserEmail,
+                        "Welcome to the Azure Service Fabric party",
+                        this.joinMailTemplate
+                            .Replace("__clusterAddress__", clusterAddress)
+                            .Replace("__userPort__", userPort.ToString())
+                            .Replace("__clusterExpiration__", date)
+                            .Replace("__clusterTimeRemaining__", time));
+                        
+                }
+                catch (Exception e)
+                {
+                    ServiceEventSource.Current.ServiceMessage(this, "Failed to send join mail. {0}.", e.Message);
+
+                    throw new JoinClusterFailedException(JoinClusterFailedReason.InvalidEmail);
+                }
+
                 cluster.Users.Add(new ClusterUser(user.UserEmail, userPort));
 
                 await clusterDictionary.SetAsync(tx, clusterId, cluster);
@@ -176,37 +211,7 @@ namespace ClusterService
                 await tx.CommitAsync();
             }
 
-            ServiceEventSource.Current.ServiceMessage(this, "Sending join mail. Cluster: {0}.", clusterId);
-
-            try
-            {
-                await this.mailer.SendMessageAsync(
-                    new MailAddress("partycluster@azure.com", "Service Fabric Party Cluster Team"),
-                    user.UserEmail,
-                    "Thanks for trying out Service Fabric",
-                    String.Format(
-                        "Hello,"
-                        + "<br/><br/>"
-                        +
-                        "Thanks for trying out Service Fabric. The endpoint which you can use to connect and deploy your applications is {0}:19000. A port has been allocated for your applications: {1} The cluster is available for {2}."
-                        + "<br/><br/>"
-                        +
-                        "To connect to the cluster and deploy applications, please refer to the guides <here> and <here>. Please familiarize yourself with the rules < TBD:link > and the terms < TBD:link > of using this service. This is a shared cluster meaning all your applications will be publicly visible and can be deleted at any time by other users. Furthermore, the cluster can be reset earlier than the prescribed time per Microsoft’s discretion. Please refer to the full terms of the service < TBD - link > for more details."
-                        + "<br/><br/>"
-                        + "Thanks,"
-                        + "<br/>"
-                        + "The Service Fabric Team",
-                        clusterAddress,
-                        userPort,
-                        clusterTimeRemaining)
-                    );
-            }
-            catch (Exception e)
-            {
-                ServiceEventSource.Current.ServiceMessage(this, "Failed to send join mail. {0}.", e.Message);
-
-                throw new JoinClusterFailedException(JoinClusterFailedReason.InvalidEmail);
-            }
+           
 
             ServiceEventSource.Current.ServiceMessage(this, "Join cluster request completed. Cluster: {0}.", clusterId);
             // send email to user with cluster info
@@ -533,12 +538,29 @@ namespace ClusterService
                 serviceParameters.CodePackageActivationContext.ConfigurationPackageModifiedEvent
                     += this.CodePackageActivationContext_ConfigurationPackageModifiedEvent;
 
+                serviceParameters.CodePackageActivationContext.DataPackageModifiedEvent
+                    += this.CodePackageActivationContext_DataPackageModifiedEvent;
+
                 ConfigurationPackage configPackage = serviceParameters.CodePackageActivationContext.GetConfigurationPackageObject("Config");
+                DataPackage dataPackage = serviceParameters.CodePackageActivationContext.GetDataPackageObject("Data");
 
                 this.UpdateClusterConfigSettings(configPackage.Settings);
+                this.UpdateJoinMailTemplateContent(dataPackage.Path);
             }
         }
 
+        private void CodePackageActivationContext_DataPackageModifiedEvent(object sender, PackageModifiedEventArgs<DataPackage> e)
+        {
+            this.UpdateJoinMailTemplateContent(e.NewPackage.Path);
+        }
+
+        private void UpdateJoinMailTemplateContent(string templateDataPath)
+        {
+            using (StreamReader reader = new StreamReader(Path.Combine(templateDataPath, "joinmail.html")))
+            {
+                this.joinMailTemplate = reader.ReadToEnd();
+            }
+        }
         private void UpdateClusterConfigSettings(ConfigurationSettings settings)
         {
             KeyedCollection<string, ConfigurationProperty> clusterConfigParameters = settings.Sections["ClusterConfigSettings"].Parameters;
