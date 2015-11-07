@@ -27,7 +27,6 @@ namespace ClusterService
         internal const string ClusterDictionaryName = "clusterDictionary";
         internal const string SickClusterDictionaryName = "sickClusterDictionary";
 
-        private string joinMailTemplate;
         private ClusterConfig config;
 
         private readonly Random random = new Random();
@@ -89,12 +88,7 @@ namespace ClusterService
 
             IReliableDictionary<int, Cluster> clusterDictionary =
                 await this.reliableStateManager.GetOrAddAsync<IReliableDictionary<int, Cluster>>(ClusterDictionaryName);
-
-            int userPort;
-            string clusterAddress;
-            TimeSpan clusterTimeRemaining;
-            DateTimeOffset clusterExpiration;
-
+            
             using (ITransaction tx = this.reliableStateManager.CreateTransaction())
             {
                 ConditionalResult<Cluster> result = await clusterDictionary.TryGetValueAsync(tx, clusterId, LockMode.Update);
@@ -110,6 +104,18 @@ namespace ClusterService
                 }
 
                 Cluster cluster = result.Value;
+                
+                // make sure the cluster isn't about to be deleted.
+                if ((DateTimeOffset.UtcNow - cluster.CreatedOn.ToUniversalTime()) > (this.config.MaximumClusterUptime))
+                {
+                    ServiceEventSource.Current.ServiceMessage(
+                        this,
+                        "Join cluster request failed. Cluster has expired. Cluster: {0}. Cluster creation time: {1}",
+                        clusterId,
+                        cluster.CreatedOn.ToUniversalTime());
+
+                    throw new JoinClusterFailedException(JoinClusterFailedReason.ClusterExpired);
+                }
 
                 // make sure the cluster is ready
                 if (cluster.Status != ClusterStatus.Ready)
@@ -121,18 +127,6 @@ namespace ClusterService
                         cluster.Status);
 
                     throw new JoinClusterFailedException(JoinClusterFailedReason.ClusterNotReady);
-                }
-
-                // make sure the cluster isn't about to be deleted.
-                if ((DateTimeOffset.UtcNow - cluster.CreatedOn.ToUniversalTime()) > (this.config.MaximumClusterUptime))
-                {
-                    ServiceEventSource.Current.ServiceMessage(
-                        this,
-                        "Join cluster request failed. Cluster has expired. Cluster: {0}. Cluster creation time: {1}",
-                        clusterId,
-                        cluster.CreatedOn.ToUniversalTime());
-
-                    throw new JoinClusterFailedException(JoinClusterFailedReason.ClusterExpired);
                 }
 
                 if (cluster.Users.Count >= this.config.MaximumUsersPerCluster)
@@ -156,6 +150,11 @@ namespace ClusterService
                     throw new JoinClusterFailedException(JoinClusterFailedReason.UserAlreadyJoined);
                 }
 
+                int userPort;
+                string clusterAddress = cluster.Address;;
+                TimeSpan clusterTimeRemaining = this.config.MaximumClusterUptime - (DateTimeOffset.UtcNow - cluster.CreatedOn);
+                DateTimeOffset clusterExpiration = cluster.CreatedOn + this.config.MaximumClusterUptime;
+
                 try
                 {
                     userPort = cluster.Ports.First(port => !cluster.Users.Any(x => x.Port == port));
@@ -171,31 +170,12 @@ namespace ClusterService
 
                     throw new JoinClusterFailedException(JoinClusterFailedReason.NoPortsAvailable);
                 }
-
-                clusterExpiration = cluster.CreatedOn + this.config.MaximumClusterUptime;
-                clusterTimeRemaining = this.config.MaximumClusterUptime - (DateTimeOffset.UtcNow - cluster.CreatedOn);
-                clusterAddress = cluster.Address;
-
-                ServiceEventSource.Current.ServiceMessage(this, "Sending join mail. Cluster: {0}.", clusterId);
-
+                
                 try
                 {
-                    string time = String.Format("{0} hour{1}, ", clusterTimeRemaining.Hours, clusterTimeRemaining.Hours == 1 ? "" : "s")
-                                  + String.Format("{0} minute{1}, ", clusterTimeRemaining.Minutes, clusterTimeRemaining.Minutes == 1 ? "" : "s")
-                                  + String.Format("and {0} second{1}", clusterTimeRemaining.Seconds, clusterTimeRemaining.Seconds == 1 ? "" : "s");
+                    ServiceEventSource.Current.ServiceMessage(this, "Sending join mail. Cluster: {0}.", clusterId);
 
-                    string date = String.Format("on {0:MMMM dd} at {1:H:mm:ss UTC}", clusterExpiration, clusterExpiration);
-
-                    await this.mailer.SendMessageAsync(
-                        new MailAddress("partycluster@azure.com", "Service Fabric Party Cluster Team"),
-                        user.UserEmail,
-                        "Welcome to the Azure Service Fabric party",
-                        this.joinMailTemplate
-                            .Replace("__clusterAddress__", clusterAddress)
-                            .Replace("__userPort__", userPort.ToString())
-                            .Replace("__clusterExpiration__", date)
-                            .Replace("__clusterTimeRemaining__", time));
-                        
+                    await this.mailer.SendJoinMail(user.UserEmail, clusterAddress, userPort, clusterTimeRemaining, clusterExpiration); 
                 }
                 catch (Exception e)
                 {
@@ -207,14 +187,10 @@ namespace ClusterService
                 cluster.Users.Add(new ClusterUser(user.UserEmail, userPort));
 
                 await clusterDictionary.SetAsync(tx, clusterId, cluster);
-
                 await tx.CommitAsync();
             }
-
-           
-
+            
             ServiceEventSource.Current.ServiceMessage(this, "Join cluster request completed. Cluster: {0}.", clusterId);
-            // send email to user with cluster info
         }
         
         protected override IEnumerable<ServiceReplicaListener> CreateServiceReplicaListeners()
@@ -537,30 +513,14 @@ namespace ClusterService
             {
                 serviceParameters.CodePackageActivationContext.ConfigurationPackageModifiedEvent
                     += this.CodePackageActivationContext_ConfigurationPackageModifiedEvent;
-
-                serviceParameters.CodePackageActivationContext.DataPackageModifiedEvent
-                    += this.CodePackageActivationContext_DataPackageModifiedEvent;
-
+                
                 ConfigurationPackage configPackage = serviceParameters.CodePackageActivationContext.GetConfigurationPackageObject("Config");
-                DataPackage dataPackage = serviceParameters.CodePackageActivationContext.GetDataPackageObject("Data");
 
                 this.UpdateClusterConfigSettings(configPackage.Settings);
-                this.UpdateJoinMailTemplateContent(dataPackage.Path);
             }
         }
 
-        private void CodePackageActivationContext_DataPackageModifiedEvent(object sender, PackageModifiedEventArgs<DataPackage> e)
-        {
-            this.UpdateJoinMailTemplateContent(e.NewPackage.Path);
-        }
 
-        private void UpdateJoinMailTemplateContent(string templateDataPath)
-        {
-            using (StreamReader reader = new StreamReader(Path.Combine(templateDataPath, "joinmail.html")))
-            {
-                this.joinMailTemplate = reader.ReadToEnd();
-            }
-        }
         private void UpdateClusterConfigSettings(ConfigurationSettings settings)
         {
             KeyedCollection<string, ConfigurationProperty> clusterConfigParameters = settings.Sections["ClusterConfigSettings"].Parameters;

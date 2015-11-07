@@ -5,11 +5,11 @@
 
 namespace Domain
 {
-    using System.Net.Mail;
+    using System;
     using System.Threading.Tasks;
 
     public interface ISendMail
     {
-        Task SendMessageAsync(MailAddress from, string to, string subject, string htmlBody);
+        Task SendJoinMail(string receipientAddress, string clusterAddress, int userPort, TimeSpan timeRemaining, DateTimeOffset clusterExpiration);
     }
 }

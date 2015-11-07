@@ -10,9 +10,10 @@ namespace Mocks
 {
     public class MockMailer : ISendMail
     {
-        public Task SendMessageAsync(MailAddress from, string to, string subject, string htmlBody)
+        public Task SendJoinMail(string receipientAddress, string clusterAddress, int userPort, TimeSpan timeRemaining, DateTimeOffset clusterExpiration)
         {
             return Task.FromResult(true);
         }
+        
     }
 }

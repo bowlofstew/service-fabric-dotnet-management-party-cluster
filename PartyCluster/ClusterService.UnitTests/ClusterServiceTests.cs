@@ -886,7 +886,8 @@ namespace ClusterService.UnitTests
             {
                 Status = ClusterStatus.Ready,
                 Users = new[] {new ClusterUser(email, 80)},
-                Ports = new[] {80}
+                Ports = new[] {80},
+                CreatedOn = DateTimeOffset.UtcNow
             };
 
             IReliableDictionary<int, Cluster> dictionary =

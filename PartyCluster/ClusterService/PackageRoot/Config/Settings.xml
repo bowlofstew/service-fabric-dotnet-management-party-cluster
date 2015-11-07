@@ -20,6 +20,9 @@
   <Section Name="SendGridSettings">
     <Parameter Name="Username" Value=""/>
     <Parameter Name="Password" Value="" />
+    <Parameter Name="MailAddress" Value="partycluster@azure.com" />
+    <Parameter Name="MailFrom" Value="Service Fabric Party Cluster Team" />
+    <Parameter Name="MailSubject" Value="Welcome to the Azure Service Fabric party" />
   </Section>
   
   <Section Name="AzureSubscriptionSettings">
