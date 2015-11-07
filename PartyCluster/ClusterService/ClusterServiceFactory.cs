@@ -27,7 +27,8 @@ namespace ClusterService
                 new FakeClusterOperator(stateManager),
                 new SendGridMailer(parameters),
                 stateManager,
-                parameters);
+                parameters,
+                new ClusterConfig());
         }
     }
 }

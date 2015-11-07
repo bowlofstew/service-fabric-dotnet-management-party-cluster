@@ -19,6 +19,6 @@ namespace Domain
 
         NoPortsAvailable,
 
-        InvalidEmail
+        SendMailFailed
     }
 }

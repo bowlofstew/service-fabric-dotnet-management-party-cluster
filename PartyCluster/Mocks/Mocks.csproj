@@ -69,6 +69,7 @@
   <ItemGroup>
     <Compile Include="ConditionalResultActivator.cs" />
     <Compile Include="MockClusterOperator.cs" />
+    <Compile Include="MockMailer.cs" />
     <Compile Include="MockReliableDictionary.cs" />
     <Compile Include="MockReliableQueue.cs" />
     <Compile Include="MockReliableStateManager.cs" />

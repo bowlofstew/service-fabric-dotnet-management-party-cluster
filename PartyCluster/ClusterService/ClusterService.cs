@@ -28,6 +28,7 @@ namespace ClusterService
         internal const string SickClusterDictionaryName = "sickClusterDictionary";
 
         private string joinMailTemplate;
+        private ClusterConfig config;
 
         private readonly Random random = new Random();
         private readonly IClusterOperator clusterOperator;
@@ -46,9 +47,10 @@ namespace ClusterService
             IClusterOperator clusterOperator, 
             ISendMail mailer, 
             IReliableStateManager stateManager, 
-            StatefulServiceParameters serviceParameters)
+            StatefulServiceParameters serviceParameters,
+            ClusterConfig config)
         {
-            this.Config = new ClusterConfig();
+            this.config = config;
             this.clusterOperator = clusterOperator;
             this.reliableStateManager = stateManager;
             this.mailer = mailer;
@@ -57,8 +59,6 @@ namespace ClusterService
 
             this.ConfigureService();
         }
-
-        internal ClusterConfig Config { get; set; }
         
         public async Task<IEnumerable<ClusterView>> GetClusterListAsync()
         {
@@ -74,8 +74,8 @@ namespace ClusterService
                     item.Value.AppCount,
                     item.Value.ServiceCount,
                     item.Value.Users.Count,
-                    this.Config.MaximumUsersPerCluster,
-                    this.Config.MaximumClusterUptime - (DateTimeOffset.UtcNow - item.Value.CreatedOn.ToUniversalTime()));
+                    this.config.MaximumUsersPerCluster,
+                    this.config.MaximumClusterUptime - (DateTimeOffset.UtcNow - item.Value.CreatedOn.ToUniversalTime()));
         }
 
         public async Task JoinClusterAsync(int clusterId, UserView user)
@@ -124,7 +124,7 @@ namespace ClusterService
                 }
 
                 // make sure the cluster isn't about to be deleted.
-                if ((DateTimeOffset.UtcNow - cluster.CreatedOn.ToUniversalTime()) > (this.Config.MaximumClusterUptime))
+                if ((DateTimeOffset.UtcNow - cluster.CreatedOn.ToUniversalTime()) > (this.config.MaximumClusterUptime))
                 {
                     ServiceEventSource.Current.ServiceMessage(
                         this,
@@ -135,7 +135,7 @@ namespace ClusterService
                     throw new JoinClusterFailedException(JoinClusterFailedReason.ClusterExpired);
                 }
 
-                if (cluster.Users.Count >= this.Config.MaximumUsersPerCluster)
+                if (cluster.Users.Count >= this.config.MaximumUsersPerCluster)
                 {
                     ServiceEventSource.Current.ServiceMessage(
                         this,
@@ -172,8 +172,8 @@ namespace ClusterService
                     throw new JoinClusterFailedException(JoinClusterFailedReason.NoPortsAvailable);
                 }
 
-                clusterExpiration = cluster.CreatedOn + this.Config.MaximumClusterUptime;
-                clusterTimeRemaining = this.Config.MaximumClusterUptime - (DateTimeOffset.UtcNow - cluster.CreatedOn);
+                clusterExpiration = cluster.CreatedOn + this.config.MaximumClusterUptime;
+                clusterTimeRemaining = this.config.MaximumClusterUptime - (DateTimeOffset.UtcNow - cluster.CreatedOn);
                 clusterAddress = cluster.Address;
 
                 ServiceEventSource.Current.ServiceMessage(this, "Sending join mail. Cluster: {0}.", clusterId);
@@ -201,7 +201,7 @@ namespace ClusterService
                 {
                     ServiceEventSource.Current.ServiceMessage(this, "Failed to send join mail. {0}.", e.Message);
 
-                    throw new JoinClusterFailedException(JoinClusterFailedReason.InvalidEmail);
+                    throw new JoinClusterFailedException(JoinClusterFailedReason.SendMailFailed);
                 }
 
                 cluster.Users.Add(new ClusterUser(user.UserEmail, userPort));
@@ -239,7 +239,7 @@ namespace ClusterService
                     ServiceEventSource.Current.ServiceMessage(this, "TimeoutException in RunAsync: {0}.", te.Message);
                 }
 
-                await Task.Delay(this.Config.RefreshInterval, cancellationToken);
+                await Task.Delay(this.config.RefreshInterval, cancellationToken);
             }
         }
 
@@ -258,14 +258,14 @@ namespace ClusterService
                 IEnumerable<KeyValuePair<int, Cluster>> activeClusters = this.GetActiveClusters(clusterDictionary);
                 int activeClusterCount = activeClusters.Count();
 
-                if (target < this.Config.MinimumClusterCount)
+                if (target < this.config.MinimumClusterCount)
                 {
-                    target = this.Config.MinimumClusterCount;
+                    target = this.config.MinimumClusterCount;
                 }
 
-                if (target > this.Config.MaximumClusterCount)
+                if (target > this.config.MaximumClusterCount)
                 {
-                    target = this.Config.MaximumClusterCount;
+                    target = this.config.MaximumClusterCount;
                 }
 
                 ServiceEventSource.Current.ServiceMessage(
@@ -279,7 +279,7 @@ namespace ClusterService
 
                 if (activeClusterCount < target)
                 {
-                    int limit = Math.Min(target, this.Config.MaximumClusterCount) - activeClusterCount;
+                    int limit = Math.Min(target, this.config.MaximumClusterCount) - activeClusterCount;
 
                     for (int i = 0; i < limit; ++i)
                     {
@@ -294,7 +294,7 @@ namespace ClusterService
                 {
                     IEnumerable<KeyValuePair<int, Cluster>> removeList = activeClusters
                         .Where(x => x.Value.Users.Count == 0)
-                        .Take(Math.Min(activeClusterCount - this.Config.MinimumClusterCount, activeClusterCount - target));
+                        .Take(Math.Min(activeClusterCount - this.config.MinimumClusterCount, activeClusterCount - target));
 
                     int ix = 0;
                     foreach (KeyValuePair<int, Cluster> item in removeList)
@@ -372,26 +372,26 @@ namespace ClusterService
             IEnumerable<KeyValuePair<int, Cluster>> activeClusters = this.GetActiveClusters(clusterDictionary);
             int activeClusterCount = activeClusters.Count();
 
-            double totalCapacity = activeClusterCount*this.Config.MaximumUsersPerCluster;
+            double totalCapacity = activeClusterCount*this.config.MaximumUsersPerCluster;
 
             double totalUsers = activeClusters
                 .Aggregate(0, (total, next) => total += next.Value.Users.Count);
 
             double percentFull = totalUsers/totalCapacity;
 
-            if (percentFull >= this.Config.UserCapacityHighPercentThreshold)
+            if (percentFull >= this.config.UserCapacityHighPercentThreshold)
             {
                 return Math.Min(
-                    this.Config.MaximumClusterCount,
-                    activeClusterCount + (int) Math.Ceiling(activeClusterCount*(1 - this.Config.UserCapacityHighPercentThreshold)));
+                    this.config.MaximumClusterCount,
+                    activeClusterCount + (int) Math.Ceiling(activeClusterCount*(1 - this.config.UserCapacityHighPercentThreshold)));
             }
 
-            if (percentFull <= this.Config.UserCapacityLowPercentThreshold)
+            if (percentFull <= this.config.UserCapacityLowPercentThreshold)
             {
                 return Math.Max(
-                    this.Config.MinimumClusterCount,
+                    this.config.MinimumClusterCount,
                     activeClusterCount -
-                    (int) Math.Floor(activeClusterCount*(this.Config.UserCapacityHighPercentThreshold - this.Config.UserCapacityLowPercentThreshold)));
+                    (int) Math.Floor(activeClusterCount*(this.config.UserCapacityHighPercentThreshold - this.config.UserCapacityLowPercentThreshold)));
             }
 
             return activeClusterCount;
@@ -454,7 +454,7 @@ namespace ClusterService
                     break;
 
                 case ClusterStatus.Ready:
-                    if (DateTimeOffset.UtcNow - cluster.CreatedOn.ToUniversalTime() >= this.Config.MaximumClusterUptime)
+                    if (DateTimeOffset.UtcNow - cluster.CreatedOn.ToUniversalTime() >= this.config.MaximumClusterUptime)
                     {
                         ServiceEventSource.Current.ServiceMessage(this, "Cluster expired: {0}", cluster.Address);
                         cluster.Status = ClusterStatus.Remove;
@@ -565,13 +565,14 @@ namespace ClusterService
         {
             KeyedCollection<string, ConfigurationProperty> clusterConfigParameters = settings.Sections["ClusterConfigSettings"].Parameters;
 
-            this.Config.RefreshInterval = TimeSpan.Parse(clusterConfigParameters["RefreshInterval"].Value);
-            this.Config.MinimumClusterCount = Int32.Parse(clusterConfigParameters["MinimumClusterCount"].Value);
-            this.Config.MaximumClusterCount = Int32.Parse(clusterConfigParameters["MaximumClusterCount"].Value);
-            this.Config.MaximumUsersPerCluster = Int32.Parse(clusterConfigParameters["MaximumUsersPerCluster"].Value);
-            this.Config.MaximumClusterUptime = TimeSpan.Parse(clusterConfigParameters["MaximumClusterUptime"].Value);
-            this.Config.UserCapacityHighPercentThreshold = Double.Parse(clusterConfigParameters["UserCapacityHighPercentThreshold"].Value);
-            this.Config.UserCapacityLowPercentThreshold = Double.Parse(clusterConfigParameters["UserCapacityLowPercentThreshold"].Value);
+            this.config = new ClusterConfig();
+            this.config.RefreshInterval = TimeSpan.Parse(clusterConfigParameters["RefreshInterval"].Value);
+            this.config.MinimumClusterCount = Int32.Parse(clusterConfigParameters["MinimumClusterCount"].Value);
+            this.config.MaximumClusterCount = Int32.Parse(clusterConfigParameters["MaximumClusterCount"].Value);
+            this.config.MaximumUsersPerCluster = Int32.Parse(clusterConfigParameters["MaximumUsersPerCluster"].Value);
+            this.config.MaximumClusterUptime = TimeSpan.Parse(clusterConfigParameters["MaximumClusterUptime"].Value);
+            this.config.UserCapacityHighPercentThreshold = Double.Parse(clusterConfigParameters["UserCapacityHighPercentThreshold"].Value);
+            this.config.UserCapacityLowPercentThreshold = Double.Parse(clusterConfigParameters["UserCapacityLowPercentThreshold"].Value);
         }
 
         private void CodePackageActivationContext_ConfigurationPackageModifiedEvent(object sender, PackageModifiedEventArgs<ConfigurationPackage> e)
