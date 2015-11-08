@@ -20,9 +20,9 @@ namespace Domain
             this.UserCount = userCount;
             this.Capacity = capacity;
 
-            this.TimeRemaining = timeRemaining > TimeSpan.Zero ?
-                String.Format("{0:hh\\:mm\\:ss}", timeRemaining) :
-                "expired";
+            this.TimeRemaining = timeRemaining > TimeSpan.Zero
+                ? String.Format("{0:hh\\:mm\\:ss}", timeRemaining)
+                : "expired";
         }
 
         [DataMember]

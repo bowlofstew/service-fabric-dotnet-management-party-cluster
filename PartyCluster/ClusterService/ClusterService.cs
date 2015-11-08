@@ -10,9 +10,7 @@ namespace ClusterService
     using System.Collections.ObjectModel;
     using System.Fabric;
     using System.Fabric.Description;
-    using System.IO;
     using System.Linq;
-    using System.Net.Mail;
     using System.Threading;
     using System.Threading.Tasks;
     using Domain;
@@ -26,15 +24,13 @@ namespace ClusterService
     {
         internal const string ClusterDictionaryName = "clusterDictionary";
         internal const string SickClusterDictionaryName = "sickClusterDictionary";
-
-        private ClusterConfig config;
-
         private readonly Random random = new Random();
         private readonly IClusterOperator clusterOperator;
         private readonly ISendMail mailer;
         private readonly IReliableStateManager reliableStateManager;
         private readonly StatefulServiceParameters serviceParameters;
-        
+        private ClusterConfig config;
+
         /// <summary>
         /// Creates a new instance of the service class.
         /// </summary>
@@ -43,9 +39,9 @@ namespace ClusterService
         /// <param name="stateManager"></param>
         /// <param name="serviceParameters"></param>
         public ClusterService(
-            IClusterOperator clusterOperator, 
-            ISendMail mailer, 
-            IReliableStateManager stateManager, 
+            IClusterOperator clusterOperator,
+            ISendMail mailer,
+            IReliableStateManager stateManager,
             StatefulServiceParameters serviceParameters,
             ClusterConfig config)
         {
@@ -58,7 +54,7 @@ namespace ClusterService
 
             this.ConfigureService();
         }
-        
+
         public async Task<IEnumerable<ClusterView>> GetClusterListAsync()
         {
             IReliableDictionary<int, Cluster> clusterDictionary =
@@ -88,7 +84,7 @@ namespace ClusterService
 
             IReliableDictionary<int, Cluster> clusterDictionary =
                 await this.reliableStateManager.GetOrAddAsync<IReliableDictionary<int, Cluster>>(ClusterDictionaryName);
-            
+
             using (ITransaction tx = this.reliableStateManager.CreateTransaction())
             {
                 ConditionalResult<Cluster> result = await clusterDictionary.TryGetValueAsync(tx, clusterId, LockMode.Update);
@@ -104,7 +100,7 @@ namespace ClusterService
                 }
 
                 Cluster cluster = result.Value;
-                
+
                 // make sure the cluster isn't about to be deleted.
                 if ((DateTimeOffset.UtcNow - cluster.CreatedOn.ToUniversalTime()) > (this.config.MaximumClusterUptime))
                 {
@@ -151,7 +147,8 @@ namespace ClusterService
                 }
 
                 int userPort;
-                string clusterAddress = cluster.Address;;
+                string clusterAddress = cluster.Address;
+                ;
                 TimeSpan clusterTimeRemaining = this.config.MaximumClusterUptime - (DateTimeOffset.UtcNow - cluster.CreatedOn);
                 DateTimeOffset clusterExpiration = cluster.CreatedOn + this.config.MaximumClusterUptime;
 
@@ -170,12 +167,12 @@ namespace ClusterService
 
                     throw new JoinClusterFailedException(JoinClusterFailedReason.NoPortsAvailable);
                 }
-                
+
                 try
                 {
                     ServiceEventSource.Current.ServiceMessage(this, "Sending join mail. Cluster: {0}.", clusterId);
 
-                    await this.mailer.SendJoinMail(user.UserEmail, clusterAddress, userPort, clusterTimeRemaining, clusterExpiration); 
+                    await this.mailer.SendJoinMail(user.UserEmail, clusterAddress, userPort, clusterTimeRemaining, clusterExpiration);
                 }
                 catch (Exception e)
                 {
@@ -200,10 +197,10 @@ namespace ClusterService
                 await clusterDictionary.SetAsync(tx, clusterId, updatedCluster);
                 await tx.CommitAsync();
             }
-            
+
             ServiceEventSource.Current.ServiceMessage(this, "Join cluster request completed. Cluster: {0}.", clusterId);
         }
-        
+
         protected override IEnumerable<ServiceReplicaListener> CreateServiceReplicaListeners()
         {
             return new[] {new ServiceReplicaListener(parameters => new ServiceRemotingListener<IClusterService>(parameters, this))};
@@ -317,7 +314,7 @@ namespace ClusterService
                     try
                     {
                         Cluster updatedCluster = await this.ProcessClusterStatusAsync(item.Value);
-                        
+
                         if (updatedCluster.Status == ClusterStatus.Deleted)
                         {
                             await clusterDictionary.TryRemoveAsync(tx, item.Key);
@@ -557,15 +554,14 @@ namespace ClusterService
         {
             if (this.serviceParameters.CodePackageActivationContext != null)
             {
-                serviceParameters.CodePackageActivationContext.ConfigurationPackageModifiedEvent
+                this.serviceParameters.CodePackageActivationContext.ConfigurationPackageModifiedEvent
                     += this.CodePackageActivationContext_ConfigurationPackageModifiedEvent;
-                
-                ConfigurationPackage configPackage = serviceParameters.CodePackageActivationContext.GetConfigurationPackageObject("Config");
+
+                ConfigurationPackage configPackage = this.serviceParameters.CodePackageActivationContext.GetConfigurationPackageObject("Config");
 
                 this.UpdateClusterConfigSettings(configPackage.Settings);
             }
         }
-
 
         private void UpdateClusterConfigSettings(ConfigurationSettings settings)
         {

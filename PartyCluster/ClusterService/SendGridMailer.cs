@@ -24,7 +24,6 @@ namespace ClusterService
         private string mailFrom;
         private string mailSubject;
 
-
         public SendGridMailer(StatefulServiceParameters serviceParameters)
         {
             ConfigurationPackage configPackage = serviceParameters.CodePackageActivationContext.GetConfigurationPackageObject("Config");
@@ -44,8 +43,8 @@ namespace ClusterService
         {
             string date = String.Format("on {0:MMMM dd} at {1:H:mm:ss UTC}", clusterExpiration, clusterExpiration);
             string time = String.Format("{0} hour{1}, ", clusterTimeRemaining.Hours, clusterTimeRemaining.Hours == 1 ? "" : "s")
-                                  + String.Format("{0} minute{1}, ", clusterTimeRemaining.Minutes, clusterTimeRemaining.Minutes == 1 ? "" : "s")
-                                  + String.Format("and {0} second{1}", clusterTimeRemaining.Seconds, clusterTimeRemaining.Seconds == 1 ? "" : "s");
+                          + String.Format("{0} minute{1}, ", clusterTimeRemaining.Minutes, clusterTimeRemaining.Minutes == 1 ? "" : "s")
+                          + String.Format("and {0} second{1}", clusterTimeRemaining.Seconds, clusterTimeRemaining.Seconds == 1 ? "" : "s");
 
 
             return this.SendMessageAsync(

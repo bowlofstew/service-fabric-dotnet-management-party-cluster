@@ -11,6 +11,7 @@ namespace ClusterService
     using Domain;
     using Microsoft.ServiceFabric.Data;
     using Microsoft.ServiceFabric.Data.Collections;
+
     internal class FakeClusterOperator : IClusterOperator
     {
         private readonly IReliableStateManager stateManager;
@@ -25,10 +26,10 @@ namespace ClusterService
         public async Task<string> CreateClusterAsync(string name)
         {
             IReliableDictionary<string, ClusterOperationStatus> clusters =
-                 await this.stateManager.GetOrAddAsync<IReliableDictionary<string, ClusterOperationStatus>>(new Uri("fakeclusterops:/clusters"));
+                await this.stateManager.GetOrAddAsync<IReliableDictionary<string, ClusterOperationStatus>>(new Uri("fakeclusterops:/clusters"));
 
             IReliableDictionary<string, DateTimeOffset> clusterCreateDelay =
-                 await this.stateManager.GetOrAddAsync<IReliableDictionary<string, DateTimeOffset>>(new Uri("fakeclusterops:/clusterCreateDelay"));
+                await this.stateManager.GetOrAddAsync<IReliableDictionary<string, DateTimeOffset>>(new Uri("fakeclusterops:/clusterCreateDelay"));
 
             string domain = String.Format(this.addressFormat, name);
 
@@ -47,7 +48,7 @@ namespace ClusterService
         public async Task DeleteClusterAsync(string name)
         {
             IReliableDictionary<string, ClusterOperationStatus> clusters =
-                 await this.stateManager.GetOrAddAsync<IReliableDictionary<string, ClusterOperationStatus>>(new Uri("fakeclusterops:/clusters"));
+                await this.stateManager.GetOrAddAsync<IReliableDictionary<string, ClusterOperationStatus>>(new Uri("fakeclusterops:/clusters"));
 
             using (ITransaction tx = this.stateManager.CreateTransaction())
             {
@@ -71,10 +72,10 @@ namespace ClusterService
         public async Task<ClusterOperationStatus> GetClusterStatusAsync(string name)
         {
             IReliableDictionary<string, ClusterOperationStatus> clusters =
-                 await this.stateManager.GetOrAddAsync<IReliableDictionary<string, ClusterOperationStatus>>(new Uri("fakeclusterops:/clusters"));
+                await this.stateManager.GetOrAddAsync<IReliableDictionary<string, ClusterOperationStatus>>(new Uri("fakeclusterops:/clusters"));
 
             IReliableDictionary<string, DateTimeOffset> clusterCreateDelay =
-                 await this.stateManager.GetOrAddAsync<IReliableDictionary<string, DateTimeOffset>>(new Uri("fakeclusterops:/clusterCreateDelay"));
+                await this.stateManager.GetOrAddAsync<IReliableDictionary<string, DateTimeOffset>>(new Uri("fakeclusterops:/clusterCreateDelay"));
 
             using (ITransaction tx = this.stateManager.CreateTransaction())
             {

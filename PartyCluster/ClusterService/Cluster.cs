@@ -16,25 +16,25 @@ namespace ClusterService
 
         public Cluster(string internalName)
             : this(internalName,
-                  ClusterStatus.New,
-                  0,
-                  0,
-                  String.Empty,
-                  new int[0],
-                  new ClusterUser[0],
-                  DateTimeOffset.MaxValue)
+                ClusterStatus.New,
+                0,
+                0,
+                String.Empty,
+                new int[0],
+                new ClusterUser[0],
+                DateTimeOffset.MaxValue)
         {
         }
 
         public Cluster(ClusterStatus status, Cluster copyFrom)
-            : this (copyFrom.InternalName,
-                  status, 
-                  copyFrom.AppCount, 
-                  copyFrom.ServiceCount, 
-                  copyFrom.Address, 
-                  new List<int>(copyFrom.Ports),
-                  new List<ClusterUser>(copyFrom.Users),
-                  copyFrom.CreatedOn)
+            : this(copyFrom.InternalName,
+                status,
+                copyFrom.AppCount,
+                copyFrom.ServiceCount,
+                copyFrom.Address,
+                new List<int>(copyFrom.Ports),
+                new List<ClusterUser>(copyFrom.Users),
+                copyFrom.CreatedOn)
         {
         }
 
