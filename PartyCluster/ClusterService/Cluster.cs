@@ -10,44 +10,76 @@ namespace ClusterService
     using System.Runtime.Serialization;
 
     [DataContract]
-    internal class Cluster
+    internal struct Cluster
     {
         private static Random random = new Random();
 
         public Cluster(string internalName)
+            : this(internalName,
+                  ClusterStatus.New,
+                  0,
+                  0,
+                  String.Empty,
+                  new int[0],
+                  new ClusterUser[0],
+                  DateTimeOffset.MaxValue)
+        {
+        }
+
+        public Cluster(ClusterStatus status, Cluster copyFrom)
+            : this (copyFrom.InternalName,
+                  status, 
+                  copyFrom.AppCount, 
+                  copyFrom.ServiceCount, 
+                  copyFrom.Address, 
+                  new List<int>(copyFrom.Ports),
+                  new List<ClusterUser>(copyFrom.Users),
+                  copyFrom.CreatedOn)
+        {
+        }
+
+        public Cluster(
+            string internalName,
+            ClusterStatus status,
+            int appCount,
+            int serviceCount,
+            string address,
+            IEnumerable<int> ports,
+            IEnumerable<ClusterUser> users,
+            DateTimeOffset createdOn)
         {
             this.InternalName = internalName;
-            this.Status = ClusterStatus.New;
-            this.AppCount = 0;
-            this.ServiceCount = 0;
-            this.Address = String.Empty;
-            this.Ports = new List<int>();
-            this.Users = new List<ClusterUser>();
-            this.CreatedOn = DateTimeOffset.MaxValue;
+            this.Status = status;
+            this.AppCount = appCount;
+            this.ServiceCount = serviceCount;
+            this.Address = address;
+            this.Ports = ports;
+            this.Users = users;
+            this.CreatedOn = createdOn;
         }
 
         [DataMember]
         public string InternalName { get; private set; }
 
         [DataMember]
-        public ClusterStatus Status { get; set; }
+        public ClusterStatus Status { get; private set; }
 
         [DataMember]
-        public int AppCount { get; set; }
+        public int AppCount { get; private set; }
 
         [DataMember]
-        public int ServiceCount { get; set; }
+        public int ServiceCount { get; private set; }
 
         [DataMember]
-        public string Address { get; set; }
+        public string Address { get; private set; }
 
         [DataMember]
-        public IEnumerable<int> Ports { get; set; }
+        public IEnumerable<int> Ports { get; private set; }
 
         [DataMember]
-        public IList<ClusterUser> Users { get; set; }
+        public IEnumerable<ClusterUser> Users { get; private set; }
 
         [DataMember]
-        public DateTimeOffset CreatedOn { get; set; }
+        public DateTimeOffset CreatedOn { get; private set; }
     }
 }

@@ -208,12 +208,13 @@ namespace Mocks
 
         public Task<ConditionalResult<TValue>> TryRemoveAsync(ITransaction tx, TKey key)
         {
-            throw new NotImplementedException();
+            TValue outValue;
+            return Task.FromResult(new ConditionalResult<TValue>(this.dictionary.TryRemove(key, out outValue), outValue));
         }
 
         public Task<ConditionalResult<TValue>> TryRemoveAsync(ITransaction tx, TKey key, TimeSpan timeout, CancellationToken cancellationToken)
         {
-            throw new NotImplementedException();
+            return this.TryRemoveAsync(tx, key);
         }
 
         public Task<bool> TryUpdateAsync(ITransaction tx, TKey key, TValue newValue, TValue comparisonValue)
