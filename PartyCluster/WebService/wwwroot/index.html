@@ -21,25 +21,32 @@
             <h2 class="azure-heading">Azure Service Fabric</h2>
             <h1 class="party-heading">Party Clusters</h1>
             <h3 class="party-subheading">Try Service Fabric on Azure for free!</h3>
-            <a class="button partynow" href="javascript:void(0)">Party Now!</a>
+            <a class="button party-now-button" href="javascript:void(0)">Party Now!</a>
             <a class="button download" href="http://aka.ms/servicefabricSDK">Download SDK</a>
         </div>
     </header>
     <section id="main" class="wrapper clearfix">
         <div class="overlay"></div>
-        <div class="dialog join-cluster">
+        <div class="dialog join-cluster-dialog">
             <h3 class="join-cluster-name"></h3>
             <p>
-                To join the cluster, just fill in your email address, and instructions on how to connect will be emailed to you.
+                To join the cluster, just fill in your email address, and you'll receive an invitation with all the information you need to connect and deploy apps to the cluster, for free.
             </p>
             <div>
                 <label for="useremail">Your email:</label><input id="join-useremail" name="useremail" />
             </div>
-            <a class="button join-now" href="javascript:void(0)">Join!</a>
+            <a class="button join-now-button" href="javascript:void(0)">Send invitation</a>
             <p class="disclaimer">
-                This is just to prevent spam. We do not retain your email information and will not use this information for any other purpose.
-                Still skeptical? This application is open source! <a href="http://github.com" target="_blank">See for yourself</a>.
+
             </p>
+        </div>
+        <div class="dialog join-cluster-dialog-success">
+            <h3>Invitation sent!</h3>
+            <p>An invitation email with information on how to connect to this cluster has been sent to you. Once this cluster expires, you're free to connect again to another one.</p>
+        </div>
+        <div class="dialog join-cluster-dialog-failed">
+            <h3>Something went wrong</h3>
+            <p></p>
         </div>
         <div class="cluster-list clearfix">
             <table class="clearfix"></table>

@@ -3,13 +3,13 @@
 //  Licensed under the MIT License (MIT). See License.txt in the repo root for license information.
 // ------------------------------------------------------------
 
-namespace Mocks
+namespace ClusterService
 {
     using System;
     using System.Threading.Tasks;
     using Domain;
 
-    public class MockMailer : ISendMail
+    public class FakeMailer : ISendMail
     {
         public Task SendJoinMail(string receipientAddress, string clusterAddress, int userPort, TimeSpan timeRemaining, DateTimeOffset clusterExpiration)
         {
