@@ -21,7 +21,7 @@ namespace Microsoft.Diagnostics.EventListeners
         private const int ConcurrentConnections = 4;
         private EventHubConnectionData connectionData;
 
-        public EventHubListener(IConfigurationProvider configurationProvider) : base(configurationProvider)
+        public EventHubListener(IConfigurationProvider configurationProvider, IHealthReporter healthReporter) : base(configurationProvider, healthReporter)
         {
             if (this.Disabled)
             {
@@ -36,7 +36,8 @@ namespace Microsoft.Diagnostics.EventListeners
                 maxConcurrency: ConcurrentConnections,
                 batchSize: 50,
                 noEventsDelay: TimeSpan.FromMilliseconds(1000),
-                transmitterProc: this.SendEventsAsync);
+                transmitterProc: this.SendEventsAsync,
+                healthReporter: healthReporter);
         }
 
         private void CreateConnectionData(object sender)
@@ -87,7 +88,6 @@ namespace Microsoft.Diagnostics.EventListeners
 
                 if (cancellationToken.IsCancellationRequested)
                 {
-                    // TODO: report that event sending has been cancelled 
                     return;
                 }
 
@@ -99,10 +99,12 @@ namespace Microsoft.Diagnostics.EventListeners
                 }
 
                 await hubClient.SendBatchAsync(batch);
+
+                ReportListenerHealthy();
             }
-            catch (Exception)
+            catch (Exception e)
             {
-                // TODO report EventHub upload error (e.ToString())
+                ReportListenerProblem("Diagnostics data upload has failed." + Environment.NewLine + e.ToString());
             }
         }
 

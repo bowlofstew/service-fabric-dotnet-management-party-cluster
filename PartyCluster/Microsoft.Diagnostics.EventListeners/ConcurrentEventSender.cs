@@ -23,19 +23,22 @@ namespace Microsoft.Diagnostics.EventListeners
         private TimeSpan noEventsDelay;
         private Func<IEnumerable<EventDataType>, long, CancellationToken, Task> TransmitterProc;
         private TimeSpanThrottle eventLossThrottle;
+        private IHealthReporter healthReporter;
 
         public ConcurrentEventSender(
             int eventBufferSize, uint maxConcurrency, int batchSize, TimeSpan noEventsDelay,
-            Func<IEnumerable<EventDataType>, long, CancellationToken, Task> transmitterProc)
+            Func<IEnumerable<EventDataType>, long, CancellationToken, Task> transmitterProc,
+            IHealthReporter healthReporter)
         {
             this.events = new BlockingCollection<EventDataType>(eventBufferSize);
 
-            this.ValidateConstructorParameters(eventBufferSize, maxConcurrency, batchSize, noEventsDelay, transmitterProc);
+            this.ValidateConstructorParameters(eventBufferSize, maxConcurrency, batchSize, noEventsDelay, transmitterProc, healthReporter);
             this.maxConcurrency = maxConcurrency;
             this.batchSize = batchSize;
             this.noEventsDelay = noEventsDelay;
             this.TransmitterProc = transmitterProc;
             this.capacityWarningThreshold = (int) Math.Ceiling(0.9m*eventBufferSize);
+            this.healthReporter = healthReporter;
 
             // Probably does not make sense to report event loss more often than once per second.
             this.eventLossThrottle = new TimeSpanThrottle(TimeSpan.FromSeconds(1));
@@ -68,7 +71,7 @@ namespace Microsoft.Diagnostics.EventListeners
                 this.eventLossThrottle.Execute(
                     () =>
                     {
-                        // TODO: report warning that some events were lost
+                        this.healthReporter.ReportProblem("Diagnostic events buffer overflow occurred. Some diagnostics data was lost.");
                     });
             }
         }
@@ -157,7 +160,8 @@ namespace Microsoft.Diagnostics.EventListeners
 
         private void ValidateConstructorParameters(
             int eventBufferSize, uint maxConcurrency, int batchSize, TimeSpan noEventsDelay,
-            Func<IEnumerable<EventDataType>, long, CancellationToken, Task> transmitterProc)
+            Func<IEnumerable<EventDataType>, long, CancellationToken, Task> transmitterProc,
+            IHealthReporter healthReporter)
         {
             if (eventBufferSize <= 0)
             {
@@ -177,6 +181,11 @@ namespace Microsoft.Diagnostics.EventListeners
             if (transmitterProc == null)
             {
                 throw new ArgumentNullException("transmitterProc");
+            }
+
+            if (healthReporter == null)
+            {
+                throw new ArgumentNullException("healthReporter");
             }
         }
     }

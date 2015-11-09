@@ -20,12 +20,13 @@ namespace ClusterService
             {
                 using (FabricRuntime fabricRuntime = FabricRuntime.Create())
                 {
+                    const string ElasticSearchEventListenerId = "ElasticSearchEventListener";
                     FabricEventListeners.FabricConfigurationProvider configProvider =
-                        new FabricEventListeners.FabricConfigurationProvider("ElasticSearchEventListener");
+                        new FabricEventListeners.FabricConfigurationProvider(ElasticSearchEventListenerId);
                     ElasticSearchListener esListener = null;
                     if (configProvider.HasConfiguration)
                     {
-                        esListener = new ElasticSearchListener(configProvider);
+                        esListener = new ElasticSearchListener(configProvider, new FabricEventListeners.FabricHealthReporter(ElasticSearchEventListenerId));
                     }
 
                     // This is the name of the ServiceType that is registered with FabricRuntime. 
