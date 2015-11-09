@@ -87,7 +87,8 @@ function PartyClusters(api) {
         $('.party-now-button').click(function () {
             try {
                 var id = self.SelectRandomCluster();
-                self.ShowJoinClusterDialog(new SelectedCluster(id, 'Party now!', true));
+                self.selectedCluster = new SelectedCluster(id, 'Party now!', true);
+                self.ShowJoinClusterDialog();
             }
             catch (exception) {
                 alert('There are currently no clusters available. Please try again later.');
@@ -95,74 +96,55 @@ function PartyClusters(api) {
         });
 
         $('.join-now-button').click(function () {
-            var joinClusterWindow = $('.join-cluster-dialog');
-            var email = $('#join-useremail').val();
-
-            self.api.JoinCluster(
-				self.selectedCluser.Id,
-				email,
-				function (data) {
-				    var joinClusterSuccessWindow = $('.join-cluster-dialog-success');
-				    self.joinClusterDialog.Change(joinClusterWindow, joinClusterSuccessWindow);
-				},
-				function (data) {
-				    if (self.selectedCluser.AutoRetry) {
-				        switch (data.Code) {
-				            case "ClusterFull":
-				            case "ClusterExpired":
-				            case "ClusterNotReady":
-				            case "ClusterDoesNotExist":
-				            case "NoPortsAvailable":
-				                self.selectedClusterId = self.SelectRandomCluster();
-				                setTimeout(self.JoinCluster, self.refreshRate)
-				                return;
-				        }
-				    }
-
-				    var failedClusterWindow = $('.join-cluster-dialog-failed');
-				    switch (data.Code) {
-				        case "InvalidArguments":
-				            $('p', failedClusterWindow).text("Please provide a valid email address.");
-				            break;
-				        case "ClusterFull":
-				            $('p', failedClusterWindow).text("Sorry, this cluster is full. Please try a different one.");
-				            break;
-				        case "ClusterExpired":
-				            $('p', failedClusterWindow).text("Sorry, this cluster has expired and is being replaced with a new one. Please try a different one.");
-				            break;
-				        case "ClusterNotReady":
-				            $('p', failedClusterWindow).text("Sorry, this cluster isn't ready yet. Please try a different in the meantime.");
-				            break;
-				        case "ClusterDoesNotExist":
-				            $('p', failedClusterWindow).text("Sorry, that cluster doesn't exist! Please try a different one.");
-				            break;
-				        case "NoPortsAvailable":
-				            $('p', failedClusterWindow).text("Sorry, there are no ports available for your application to use on this cluster. Please try a different one.");
-				            break;
-				        case "SendMailFailed":
-				            $('p', failedClusterWindow).text("Sorry, we couldn't send an invitation to that email. Please check for typos or try a different email.");
-				            break;
-				        default:
-				            $('p', failedClusterWindow).text("Sorry, something went wrong with this cluster. Please try a different one.");
-				            break;
-				    }
-
-				    self.joinClusterDialog.Change(joinClusterWindow, failedClusterWindow);
-				}
-			);
+            self.JoinCluster();
         });
 
         setInterval(this.PopulateClusterList, self.refreshRate);
     };
 
-    this.ShowJoinClusterDialog = function (selectedCluster) {
+    this.JoinCluster = function()
+    {
+        var joinClusterWindow = $('.join-cluster-dialog');
+        var email = $('#join-useremail').val();
+
+        self.api.JoinCluster(
+            self.selectedCluster.Id,
+            email,
+            function (data) {
+                var joinClusterSuccessWindow = $('.join-cluster-dialog-success');
+                self.joinClusterDialog.Change(joinClusterWindow, joinClusterSuccessWindow);
+            },
+            function (data) {
+                if (self.selectedCluster.AutoRetry) {
+                    switch (data.Code) {
+                        case "ClusterFull":
+                        case "ClusterExpired":
+                        case "ClusterNotReady":
+                        case "ClusterDoesNotExist":
+                        case "NoPortsAvailable":
+                            var id = self.SelectRandomCluster();
+                            self.selectedCluster = new SelectedCluster(id, 'Party now!', true);
+                            setTimeout(self.JoinCluster, self.refreshRate)
+                            return;
+                    }
+                }
+
+                var failedClusterWindow = $('.join-cluster-dialog-failed');
+                $('p', failedClusterWindow).text(data.Message);
+
+                self.joinClusterDialog.Change(joinClusterWindow, failedClusterWindow);
+            }
+        );
+    }
+
+    this.ShowJoinClusterDialog = function () {
         var joinClusterWindow = $('.join-cluster-dialog');
         self.joinClusterDialog.Show(joinClusterWindow);
-        self.selectedCluser = selectedCluster;
 
-        $('h3', joinClusterWindow).text(selectedCluster.Name);
+        $('h3', joinClusterWindow).text(self.selectedCluster.Name);
         $('#join-useremail', joinClusterWindow).val('');
     };
+
 
     this.SelectRandomCluster = function () {
         var tableRows = $('.cluster-list table tr');
@@ -222,7 +204,8 @@ function PartyClusters(api) {
                             $('<a href="javascript:void(0);" class="button">')
                                 .text('Join!')
                                     .click(function () {
-                                        self.ShowJoinClusterDialog(new SelectedCluster(jObject.ClusterId, jObject.Name, false));
+                                        self.selectedCluster = new SelectedCluster(jObject.ClusterId, jObject.Name, false);
+                                        self.ShowJoinClusterDialog();
                                     })))
             .appendTo(clusterTable);
 

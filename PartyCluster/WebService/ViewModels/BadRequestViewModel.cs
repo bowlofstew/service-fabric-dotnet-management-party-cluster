@@ -7,11 +7,14 @@ namespace WebService.ViewModels
 {
     internal struct BadRequestViewModel
     {
-        public BadRequestViewModel(string code, string message)
+        public BadRequestViewModel(string code, string message, string error)
         {
             this.Code = code;
             this.Message = message;
+            this.Error = error;
         }
+
+        public string Error { get; private set; }
 
         public string Message { get; private set; }
 

@@ -859,16 +859,22 @@ namespace ClusterService.UnitTests
             }
         }
 
+        /// <summary>
+        /// A user can only be on one cluster at a time.
+        /// If a user tries to join another cluster, an exception should be thrown.
+        /// </summary>
+        /// <returns></returns>
         [TestMethod]
         public async Task JoinClusterUserAlreadyExists()
         {
             ClusterConfig config = new ClusterConfig() {MaximumUsersPerCluster = 2};
             MockReliableStateManager stateManager = new MockReliableStateManager();
-            ClusterService target = new ClusterService(null, null, stateManager, this.CreateServiceParameters(), config);
+            MockMailer mockMailer = new MockMailer();
+            ClusterService target = new ClusterService(null, mockMailer, stateManager, this.CreateServiceParameters(), config);
 
-            int id = 5;
+            int idWithUser = 5;
             string email = "test@test.com";
-            Cluster cluster = new Cluster(
+            Cluster clusterWithUser = new Cluster(
                 "test",
                 ClusterStatus.Ready,
                 0,
@@ -878,17 +884,31 @@ namespace ClusterService.UnitTests
                 new[] {new ClusterUser(email, 80)},
                 DateTimeOffset.UtcNow);
 
+            int idWithoutUser = 6;
+            Cluster clusterWithoutUser = new Cluster(
+                "test2",
+                ClusterStatus.Ready,
+                0,
+                0,
+                "",
+                new[] { 80, 81 },
+                new ClusterUser[0],
+                DateTimeOffset.UtcNow);
+
+
             IReliableDictionary<int, Cluster> dictionary =
                 await stateManager.GetOrAddAsync<IReliableDictionary<int, Cluster>>(ClusterService.ClusterDictionaryName);
+
             using (ITransaction tx = stateManager.CreateTransaction())
             {
-                await dictionary.AddAsync(tx, id, cluster);
+                await dictionary.AddAsync(tx, idWithUser, clusterWithUser);
+                await dictionary.AddAsync(tx, idWithoutUser, clusterWithoutUser);
                 await tx.CommitAsync();
             }
 
             try
             {
-                await target.JoinClusterAsync(id, new UserView(email));
+                await target.JoinClusterAsync(idWithoutUser, new UserView(email));
                 Assert.Fail("JoinClusterFailedException not thrown.");
             }
             catch (JoinClusterFailedException result)

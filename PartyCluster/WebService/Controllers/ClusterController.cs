@@ -9,6 +9,8 @@ namespace WebService.Controllers
     using System.Collections.Generic;
     using System.Net;
     using System.Net.Http;
+    using System.Reflection;
+    using System.Resources;
     using System.Threading.Tasks;
     using System.Web.Http;
     using Domain;
@@ -18,6 +20,8 @@ namespace WebService.Controllers
     [RoutePrefix("api")]
     public class ClusterController : ApiController
     {
+        private static ResourceManager resources = new ResourceManager("WebService.Resources.Messages", Assembly.GetExecutingAssembly());
+
         [HttpGet]
         [Route("clusters")]
         public Task<IEnumerable<ClusterView>> Get()
@@ -36,7 +40,7 @@ namespace WebService.Controllers
             {
                 return this.Request.CreateResponse(
                     HttpStatusCode.BadRequest,
-                    new BadRequestViewModel("InvalidArguments", "Please provide an email address."));
+                    new BadRequestViewModel("InvalidArguments", resources.GetString("InvalidArguments"), "Invalid parameter: user"));
             }
 
             ServiceUriBuilder builder = new ServiceUriBuilder("ClusterService");
@@ -55,7 +59,7 @@ namespace WebService.Controllers
                 {
                     return this.Request.CreateResponse(
                         HttpStatusCode.BadRequest,
-                        new BadRequestViewModel("InvalidArguments", argumentEx.Message));
+                        new BadRequestViewModel("InvalidArguments", resources.GetString("InvalidArguments"), argumentEx.Message));
                 }
 
                 JoinClusterFailedException joinFailedEx = ae.InnerException as JoinClusterFailedException;
@@ -63,18 +67,18 @@ namespace WebService.Controllers
                 {
                     return this.Request.CreateResponse(
                         HttpStatusCode.BadRequest,
-                        new BadRequestViewModel(joinFailedEx.Reason.ToString(), joinFailedEx.Message));
+                        new BadRequestViewModel(joinFailedEx.Reason.ToString(), resources.GetString(joinFailedEx.Reason.ToString()), joinFailedEx.Message));
                 }
 
                 return this.Request.CreateResponse(
                     HttpStatusCode.InternalServerError,
-                    new BadRequestViewModel("ServerError", ae.InnerException.Message));
+                    new BadRequestViewModel("ServerError", resources.GetString("ServerError"), ae.InnerException.Message));
             }
             catch (Exception e)
             {
                 return this.Request.CreateResponse(
                     HttpStatusCode.InternalServerError,
-                    new BadRequestViewModel("ServerError", e.Message));
+                    new BadRequestViewModel("ServerError", resources.GetString("ServerError"), e.Message));
             }
         }
     }

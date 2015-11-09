@@ -20,6 +20,9 @@ namespace ClusterService
     using Microsoft.ServiceFabric.Services.Remoting.Runtime;
     using Microsoft.ServiceFabric.Services.Runtime;
 
+    /// <summary>
+    /// Stateful service that manages the lifetime of the party clusters.
+    /// </summary>
     internal class ClusterService : StatefulService, IClusterService
     {
         internal const string ClusterDictionaryName = "clusterDictionary";
@@ -38,6 +41,7 @@ namespace ClusterService
         /// <param name="mailer"></param>
         /// <param name="stateManager"></param>
         /// <param name="serviceParameters"></param>
+        /// <param name="config"></param>
         public ClusterService(
             IClusterOperator clusterOperator,
             ISendMail mailer,
@@ -55,6 +59,10 @@ namespace ClusterService
             this.ConfigureService();
         }
 
+        /// <summary>
+        /// Gets a list of all currently active clusters.
+        /// </summary>
+        /// <returns></returns>
         public async Task<IEnumerable<ClusterView>> GetClusterListAsync()
         {
             IReliableDictionary<int, Cluster> clusterDictionary =
@@ -73,6 +81,12 @@ namespace ClusterService
                     this.config.MaximumClusterUptime - (DateTimeOffset.UtcNow - item.Value.CreatedOn.ToUniversalTime()));
         }
 
+        /// <summary>
+        /// Processes a request to join a cluster. 
+        /// </summary>
+        /// <param name="clusterId"></param>
+        /// <param name="user"></param>
+        /// <returns></returns>
         public async Task JoinClusterAsync(int clusterId, UserView user)
         {
             if (user == null || String.IsNullOrWhiteSpace(user.UserEmail))
@@ -84,6 +98,19 @@ namespace ClusterService
 
             IReliableDictionary<int, Cluster> clusterDictionary =
                 await this.reliableStateManager.GetOrAddAsync<IReliableDictionary<int, Cluster>>(ClusterDictionaryName);
+            
+            foreach (var item in clusterDictionary)
+            {
+                if (item.Value.Users.Any(x => String.Equals(x.Email, user.UserEmail, StringComparison.OrdinalIgnoreCase)))
+                {
+                    ServiceEventSource.Current.ServiceMessage(
+                        this,
+                        "Join cluster request failed. User already exists on cluster: {0}.",
+                        item.Key);
+
+                    throw new JoinClusterFailedException(JoinClusterFailedReason.UserAlreadyJoined);
+                }
+            }
 
             using (ITransaction tx = this.reliableStateManager.CreateTransaction())
             {
@@ -136,19 +163,8 @@ namespace ClusterService
                     throw new JoinClusterFailedException(JoinClusterFailedReason.ClusterFull);
                 }
 
-                if (cluster.Users.Any(x => String.Equals(x.Email, user.UserEmail, StringComparison.OrdinalIgnoreCase)))
-                {
-                    ServiceEventSource.Current.ServiceMessage(
-                        this,
-                        "Join cluster request failed. User already exists. Cluster: {0}.",
-                        clusterId);
-
-                    throw new JoinClusterFailedException(JoinClusterFailedReason.UserAlreadyJoined);
-                }
-
                 int userPort;
                 string clusterAddress = cluster.Address;
-                ;
                 TimeSpan clusterTimeRemaining = this.config.MaximumClusterUptime - (DateTimeOffset.UtcNow - cluster.CreatedOn);
                 DateTimeOffset clusterExpiration = cluster.CreatedOn + this.config.MaximumClusterUptime;
 
