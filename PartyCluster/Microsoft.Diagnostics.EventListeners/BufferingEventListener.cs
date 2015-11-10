@@ -10,12 +10,22 @@ namespace Microsoft.Diagnostics.EventListeners
 
     public abstract class BufferingEventListener : EventListener
     {
-        public BufferingEventListener(IConfigurationProvider configurationProvider)
+        private IHealthReporter healthReporter;
+        private TimeSpanThrottle errorReportingThrottle;
+
+        public BufferingEventListener(IConfigurationProvider configurationProvider, IHealthReporter healthReporter)
         {
             if (configurationProvider == null)
             {
                 throw new ArgumentNullException("configurationProvider");
             }
+
+            if (healthReporter == null)
+            {
+                throw new ArgumentNullException("healthReporter");
+            }
+            this.healthReporter = healthReporter;
+            this.errorReportingThrottle = new TimeSpanThrottle(TimeSpan.FromSeconds(1));
 
             this.Disabled = !configurationProvider.HasConfiguration;
         }
@@ -46,6 +56,16 @@ namespace Microsoft.Diagnostics.EventListeners
             {
                 this.EnableEvents(eventSource, EventLevel.LogAlways, (EventKeywords) ~0);
             }
+        }
+
+        protected void ReportListenerHealthy()
+        {
+            this.errorReportingThrottle.Execute(() => this.healthReporter.ReportHealthy());
+        }
+
+        protected void ReportListenerProblem(string problemDescription)
+        {
+            this.errorReportingThrottle.Execute(() => this.healthReporter.ReportProblem(problemDescription));
         }
     }
 }

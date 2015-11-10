@@ -20,8 +20,9 @@ namespace Microsoft.Diagnostics.EventListeners
         // TODO: make it a (configuration) property of the listener
         private const string EventDocumentTypeName = "event";
         private ElasticSearchConnectionData connectionData;
-        // TODO: support for multiple ES nodes/connection pools, for failover and load-balancing
-        public ElasticSearchListener(IConfigurationProvider configurationProvider) : base(configurationProvider)
+        // TODO: support for multiple ES nodes/connection pools, for failover and load-balancing        
+
+        public ElasticSearchListener(IConfigurationProvider configurationProvider, IHealthReporter healthReporter) : base(configurationProvider, healthReporter)
         {
             if (this.Disabled)
             {
@@ -36,7 +37,8 @@ namespace Microsoft.Diagnostics.EventListeners
                 maxConcurrency: 2,
                 batchSize: 100,
                 noEventsDelay: TimeSpan.FromMilliseconds(1000),
-                transmitterProc: this.SendEventsAsync);
+                transmitterProc: this.SendEventsAsync,
+                healthReporter: healthReporter);
         }
 
         private ElasticClient CreateElasticClient(IConfigurationProvider configurationProvider)
@@ -62,7 +64,7 @@ namespace Microsoft.Diagnostics.EventListeners
 
         private void CreateConnectionData(object sender)
         {
-            IConfigurationProvider configurationProvider = (IConfigurationProvider) sender;
+            IConfigurationProvider configurationProvider = (IConfigurationProvider)sender;
 
             this.connectionData = new ElasticSearchConnectionData();
             this.connectionData.Client = this.CreateElasticClient(configurationProvider);
@@ -103,7 +105,6 @@ namespace Microsoft.Diagnostics.EventListeners
 
                 if (cancellationToken.IsCancellationRequested)
                 {
-                    // TODO: report that event sending has been cancelled               
                     return;
                 }
 
@@ -115,10 +116,12 @@ namespace Microsoft.Diagnostics.EventListeners
                 {
                     this.ReportEsRequestError(response, "Bulk upload");
                 }
+
+                ReportListenerHealthy();
             }
-            catch (Exception)
+            catch (Exception e)
             {
-                // TODO report ES upload error (e.ToString())
+                ReportListenerProblem("Diagnostics data upload has failed." + Environment.NewLine + e.ToString());
             }
         }
 
@@ -169,11 +172,17 @@ namespace Microsoft.Diagnostics.EventListeners
 
             if (response.ServerError != null)
             {
-                // TODO: report response.ServerError.Error, response.ServerError.ExceptionType, response.ServerError.Status
+                ReportListenerProblem(string.Format("ElasticSearch communication attempt resulted in an error: {0} \n ExceptionType: {1} \n Status code: {2}",
+                    response.ServerError.Error, response.ServerError.ExceptionType, response.ServerError.Status));
+            }
+            else if (response.ConnectionStatus != null)
+            {
+                ReportListenerProblem("ElasticSearch communication attempt resulted in an error. Connection status: " + response.ConnectionStatus.ToString());
             }
             else
             {
-                // TODO: report unknown ES communication error                
+                // Hopefully never happens
+                ReportListenerProblem("ElasticSearch communication attempt resulted in an error. No further error information is available");
             }
         }
 
