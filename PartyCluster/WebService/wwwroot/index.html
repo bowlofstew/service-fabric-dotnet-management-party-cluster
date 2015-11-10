@@ -1,5 +1,5 @@
 ﻿<!DOCTYPE html>
-<html lang="en" ng-app="fabrikam">
+<html lang="en">
 <head>
     <meta charset="utf-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
@@ -10,6 +10,7 @@
 
     <script type="text/javascript" src="Scripts/jquery-2.1.4.js"></script>
     <script type="text/javascript" src="Scripts/main.js"></script>
+    <script type="text/javascript" src="https://www.google.com/recaptcha/api.js?onload=onCaptchaLoad&render=explicit"></script>
 
     <!-- Bootstrap -->
     <link href="Content/bootstrap.css" rel="stylesheet">
@@ -34,8 +35,9 @@
             </p>
             <div>
                 <label for="useremail">Your email:</label><input id="join-useremail" name="useremail" />
+                <label>Are you a robot?</label><div class="recaptcha"></div>
             </div>
-            <a class="button join-now-button" href="javascript:void(0)">Send invitation</a>
+            <a class="button join-now-button" href="javascript:void(0)">Submit</a>
             <p class="disclaimer">
 
             </p>
@@ -54,7 +56,7 @@
         <div class="faq">
             <ul>
                 <li>
-                    <h4>wat</h4>
+                    <h4>what's this about?</h4>
                     <p>
                         Party Clusters are shared Service Fabric clusters on Azure run by the Service Fabric team where you can deploy applications and learn about the platform. For free.
                     </p>
@@ -90,6 +92,13 @@
 			var partyClusters = new PartyClusters(new Api());
 			partyClusters.Initialize();
 		});
+
+		var onCaptchaLoad = function()
+		{
+			grecaptcha.render($('.recaptcha')[0], {
+				'sitekey' : '6LfQehATAAAAAEETksUm8i2Bpw4jRV-cbfb_Sw_t'
+			});
+		}
     </script>
 </body>
 </html>

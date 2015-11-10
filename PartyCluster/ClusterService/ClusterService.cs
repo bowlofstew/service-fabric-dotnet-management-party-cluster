@@ -87,11 +87,11 @@ namespace ClusterService
         /// <param name="clusterId"></param>
         /// <param name="user"></param>
         /// <returns></returns>
-        public async Task JoinClusterAsync(int clusterId, UserView user)
+        public async Task JoinClusterAsync(int clusterId, string userEmail)
         {
-            if (user == null || String.IsNullOrWhiteSpace(user.UserEmail))
+            if (String.IsNullOrWhiteSpace(userEmail))
             {
-                throw new ArgumentNullException(nameof(user));
+                throw new ArgumentNullException("userEmail");
             }
 
             ServiceEventSource.Current.ServiceMessage(this, "Join cluster request. Cluster: {0}.", clusterId);
@@ -101,7 +101,7 @@ namespace ClusterService
             
             foreach (var item in clusterDictionary)
             {
-                if (item.Value.Users.Any(x => String.Equals(x.Email, user.UserEmail, StringComparison.OrdinalIgnoreCase)))
+                if (item.Value.Users.Any(x => String.Equals(x.Email, userEmail, StringComparison.OrdinalIgnoreCase)))
                 {
                     ServiceEventSource.Current.ServiceMessage(
                         this,
@@ -188,7 +188,7 @@ namespace ClusterService
                 {
                     ServiceEventSource.Current.ServiceMessage(this, "Sending join mail. Cluster: {0}.", clusterId);
 
-                    await this.mailer.SendJoinMail(user.UserEmail, clusterAddress, userPort, clusterTimeRemaining, clusterExpiration);
+                    await this.mailer.SendJoinMail(userEmail, clusterAddress, userPort, clusterTimeRemaining, clusterExpiration);
                 }
                 catch (Exception e)
                 {
@@ -198,7 +198,7 @@ namespace ClusterService
                 }
 
                 List<ClusterUser> newUserList = new List<ClusterUser>(cluster.Users);
-                newUserList.Add(new ClusterUser(user.UserEmail, userPort));
+                newUserList.Add(new ClusterUser(userEmail, userPort));
 
                 Cluster updatedCluster = new Cluster(
                     cluster.InternalName,

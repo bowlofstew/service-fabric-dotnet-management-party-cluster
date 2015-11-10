@@ -774,7 +774,7 @@ namespace ClusterService.UnitTests
                 await tx.CommitAsync();
             }
 
-            await target.JoinClusterAsync(id, new UserView(email));
+            await target.JoinClusterAsync(id, email);
 
             using (ITransaction tx = stateManager.CreateTransaction())
             {
@@ -813,7 +813,7 @@ namespace ClusterService.UnitTests
 
             try
             {
-                await target.JoinClusterAsync(id, new UserView("email"));
+                await target.JoinClusterAsync(id, "email");
                 Assert.Fail("JoinClusterFailedException not thrown.");
             }
             catch (JoinClusterFailedException result)
@@ -850,7 +850,7 @@ namespace ClusterService.UnitTests
 
             try
             {
-                await target.JoinClusterAsync(id, new UserView("email"));
+                await target.JoinClusterAsync(id, "email");
                 Assert.Fail("JoinClusterFailedException not thrown.");
             }
             catch (JoinClusterFailedException result)
@@ -908,7 +908,7 @@ namespace ClusterService.UnitTests
 
             try
             {
-                await target.JoinClusterAsync(idWithoutUser, new UserView(email));
+                await target.JoinClusterAsync(idWithoutUser, email);
                 Assert.Fail("JoinClusterFailedException not thrown.");
             }
             catch (JoinClusterFailedException result)
@@ -945,7 +945,7 @@ namespace ClusterService.UnitTests
 
             try
             {
-                await target.JoinClusterAsync(id, new UserView("email"));
+                await target.JoinClusterAsync(id, "email");
                 Assert.Fail("JoinClusterFailedException not thrown.");
             }
             catch (JoinClusterFailedException result)
@@ -984,7 +984,7 @@ namespace ClusterService.UnitTests
 
             try
             {
-                await target.JoinClusterAsync(id, new UserView("test"));
+                await target.JoinClusterAsync(id, "test");
                 Assert.Fail("JoinClusterFailedException not thrown.");
             }
             catch (JoinClusterFailedException result)

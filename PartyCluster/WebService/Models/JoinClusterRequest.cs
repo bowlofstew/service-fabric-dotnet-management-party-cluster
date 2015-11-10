@@ -3,19 +3,23 @@
 //  Licensed under the MIT License (MIT). See License.txt in the repo root for license information.
 // ------------------------------------------------------------
 
-namespace Domain
+namespace WebService
 {
     using System.Runtime.Serialization;
 
     [DataContract]
-    public class UserView
+    public class JoinClusterRequest
     {
-        public UserView(string userEmail)
+        public JoinClusterRequest(string userEmail, string captchaResponse)
         {
+            this.CaptchaResponse = captchaResponse;
             this.UserEmail = userEmail;
         }
 
         [DataMember]
         public string UserEmail { get; private set; }
+
+        [DataMember]
+        public string CaptchaResponse { get; private set; }
     }
 }

@@ -69,13 +69,13 @@
   <ItemGroup>
     <Compile Include="ClusterView.cs" />
     <Compile Include="ClusterOperationStatus.cs" />
+    <Compile Include="ICaptcha.cs" />
     <Compile Include="IClusterOperator.cs" />
     <Compile Include="IClusterService.cs" />
     <Compile Include="ISendMail.cs" />
     <Compile Include="JoinClusterFailedException.cs" />
     <Compile Include="JoinClusterFailedReason.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="UserView.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />

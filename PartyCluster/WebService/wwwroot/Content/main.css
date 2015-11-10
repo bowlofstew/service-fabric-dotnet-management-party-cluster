@@ -11,6 +11,28 @@ body {
     font:14px/1.2 "Segoe UI Light","Segoe WP Light","Segoe UI","Segoe WP",Tahoma,Arial,sans-serif;
     min-width: 1000px;
 }
+.clearfix::before, .clearfix::after {
+    content: " ";
+    display: block;
+    height: 0;
+    overflow: hidden;
+}
+.clearfix::after {
+    clear: both;
+}
+.clearfix::before, .clearfix::after {
+    content: " ";
+    display: block;
+    height: 0;
+    overflow: hidden;
+}
+.wrapper {
+    clear: both;
+    display: block;
+    margin: 0 auto;
+    min-width: 1000px;
+    width: 1000px;
+}
 .overlay{
 	display:none;
 	position: absolute;
@@ -63,48 +85,33 @@ body {
 }
 .join-cluster-dialog label
 {
-	width:100px;
+	width:130px;
+    vertical-align:middle;
 }
 .join-cluster-dialog input
 {
-	width: 350px;
-	padding:7px;
+	width: 300px;
+	border:1px solid #CCC;
+	padding:9px;
 	margin:5px 0;
+    vertical-align:middle;
 }
 .join-cluster-dialog .disclaimer
 {
 	font-size:11px;
 	font-style:italic;
 }
-.join-cluster-dialog a.button{
-	margin:10px 0 0 100px;
-}
-.join-now-button{
+.join-cluster-dialog .join-now-button{
 	font-size: 18px;
     line-height: 33px;
-    padding: 6px 55px 9px 20px;
+    padding: 6px 20px 9px 20px;
+	margin:10px 0 0 130px;
 }
-.clearfix::before, .clearfix::after {
-    content: " ";
-    display: block;
-    height: 0;
-    overflow: hidden;
-}
-.clearfix::after {
-    clear: both;
-}
-.clearfix::before, .clearfix::after {
-    content: " ";
-    display: block;
-    height: 0;
-    overflow: hidden;
-}
-.wrapper {
-    clear: both;
-    display: block;
-    margin: 0 auto;
-    min-width: 1000px;
-    width: 1000px;
+.join-cluster-dialog .recaptcha
+{
+	width:300px;
+	display:inline-block;
+    vertical-align:middle;
 }
 .button
 {

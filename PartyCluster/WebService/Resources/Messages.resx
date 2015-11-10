@@ -124,13 +124,19 @@
     <value>Sorry, this cluster has expired and is being replaced with a new one. Please try a different one.</value>
   </data>
   <data name="ClusterFull" xml:space="preserve">
-    <value>Sorry, this cluster is full. Please try a different one.</value>
+    <value>Sorry, this cluster is at capacity. Please try a different one.</value>
   </data>
   <data name="ClusterNotReady" xml:space="preserve">
-    <value>Sorry, this cluster isn't ready yet. Please try a different in the meantime.</value>
+    <value>Sorry, this cluster isn't ready yet. Please try a different one in the meantime.</value>
   </data>
-  <data name="InvalidArguments" xml:space="preserve">
+  <data name="InvalidCaptcha" xml:space="preserve">
+    <value>Sorry, that captcha response was incorrect. Please try again.</value>
+  </data>
+  <data name="InvalidEmail" xml:space="preserve">
     <value>Please provide a valid email address.</value>
+  </data>
+  <data name="MissingInput" xml:space="preserve">
+    <value>Please provide an email address and verify that you are not a robot.</value>
   </data>
   <data name="NoPortsAvailable" xml:space="preserve">
     <value>Sorry, there are no ports available for your application to use on this cluster. Please try a different one.</value>

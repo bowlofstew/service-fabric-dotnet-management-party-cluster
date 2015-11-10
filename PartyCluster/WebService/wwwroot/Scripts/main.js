@@ -7,13 +7,13 @@
         this.httpGetJson(self.serviceUrl + '/api/clusters', result);
     };
 
-    this.JoinCluster = function (clusterId, useremail, result, failure) {
+    this.JoinCluster = function (clusterId, useremail, captchaResponse, result, failure) {
         $.ajax({
             url: self.serviceUrl + '/api/clusters/join/' + clusterId,
             type: 'POST',
             contentType: 'application/json',
             datatype: 'json',
-            data: "{ UserEmail: '" + useremail + "' }"
+            data: "{ UserEmail: '" + useremail + "', CaptchaResponse: '" + captchaResponse + "' }"
         })
 	   .done(function (data) {
 	       result(data);
@@ -102,14 +102,15 @@ function PartyClusters(api) {
         setInterval(this.PopulateClusterList, self.refreshRate);
     };
 
-    this.JoinCluster = function()
-    {
+    this.JoinCluster = function () {
         var joinClusterWindow = $('.join-cluster-dialog');
         var email = $('#join-useremail').val();
+        var captchaResponse = $("#g-recaptcha-response").val();
 
         self.api.JoinCluster(
             self.selectedCluster.Id,
             email,
+			captchaResponse,
             function (data) {
                 var joinClusterSuccessWindow = $('.join-cluster-dialog-success');
                 self.joinClusterDialog.Change(joinClusterWindow, joinClusterSuccessWindow);
@@ -141,6 +142,7 @@ function PartyClusters(api) {
         var joinClusterWindow = $('.join-cluster-dialog');
         self.joinClusterDialog.Show(joinClusterWindow);
 
+        grecaptcha.reset();
         $('h3', joinClusterWindow).text(self.selectedCluster.Name);
         $('#join-useremail', joinClusterWindow).val('');
     };

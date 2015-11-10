@@ -5,7 +5,9 @@
 
 namespace WebService
 {
+    using System.Fabric;
     using System.Web.Http;
+    using Domain;
     using Microsoft.Owin;
     using Microsoft.Owin.FileSystems;
     using Microsoft.Owin.StaticFiles;
@@ -13,11 +15,20 @@ namespace WebService
 
     internal class Startup : IOwinAppBuilder
     {
+        private readonly ServiceInitializationParameters serviceParameters;
+
+        public Startup(ServiceInitializationParameters serviceParameters)
+        {
+            this.serviceParameters = serviceParameters;
+        }
+
         public void Configuration(IAppBuilder appBuilder)
         {
             HttpConfiguration config = new HttpConfiguration();
 
             FormatterConfig.ConfigureFormatters(config.Formatters);
+            UnityConfig.RegisterComponents(config, this.serviceParameters);
+
             PhysicalFileSystem physicalFileSystem = new PhysicalFileSystem(@".\wwwroot");
             FileServerOptions fileOptions = new FileServerOptions();
 
@@ -29,8 +40,7 @@ namespace WebService
             fileOptions.StaticFileOptions.ServeUnknownFileTypes = true;
 
             config.MapHttpAttributeRoutes();
-
-
+            
             appBuilder.UseWebApi(config);
             appBuilder.UseFileServer(fileOptions);
         }

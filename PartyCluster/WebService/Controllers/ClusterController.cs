@@ -22,6 +22,13 @@ namespace WebService.Controllers
     {
         private static ResourceManager resources = new ResourceManager("WebService.Resources.Messages", Assembly.GetExecutingAssembly());
 
+        private readonly ICaptcha captcha;
+
+        public ClusterController(ICaptcha captcha)
+        {
+            this.captcha = captcha;
+        }
+
         [HttpGet]
         [Route("clusters")]
         public Task<IEnumerable<ClusterView>> Get()
@@ -34,21 +41,30 @@ namespace WebService.Controllers
 
         [HttpPost]
         [Route("clusters/join/{clusterId}")]
-        public async Task<HttpResponseMessage> Join(int clusterId, [FromBody] UserView user)
+        public async Task<HttpResponseMessage> Join(int clusterId, [FromBody] JoinClusterRequest user)
         {
-            if (user == null || String.IsNullOrWhiteSpace(user.UserEmail))
-            {
-                return this.Request.CreateResponse(
-                    HttpStatusCode.BadRequest,
-                    new BadRequestViewModel("InvalidArguments", resources.GetString("InvalidArguments"), "Invalid parameter: user"));
-            }
-
-            ServiceUriBuilder builder = new ServiceUriBuilder("ClusterService");
-            IClusterService clusterService = ServiceProxy.Create<IClusterService>(1, builder.ToUri());
-
             try
             {
-                await clusterService.JoinClusterAsync(clusterId, user);
+                if (user == null || String.IsNullOrWhiteSpace(user.UserEmail) || String.IsNullOrWhiteSpace(user.CaptchaResponse))
+                {
+                    return this.Request.CreateResponse(
+                        HttpStatusCode.BadRequest,
+                        new BadRequestViewModel("MissingInput", resources.GetString("MissingInput"), "Missing input."));
+                }
+
+                // validate captcha.
+                bool captchaValid = await this.captcha.VerifyAsync(user.CaptchaResponse);
+                if (!captchaValid)
+                {
+                    return this.Request.CreateResponse(
+                        HttpStatusCode.Forbidden,
+                        new BadRequestViewModel("InvalidCaptcha", resources.GetString("InvalidCaptcha"), "Invalid parameter: captcha"));
+                }
+
+                ServiceUriBuilder builder = new ServiceUriBuilder("ClusterService");
+                IClusterService clusterService = ServiceProxy.Create<IClusterService>(1, builder.ToUri());
+
+                await clusterService.JoinClusterAsync(clusterId, user.UserEmail);
 
                 return this.Request.CreateResponse(HttpStatusCode.Accepted);
             }
@@ -59,7 +75,7 @@ namespace WebService.Controllers
                 {
                     return this.Request.CreateResponse(
                         HttpStatusCode.BadRequest,
-                        new BadRequestViewModel("InvalidArguments", resources.GetString("InvalidArguments"), argumentEx.Message));
+                        new BadRequestViewModel("InvalidEmail", resources.GetString("InvalidEmail"), argumentEx.Message));
                 }
 
                 JoinClusterFailedException joinFailedEx = ae.InnerException as JoinClusterFailedException;

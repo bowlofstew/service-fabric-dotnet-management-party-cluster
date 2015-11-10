@@ -79,7 +79,7 @@ namespace WebService.Resources {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Sorry, this cluster is full. Please try a different one..
+        ///   Looks up a localized string similar to Sorry, this cluster is at capacity. Please try a different one..
         /// </summary>
         internal static string ClusterFull {
             get {
@@ -88,7 +88,7 @@ namespace WebService.Resources {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Sorry, this cluster isn&apos;t ready yet. Please try a different in the meantime..
+        ///   Looks up a localized string similar to Sorry, this cluster isn&apos;t ready yet. Please try a different one in the meantime..
         /// </summary>
         internal static string ClusterNotReady {
             get {
@@ -97,11 +97,29 @@ namespace WebService.Resources {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to Sorry, that captcha response was incorrect. Please try again..
+        /// </summary>
+        internal static string InvalidCaptcha {
+            get {
+                return ResourceManager.GetString("InvalidCaptcha", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to Please provide a valid email address..
         /// </summary>
-        internal static string InvalidArguments {
+        internal static string InvalidEmail {
             get {
-                return ResourceManager.GetString("InvalidArguments", resourceCulture);
+                return ResourceManager.GetString("InvalidEmail", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Please provide an email address and verify that you are not a robot..
+        /// </summary>
+        internal static string MissingInput {
+            get {
+                return ResourceManager.GetString("MissingInput", resourceCulture);
             }
         }
         
