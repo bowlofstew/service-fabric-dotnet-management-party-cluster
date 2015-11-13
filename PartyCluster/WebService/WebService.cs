@@ -15,7 +15,7 @@ namespace WebService
         {
             return new[]
             {
-                new ServiceInstanceListener(parameters => new OwinCommunicationListener("partyclusters", new Startup(parameters), parameters))
+                new ServiceInstanceListener(parameters => new OwinCommunicationListener("", new Startup(parameters), parameters))
             };
         }
     }

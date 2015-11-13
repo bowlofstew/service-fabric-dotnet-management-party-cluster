@@ -1,7 +1,8 @@
 ﻿function Api() {
     var self = this;
+    this.appPath = '';
     this.refreshRate = 5000;
-    this.serviceUrl = location.protocol + '//' + location.hostname + (location.port ? ':' + location.port : '') + '/partyclusters';
+    this.serviceUrl = location.protocol + '//' + location.hostname + (location.port ? ':' + location.port : '') + self.appPath;
 
     this.GetClusters = function (result) {
         this.httpGetJson(self.serviceUrl + '/api/clusters', result);
