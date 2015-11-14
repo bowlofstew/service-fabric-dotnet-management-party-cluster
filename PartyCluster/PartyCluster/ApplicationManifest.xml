@@ -3,7 +3,7 @@
    <Parameters>
       <Parameter Name="WebService_InstanceCount" DefaultValue="-1" />
       <Parameter Name="ClusterService_MinReplicaSetSize" DefaultValue="2" />
-      <Parameter Name="ClusterService_PartitionCount" DefaultValue="10" />
+      <Parameter Name="ClusterService_PartitionCount" DefaultValue="1" />
       <Parameter Name="ClusterService_TargetReplicaSetSize" DefaultValue="3" />
    </Parameters>
    <ServiceManifestImport>

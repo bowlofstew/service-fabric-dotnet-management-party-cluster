@@ -8,9 +8,9 @@
   <Section Name="ReplicatorSecurityConfig" />
 
   <Section Name="ClusterConfigSettings">
-    <Parameter Name="RefreshInterval" Value="00:00:30"/>
+    <Parameter Name="RefreshInterval" Value="00:00:10"/>
     <Parameter Name="MinimumClusterCount" Value="10"/>
-    <Parameter Name="MaximumClusterCount" Value="50" />
+    <Parameter Name="MaximumClusterCount" Value="20" />
     <Parameter Name="MaximumUsersPerCluster" Value="5"/>
     <Parameter Name="MaximumClusterUptime" Value="02:00:00" />
     <Parameter Name="UserCapacityHighPercentThreshold" Value="0.75"/>
@@ -18,20 +18,20 @@
   </Section>
   
   <Section Name="SendGridSettings">
-    <Parameter Name="Username" Value=""/>
-    <Parameter Name="Password" Value="" />
+    <Parameter Name="Username" IsEncrypted="true" Value="" />
+    <Parameter Name="Password" IsEncrypted="true" Value="" />
     <Parameter Name="MailAddress" Value="partycluster@azure.com" />
     <Parameter Name="MailFrom" Value="Service Fabric Party Cluster Team" />
     <Parameter Name="MailSubject" Value="Welcome to the Azure Service Fabric party" />
   </Section>
   
   <Section Name="AzureSubscriptionSettings">
-    <Parameter Name="Region" Value="westus"/>
-    <Parameter Name="ClientID" Value=""/>
-    <Parameter Name="ClientSecret" Value="" />
-    <Parameter Name="Authority" Value="" />
-    <Parameter Name="SubscriptionID" Value="" />
-    <Parameter Name="Username" Value="" />
-    <Parameter Name="Password" Value="" />
+    <Parameter Name="Region" Value="westus" />
+    <Parameter Name="ClientID" IsEncrypted="true" Value="" />
+    <Parameter Name="ClientSecret" IsEncrypted="true" Value="" />
+    <Parameter Name="Authority" IsEncrypted="true" Value="" />
+    <Parameter Name="SubscriptionID" IsEncrypted="true" Value="" />
+    <Parameter Name="Username" IsEncrypted="true" Value="" />
+    <Parameter Name="Password" IsEncrypted="true" Value="" />
   </Section>
 </Settings>

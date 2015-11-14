@@ -12,7 +12,9 @@ namespace ClusterService
     using System.Fabric.Description;
     using System.IO;
     using System.Threading.Tasks;
+    using System.Security;
     using Domain;
+    using Common;
     using Microsoft.Azure;
     using Microsoft.Azure.Management.Resources;
     using Microsoft.Azure.Management.Resources.Models;
@@ -57,7 +59,7 @@ namespace ClusterService
         public async Task<string> CreateClusterAsync(string name)
         {
             string token = await this.GetAuthorizationTokenAsync();
-            TokenCloudCredentials credential = new TokenCloudCredentials(this.settings.SubscriptionID, token);
+            TokenCloudCredentials credential = new TokenCloudCredentials(this.settings.SubscriptionID.ToUnsecureString(), token);
 
             string rgStatus = await this.CreateResourceGroupAsync(credential, name);
 
@@ -70,8 +72,8 @@ namespace ClusterService
             string templateContent = this.armTemplate;
             string parameterContent = this.armParameters
                 .Replace("_CLUSTER_NAME_", name)
-                .Replace("_USER_", this.settings.Username)
-                .Replace("_PWD_", this.settings.Password);
+                .Replace("_USER_", this.settings.Username.ToUnsecureString())
+                .Replace("_PWD_", this.settings.Password.ToUnsecureString());
 
             await this.CreateTemplateDeploymentAsync(credential, name, templateContent, parameterContent);
 
@@ -83,7 +85,7 @@ namespace ClusterService
             string rgName = name;
 
             string token = await this.GetAuthorizationTokenAsync();
-            TokenCloudCredentials credential = new TokenCloudCredentials(this.settings.SubscriptionID, token);
+            TokenCloudCredentials credential = new TokenCloudCredentials(this.settings.SubscriptionID.ToUnsecureString(), token);
 
             using (ResourceManagementClient resourceGroupClient = new ResourceManagementClient(credential))
             {
@@ -94,7 +96,7 @@ namespace ClusterService
         public async Task<ClusterOperationStatus> GetClusterStatusAsync(string name)
         {
             string token = await this.GetAuthorizationTokenAsync();
-            TokenCloudCredentials credential = new TokenCloudCredentials(this.settings.SubscriptionID, token);
+            TokenCloudCredentials credential = new TokenCloudCredentials(this.settings.SubscriptionID.ToUnsecureString(), token);
 
             DeploymentGetResult dpResult;
             ResourceGroupGetResult rgResult;
@@ -138,9 +140,9 @@ namespace ClusterService
 
         private async Task<string> GetAuthorizationTokenAsync()
         {
-            ClientCredential cc = new ClientCredential(this.settings.ClientID, this.settings.ClientSecret);
+            ClientCredential cc = new ClientCredential(this.settings.ClientID.ToUnsecureString(), this.settings.ClientSecret.ToUnsecureString());
 
-            AuthenticationContext context = new AuthenticationContext(this.settings.Authority);
+            AuthenticationContext context = new AuthenticationContext(this.settings.Authority.ToUnsecureString());
             AuthenticationResult result = await context.AcquireTokenAsync("https://management.azure.com/", cc);
 
             if (result == null)
@@ -217,15 +219,18 @@ namespace ClusterService
         {
             KeyedCollection<string, ConfigurationProperty> clusterConfigParameters = settings.Sections["AzureSubscriptionSettings"].Parameters;
 
+            // These settings are encrypted in Settings.xml using the PowerShell command:
+            // Invoke-ServiceFabricEncryptText using a certificate 
             this.settings = new ArmClusterOperatorSettings(
                 clusterConfigParameters["Region"].Value,
-                clusterConfigParameters["ClientID"].Value,
-                clusterConfigParameters["ClientSecret"].Value,
-                clusterConfigParameters["Authority"].Value,
-                clusterConfigParameters["SubscriptionID"].Value,
-                clusterConfigParameters["Username"].Value,
-                clusterConfigParameters["Password"].Value);
+                clusterConfigParameters["ClientID"].DecryptValue(),
+                clusterConfigParameters["ClientSecret"].DecryptValue(),
+                clusterConfigParameters["Authority"].DecryptValue(),
+                clusterConfigParameters["SubscriptionID"].DecryptValue(),
+                clusterConfigParameters["Username"].DecryptValue(),
+                clusterConfigParameters["Password"].DecryptValue());
         }
+        
 
         private void UpdateArmTemplateContent(string templateDataPath)
         {

@@ -5,9 +5,11 @@ using System.Fabric;
 using System.Fabric.Description;
 using System.Linq;
 using System.Net.Http;
+using System.Security;
 using System.Text;
 using System.Threading.Tasks;
 using Domain;
+using Common;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 
@@ -15,7 +17,7 @@ namespace WebService
 {
     internal class Recaptcha : ICaptcha
     {
-        private string key;
+        private SecureString key;
         private Uri verifyUrl;
 
         public Recaptcha(ServiceInitializationParameters serviceParameters)
@@ -37,7 +39,7 @@ namespace WebService
         {
             KeyedCollection<string, ConfigurationProperty> parameters = settings.Sections["RecaptchaSettings"].Parameters;
             
-            this.key = parameters["Key"].Value;
+            this.key = parameters["Key"].DecryptValue();
             this.verifyUrl = new Uri(parameters["VerifyUrl"].Value);
         }
 
@@ -52,7 +54,7 @@ namespace WebService
 
             Dictionary<string, string> parameters = new Dictionary<string, string>()
             {
-                { "secret", this.key },
+                { "secret", this.key.ToUnsecureString() },
                 { "response", captchaResponse }
             };
 

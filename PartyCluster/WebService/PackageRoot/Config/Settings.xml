@@ -3,7 +3,7 @@
   <!-- Add your custom configuration sections and parameters here -->
   
   <Section Name="RecaptchaSettings">
-    <Parameter Name="Key" Value="" />
+    <Parameter Name="Key" IsEncrypted="true" Value="" />
     <Parameter Name="VerifyUrl" Value="https://www.google.com/recaptcha/api/siteverify"/>
   </Section>
   

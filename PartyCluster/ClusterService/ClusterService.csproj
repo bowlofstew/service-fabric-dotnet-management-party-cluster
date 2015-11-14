@@ -170,7 +170,9 @@
     <Compile Include="StatefulServiceParameters.cs" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="PackageRoot\Config\Settings.xml" />
+    <None Include="PackageRoot\Config\Settings.xml">
+      <SubType>Designer</SubType>
+    </None>
     <None Include="PackageRoot\Data\ArmTemplate-Full-5xVM-NonSecure_new.json" />
     <None Include="PackageRoot\Data\parameters.json" />
     <None Include="PackageRoot\ServiceManifest.xml" />
@@ -180,6 +182,10 @@
     <None Include="packages.config" />
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="..\Common\Common.csproj">
+      <Project>{f3dc529e-cf06-4d48-a0ac-110e2611eb71}</Project>
+      <Name>Common</Name>
+    </ProjectReference>
     <ProjectReference Include="..\Domain\Domain.csproj">
       <Project>{af0bb737-6977-4f24-824a-c5a92eb683a5}</Project>
       <Name>Domain</Name>

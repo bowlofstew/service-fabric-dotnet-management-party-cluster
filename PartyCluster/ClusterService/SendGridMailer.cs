@@ -14,6 +14,7 @@ namespace ClusterService
     using System.Net.Mail;
     using System.Threading.Tasks;
     using Domain;
+    using Common;
     using SendGrid;
 
     internal class SendGridMailer : ISendMail
@@ -82,8 +83,8 @@ namespace ClusterService
             KeyedCollection<string, ConfigurationProperty> sendGridParameters = settings.Sections["SendGridSettings"].Parameters;
 
             this.credentials = new NetworkCredential(
-                sendGridParameters["Username"].Value,
-                sendGridParameters["Password"].Value);
+                sendGridParameters["Username"].DecryptValue().ToUnsecureString(),
+                sendGridParameters["Password"].DecryptValue());
 
             this.mailAddress = sendGridParameters["MailAddress"].Value;
             this.mailFrom = sendGridParameters["MailFrom"].Value;

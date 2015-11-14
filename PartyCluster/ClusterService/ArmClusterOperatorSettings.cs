@@ -3,18 +3,20 @@
 //  Licensed under the MIT License (MIT). See License.txt in the repo root for license information.
 // ------------------------------------------------------------
 
+using System.Security;
+
 namespace ClusterService
 {
     internal class ArmClusterOperatorSettings
     {
         public ArmClusterOperatorSettings(
             string region,
-            string clientId,
-            string clientSecret,
-            string authority,
-            string subscriptionId,
-            string username,
-            string password)
+            SecureString clientId,
+            SecureString clientSecret,
+            SecureString authority,
+            SecureString subscriptionId,
+            SecureString username,
+            SecureString password)
         {
             this.Region = region;
             this.ClientID = clientId;
@@ -27,16 +29,16 @@ namespace ClusterService
 
         public string Region { get; private set; }
 
-        public string ClientID { get; private set; }
+        public SecureString ClientID { get; private set; }
 
-        public string ClientSecret { get; private set; }
+        public SecureString ClientSecret { get; private set; }
 
-        public string Authority { get; private set; }
+        public SecureString Authority { get; private set; }
 
-        public string SubscriptionID { get; private set; }
+        public SecureString SubscriptionID { get; private set; }
 
-        public string Username { get; private set; }
+        public SecureString Username { get; private set; }
 
-        public string Password { get; private set; }
+        public SecureString Password { get; private set; }
     }
 }
