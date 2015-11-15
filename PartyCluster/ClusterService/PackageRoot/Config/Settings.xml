@@ -9,8 +9,8 @@
 
   <Section Name="ClusterConfigSettings">
     <Parameter Name="RefreshInterval" Value="00:00:10"/>
-    <Parameter Name="MinimumClusterCount" Value="10"/>
-    <Parameter Name="MaximumClusterCount" Value="20" />
+    <Parameter Name="MinimumClusterCount" Value="5"/>
+    <Parameter Name="MaximumClusterCount" Value="10" />
     <Parameter Name="MaximumUsersPerCluster" Value="5"/>
     <Parameter Name="MaximumClusterUptime" Value="02:00:00" />
     <Parameter Name="UserCapacityHighPercentThreshold" Value="0.75"/>

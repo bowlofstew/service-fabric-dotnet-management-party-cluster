@@ -45,7 +45,7 @@ namespace ClusterService
         public Task<IEnumerable<int>> GetClusterPortsAsync(string domain)
         {
             //Hardcoding this with template values for now.
-            return Task.FromResult<IEnumerable<int>>(new[] {80, 8505, 8506, 8507, 8081, 8086});
+            return Task.FromResult<IEnumerable<int>>(new[] {8505, 8506, 8507, 8081, 8086});
         }
 
         /// <summary>
