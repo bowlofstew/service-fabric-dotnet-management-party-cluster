@@ -3,12 +3,12 @@
 //  Licensed under the MIT License (MIT). See License.txt in the repo root for license information.
 // ------------------------------------------------------------
 
-namespace ClusterService
+namespace Common
 {
     using System;
     using System.Fabric;
 
-    internal class StatefulServiceParameters
+    public class StatefulServiceParameters
     {
         public StatefulServiceParameters(
             CodePackageActivationContext codePackageActivationContext,

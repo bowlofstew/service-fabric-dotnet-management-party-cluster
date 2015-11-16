@@ -21,6 +21,10 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Microsoft.Diagnostics.Event
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Common", "Common\Common.csproj", "{F3DC529E-CF06-4D48-A0AC-110E2611EB71}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ApplicationDeployService", "ApplicationDeployService\ApplicationDeployService.csproj", "{B25F8241-F189-48F0-A5E9-BAE8A58EC4BD}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ApplicationDeployService.UnitTests", "ApplicationDeployService.UnitTests\ApplicationDeployService.UnitTests.csproj", "{84C6BC59-B5F1-4DFB-8FDB-418A3CA6CCC2}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|x64 = Debug|x64
@@ -65,6 +69,14 @@ Global
 		{F3DC529E-CF06-4D48-A0AC-110E2611EB71}.Debug|x64.Build.0 = Debug|x64
 		{F3DC529E-CF06-4D48-A0AC-110E2611EB71}.Release|x64.ActiveCfg = Release|x64
 		{F3DC529E-CF06-4D48-A0AC-110E2611EB71}.Release|x64.Build.0 = Release|x64
+		{B25F8241-F189-48F0-A5E9-BAE8A58EC4BD}.Debug|x64.ActiveCfg = Debug|x64
+		{B25F8241-F189-48F0-A5E9-BAE8A58EC4BD}.Debug|x64.Build.0 = Debug|x64
+		{B25F8241-F189-48F0-A5E9-BAE8A58EC4BD}.Release|x64.ActiveCfg = Release|x64
+		{B25F8241-F189-48F0-A5E9-BAE8A58EC4BD}.Release|x64.Build.0 = Release|x64
+		{84C6BC59-B5F1-4DFB-8FDB-418A3CA6CCC2}.Debug|x64.ActiveCfg = Debug|x64
+		{84C6BC59-B5F1-4DFB-8FDB-418A3CA6CCC2}.Debug|x64.Build.0 = Debug|x64
+		{84C6BC59-B5F1-4DFB-8FDB-418A3CA6CCC2}.Release|x64.ActiveCfg = Release|x64
+		{84C6BC59-B5F1-4DFB-8FDB-418A3CA6CCC2}.Release|x64.Build.0 = Release|x64
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

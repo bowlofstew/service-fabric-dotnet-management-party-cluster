@@ -5,10 +5,16 @@
 
 namespace Domain
 {
-    using System.Threading.Tasks;
-
-    public interface ICaptcha
+    public enum ApplicationDeployStatus
     {
-        Task<bool> VerifyAsync(string captchaResponse);
+        None,
+
+        Copy,
+
+        Register,
+
+        Create,
+
+        Complete
     }
 }

@@ -3,14 +3,14 @@
 //  Licensed under the MIT License (MIT). See License.txt in the repo root for license information.
 // ------------------------------------------------------------
 
-namespace ClusterService
+namespace ApplicationDeployService
 {
     using System;
     using System.Fabric;
     using Common;
     using Microsoft.ServiceFabric.Data;
 
-    internal class ClusterServiceFactory : IStatefulServiceFactory
+    internal class ApplicationDeployServiceFactory : IStatefulServiceFactory
     {
         public IStatefulServiceReplica CreateReplica(string serviceTypeName, Uri serviceName, byte[] initializationData, Guid partitionId, long replicaId)
         {
@@ -24,12 +24,7 @@ namespace ClusterService
 
             IReliableStateManager stateManager = new ReliableStateManager();
 
-            return new ClusterService(
-                new FakeClusterOperator(stateManager),
-                new SendGridMailer(parameters),
-                stateManager,
-                parameters,
-                new ClusterConfig());
+            return new ApplicationDeployService(stateManager, new FabricClientApplicationOperator(parameters), parameters);
         }
     }
 }

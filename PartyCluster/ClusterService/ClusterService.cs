@@ -13,6 +13,7 @@ namespace ClusterService
     using System.Linq;
     using System.Threading;
     using System.Threading.Tasks;
+    using Common;
     using Domain;
     using Microsoft.ServiceFabric.Data;
     using Microsoft.ServiceFabric.Data.Collections;

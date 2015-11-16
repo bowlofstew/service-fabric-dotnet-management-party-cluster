@@ -5,10 +5,14 @@
 
 namespace Domain
 {
+    using System;
+    using System.Collections.Generic;
     using System.Threading.Tasks;
+    using Microsoft.ServiceFabric.Services.Remoting;
 
-    public interface ICaptcha
+    public interface IApplicationDeployService : IService
     {
-        Task<bool> VerifyAsync(string captchaResponse);
+        Task<IEnumerable<Guid>> QueueApplicationDeployment(string cluster);
+        Task<ApplicationDeployStatus> Status(Guid deployId);
     }
 }

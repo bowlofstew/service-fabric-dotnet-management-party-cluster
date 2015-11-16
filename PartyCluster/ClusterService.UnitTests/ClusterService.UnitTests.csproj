@@ -83,6 +83,10 @@
       <Project>{9cf596cb-e0d2-493c-a6e9-42ebf481638f}</Project>
       <Name>ClusterService</Name>
     </ProjectReference>
+    <ProjectReference Include="..\Common\Common.csproj">
+      <Project>{f3dc529e-cf06-4d48-a0ac-110e2611eb71}</Project>
+      <Name>Common</Name>
+    </ProjectReference>
     <ProjectReference Include="..\Domain\Domain.csproj">
       <Project>{af0bb737-6977-4f24-824a-c5a92eb683a5}</Project>
       <Name>Domain</Name>

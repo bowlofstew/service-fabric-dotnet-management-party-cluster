@@ -167,7 +167,6 @@
     <Compile Include="Program.cs" />
     <Compile Include="SendGridMailer.cs" />
     <Compile Include="ServiceEventSource.cs" />
-    <Compile Include="StatefulServiceParameters.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="PackageRoot\Config\Settings.xml">
