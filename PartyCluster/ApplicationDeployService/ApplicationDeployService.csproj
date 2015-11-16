@@ -66,7 +66,7 @@
     <Reference Include="System.ServiceModel" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="AppDeployment.cs" />
+    <Compile Include="ApplicationDeployment.cs" />
     <Compile Include="ApplicationDeployServiceFactory.cs" />
     <Compile Include="ApplicationPackageInfo.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />

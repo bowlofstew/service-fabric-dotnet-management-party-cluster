@@ -33,8 +33,6 @@ namespace ApplicationDeployService
         public Task<string> CopyPackageToImageStoreAsync(
             string cluster, string applicationPackagePath, string applicationTypeName, string applicationTypeVersion)
         {
-            throw new NotImplementedException();
-
             FabricClient fabricClient = this.GetClient(cluster);
             FabricClient.ApplicationManagementClient applicationClient = fabricClient.ApplicationManager;
 
@@ -48,22 +46,11 @@ namespace ApplicationDeployService
 
         public Task CreateApplicationAsync(string cluster, string applicationInstanceName, string applicationTypeName, string applicationTypeVersion)
         {
-            throw new NotImplementedException();
-
             FabricClient fabricClient = this.GetClient(cluster);
             FabricClient.ApplicationManagementClient applicationClient = fabricClient.ApplicationManager;
-
-            // TODO: Support application parameters ?
-            Uri appName = null;
-            try
-            {
-                appName = new Uri("fabric:/" + applicationInstanceName);
-            }
-            catch (UriFormatException)
-            {
-                throw; // something
-            }
-
+            
+            Uri appName = new Uri("fabric:/" + applicationInstanceName);
+            
             ApplicationDescription appDescription = new ApplicationDescription(appName, applicationTypeName, applicationTypeVersion);
 
             return applicationClient.CreateApplicationAsync(appDescription);
@@ -71,8 +58,6 @@ namespace ApplicationDeployService
 
         public Task RegisterApplicationAsync(string cluster, string imageStorePath)
         {
-            throw new NotImplementedException();
-
             FabricClient fabricClient = this.GetClient(cluster);
             FabricClient.ApplicationManagementClient applicationClient = fabricClient.ApplicationManager;
 

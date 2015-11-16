@@ -53,6 +53,11 @@ namespace ApplicationDeployService
         /// </summary>
         internal IEnumerable<ApplicationPackageInfo> ApplicationPackages { get; set; }
 
+        /// <summary>
+        /// Queues deployment of application packages to the given cluster.
+        /// </summary>
+        /// <param name="cluster"></param>
+        /// <returns></returns>
         public async Task<IEnumerable<Guid>> QueueApplicationDeployment(string cluster)
         {
             IReliableQueue<Guid> queue =
@@ -74,6 +79,7 @@ namespace ApplicationDeployService
                         null,
                         package.ApplicationType,
                         package.ApplicationVersion,
+                        package.DataPackageDirectoryName,
                         Path.Combine(this.applicationPackagePath, package.DataPackageDirectoryName));
 
                     await dictionary.AddAsync(tx, id, applicationDeployment);
@@ -88,6 +94,11 @@ namespace ApplicationDeployService
             }
         }
 
+        /// <summary>
+        /// Gets the status of a deployment.
+        /// </summary>
+        /// <param name="deployId"></param>
+        /// <returns></returns>
         public async Task<ApplicationDeployStatus> Status(Guid deployId)
         {
             IReliableDictionary<Guid, ApplicationDeployment> dictionary =
@@ -122,7 +133,7 @@ namespace ApplicationDeployService
 
                     try
                     {
-                        bool performedWork = await this.TryDequeueAndPerformWorkAsync(cancellationToken);
+                        bool performedWork = await this.TryDequeueAndProcessAsync(cancellationToken);
                         delayTime = performedWork ? TimeSpan.FromSeconds(1) : TimeSpan.FromSeconds(5);
                     }
                     catch (TimeoutException)
@@ -140,7 +151,7 @@ namespace ApplicationDeployService
             }
         }
 
-        internal async Task<bool> TryDequeueAndPerformWorkAsync(CancellationToken cancellationToken)
+        internal async Task<bool> TryDequeueAndProcessAsync(CancellationToken cancellationToken)
         {
             IReliableQueue<Guid> queue =
                 await this.StateManager.GetOrAddAsync<IReliableQueue<Guid>>(QueueName);
@@ -181,7 +192,43 @@ namespace ApplicationDeployService
 
         internal async Task<ApplicationDeployment> ProcessApplicationDeployment(ApplicationDeployment applicationDeployment)
         {
-            throw new NotImplementedException();
+            switch (applicationDeployment.Status)
+            {
+                case ApplicationDeployStatus.Copy:
+                    string imageStorePath = await this.applicationOperator.CopyPackageToImageStoreAsync(
+                        applicationDeployment.Cluster,
+                        applicationDeployment.PackagePath,
+                        applicationDeployment.ApplicationTypeName,
+                        applicationDeployment.ApplicationTypeVersion);
+
+                    return new ApplicationDeployment(
+                        applicationDeployment.Cluster,
+                        ApplicationDeployStatus.Register,
+                        imageStorePath,
+                        applicationDeployment.ApplicationTypeName,
+                        applicationDeployment.ApplicationTypeVersion,
+                        applicationDeployment.ApplicationInstanceName,
+                        applicationDeployment.PackagePath);
+
+                case ApplicationDeployStatus.Register:
+                    await this.applicationOperator.RegisterApplicationAsync(
+                        applicationDeployment.Cluster,
+                        applicationDeployment.ImageStorePath);
+
+                    return new ApplicationDeployment(ApplicationDeployStatus.Create, applicationDeployment);
+
+                case ApplicationDeployStatus.Create:
+                    await this.applicationOperator.CreateApplicationAsync(
+                        applicationDeployment.Cluster,
+                        applicationDeployment.ApplicationInstanceName,
+                        applicationDeployment.ApplicationTypeName,
+                        applicationDeployment.ApplicationTypeVersion);
+
+                    return new ApplicationDeployment(ApplicationDeployStatus.Complete, applicationDeployment);
+
+                default:
+                    return applicationDeployment;
+            }
         }
 
         private void ConfigureService()
