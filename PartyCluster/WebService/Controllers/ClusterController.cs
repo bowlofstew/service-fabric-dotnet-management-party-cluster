@@ -21,7 +21,6 @@ namespace WebService.Controllers
     public class ClusterController : ApiController
     {
         private static ResourceManager resources = new ResourceManager("WebService.Resources.Messages", Assembly.GetExecutingAssembly());
-
         private readonly ICaptcha captcha;
 
         public ClusterController(ICaptcha captcha)

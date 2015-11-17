@@ -100,11 +100,11 @@ namespace Microsoft.Diagnostics.EventListeners
 
                 await hubClient.SendBatchAsync(batch);
 
-                ReportListenerHealthy();
+                this.ReportListenerHealthy();
             }
             catch (Exception e)
             {
-                ReportListenerProblem("Diagnostics data upload has failed." + Environment.NewLine + e.ToString());
+                this.ReportListenerProblem("Diagnostics data upload has failed." + Environment.NewLine + e.ToString());
             }
         }
 

@@ -48,9 +48,9 @@ namespace ApplicationDeployService
         {
             FabricClient fabricClient = this.GetClient(cluster);
             FabricClient.ApplicationManagementClient applicationClient = fabricClient.ApplicationManager;
-            
+
             Uri appName = new Uri("fabric:/" + applicationInstanceName);
-            
+
             ApplicationDescription appDescription = new ApplicationDescription(appName, applicationTypeName, applicationTypeVersion);
 
             return applicationClient.CreateApplicationAsync(appDescription);

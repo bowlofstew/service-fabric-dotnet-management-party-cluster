@@ -7,7 +7,6 @@ namespace WebService
 {
     using System.Fabric;
     using System.Web.Http;
-    using Domain;
     using Microsoft.Owin;
     using Microsoft.Owin.FileSystems;
     using Microsoft.Owin.StaticFiles;
@@ -40,7 +39,7 @@ namespace WebService
             fileOptions.StaticFileOptions.ServeUnknownFileTypes = true;
 
             config.MapHttpAttributeRoutes();
-            
+
             appBuilder.UseWebApi(config);
             appBuilder.UseFileServer(fileOptions);
         }

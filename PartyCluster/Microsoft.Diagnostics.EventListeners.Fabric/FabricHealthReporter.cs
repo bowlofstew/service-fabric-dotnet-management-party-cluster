@@ -3,12 +3,12 @@
 //  Licensed under the MIT License (MIT). See License.txt in the repo root for license information.
 // ------------------------------------------------------------
 
-using System;
-using System.Fabric;
-using System.Fabric.Health;
-
 namespace Microsoft.Diagnostics.EventListeners.Fabric
 {
+    using System;
+    using System.Fabric;
+    using System.Fabric.Health;
+
     public class FabricHealthReporter : IHealthReporter
     {
         private FabricClient fabricClient;
@@ -33,30 +33,31 @@ namespace Microsoft.Diagnostics.EventListeners.Fabric
                 {
                     HealthReportSendInterval = TimeSpan.FromSeconds(5)
                 }
-            );
+                );
 
-            var activationContext = FabricRuntime.GetActivationContext();
+            CodePackageActivationContext activationContext = FabricRuntime.GetActivationContext();
             this.applicatioName = new Uri(activationContext.ApplicationName);
             this.serviceManifestName = activationContext.GetServiceManifestName();
-            var nodeContext = FabricRuntime.GetNodeContext();
+            NodeContext nodeContext = FabricRuntime.GetNodeContext();
             this.nodeName = nodeContext.NodeName;
         }
+
         public void ReportHealthy()
         {
-            ReportHealth(HealthState.Ok, string.Empty);
+            this.ReportHealth(HealthState.Ok, string.Empty);
         }
 
         public void ReportProblem(string problemDescription)
         {
-            ReportHealth(HealthState.Warning, problemDescription);
+            this.ReportHealth(HealthState.Warning, problemDescription);
         }
 
         private void ReportHealth(HealthState healthState, string problemDescription)
         {
-            var healthInformation = new HealthInformation(this.entityIdentifier, "Connectivity", healthState);
+            HealthInformation healthInformation = new HealthInformation(this.entityIdentifier, "Connectivity", healthState);
             healthInformation.Description = problemDescription;
 
-            var healthReport = new DeployedServicePackageHealthReport(
+            DeployedServicePackageHealthReport healthReport = new DeployedServicePackageHealthReport(
                 this.applicatioName,
                 this.serviceManifestName,
                 this.nodeName,

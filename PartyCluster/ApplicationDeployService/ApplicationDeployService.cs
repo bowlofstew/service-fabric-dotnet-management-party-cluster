@@ -121,6 +121,16 @@ namespace ApplicationDeployService
             }
         }
 
+        public Task<int> GetApplicationCountyAsync(string cluster)
+        {
+            throw new NotImplementedException();
+        }
+
+        public Task<int> GetServiceCountAsync(string cluster)
+        {
+            throw new NotImplementedException();
+        }
+
         protected override IEnumerable<ServiceReplicaListener> CreateServiceReplicaListeners()
         {
             return new[] {new ServiceReplicaListener(parameters => new ServiceRemotingListener<IApplicationDeployService>(parameters, this))};
@@ -184,7 +194,9 @@ namespace ApplicationDeployService
                 ConditionalResult<ApplicationDeployment> appDeployment = await dictionary.TryGetValueAsync(tx, workItemId);
                 if (!appDeployment.HasValue)
                 {
-                    ServiceEventSource.Current.ServiceMessage(this, "Found queued application deployment request with no associated deployment information. Discarding.");
+                    ServiceEventSource.Current.ServiceMessage(
+                        this,
+                        "Found queued application deployment request with no associated deployment information. Discarding.");
                     return true;
                 }
 
@@ -199,13 +211,19 @@ namespace ApplicationDeployService
 
                     await dictionary.SetAsync(tx, workItemId, processedDeployment);
 
-                    ServiceEventSource.Current.ServiceMessage(this, "Application deployment request successfully processed. Cluster: {0}. Status: {1}",
+                    ServiceEventSource.Current.ServiceMessage(
+                        this,
+                        "Application deployment request successfully processed. Cluster: {0}. Status: {1}",
                         processedDeployment.Cluster,
                         processedDeployment.Status);
                 }
                 catch (FileNotFoundException fnfe)
                 {
-                    ServiceEventSource.Current.ServiceMessage(this, "Found corrupt application package. Package: {0}. Error: {1}", appDeployment.Value.PackagePath, fnfe.Message);
+                    ServiceEventSource.Current.ServiceMessage(
+                        this,
+                        "Found corrupt application package. Package: {0}. Error: {1}",
+                        appDeployment.Value.PackagePath,
+                        fnfe.Message);
 
                     // corrupt application, remove it so we don't keep trying to reprocess it.
                     await dictionary.TryRemoveAsync(tx, workItemId);
@@ -219,7 +237,11 @@ namespace ApplicationDeployService
                 }
                 catch (Exception e)
                 {
-                    ServiceEventSource.Current.ServiceMessage(this, "Application package processing failed.. Package: {0}. Error: {1}", appDeployment.Value.PackagePath, e.ToString());
+                    ServiceEventSource.Current.ServiceMessage(
+                        this,
+                        "Application package processing failed.. Package: {0}. Error: {1}",
+                        appDeployment.Value.PackagePath,
+                        e.ToString());
 
                     //TODO: for now, remove any requests that fail to deploy so the service doesn't get stuck on any one deployment.
                     await dictionary.TryRemoveAsync(tx, workItemId);
@@ -236,10 +258,11 @@ namespace ApplicationDeployService
             switch (applicationDeployment.Status)
             {
                 case ApplicationDeployStatus.Copy:
-                    ServiceEventSource.Current.ServiceMessage(this, 
+                    ServiceEventSource.Current.ServiceMessage(
+                        this,
                         "Application deployment: Copying to image store. Cluster: {0}. Application: {1}. Package path: {2}",
                         applicationDeployment.Cluster,
-                        applicationDeployment.ApplicationInstanceName, 
+                        applicationDeployment.ApplicationInstanceName,
                         applicationDeployment.PackagePath);
 
                     string imageStorePath = await this.applicationOperator.CopyPackageToImageStoreAsync(
@@ -259,7 +282,8 @@ namespace ApplicationDeployService
                         applicationDeployment.DeploymentTimestamp);
 
                 case ApplicationDeployStatus.Register:
-                    ServiceEventSource.Current.ServiceMessage(this, 
+                    ServiceEventSource.Current.ServiceMessage(
+                        this,
                         "Application deployment: Registering. Cluster: {0}. Application: {1}, Imagestore path: {2}",
                         applicationDeployment.Cluster,
                         applicationDeployment.ApplicationInstanceName,
@@ -272,7 +296,8 @@ namespace ApplicationDeployService
                     return new ApplicationDeployment(ApplicationDeployStatus.Create, applicationDeployment);
 
                 case ApplicationDeployStatus.Create:
-                    ServiceEventSource.Current.ServiceMessage(this,
+                    ServiceEventSource.Current.ServiceMessage(
+                        this,
                         "Application deployment: Creating. Cluster: {0}. Application: {1}",
                         applicationDeployment.Cluster,
                         applicationDeployment.ApplicationInstanceName);
@@ -300,7 +325,7 @@ namespace ApplicationDeployService
                 this.UpdateApplicationPackageConfig(configPackage.Path);
                 this.UpdateApplicationPackageData(dataPackage.Path);
 
-                this.serviceParameters.CodePackageActivationContext.DataPackageModifiedEvent += 
+                this.serviceParameters.CodePackageActivationContext.DataPackageModifiedEvent +=
                     this.CodePackageActivationContext_DataPackageModifiedEvent;
 
                 this.serviceParameters.CodePackageActivationContext.ConfigurationPackageModifiedEvent +=
@@ -324,9 +349,9 @@ namespace ApplicationDeployService
 
             foreach (FileInfo file in directory.EnumerateFiles("*.zip", SearchOption.TopDirectoryOnly))
             {
-                string extractPath = 
+                string extractPath =
                     Path.Combine(packageLocation.FullName, GetPackageDirectoryName(file.Name));
-                
+
                 ZipFile.ExtractToDirectory(file.FullName, extractPath);
             }
         }
@@ -352,16 +377,6 @@ namespace ApplicationDeployService
         private static string GetPackageDirectoryName(string fileName)
         {
             return fileName.Replace(".zip", String.Empty);
-        }
-
-        public Task<int> GetApplicationCountyAsync(string cluster)
-        {
-            throw new NotImplementedException();
-        }
-
-        public Task<int> GetServiceCountAsync(string cluster)
-        {
-            throw new NotImplementedException();
         }
     }
 }

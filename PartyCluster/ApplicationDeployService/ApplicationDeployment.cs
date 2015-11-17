@@ -34,17 +34,17 @@ namespace ApplicationDeployService
 
         public ApplicationDeployment(ApplicationDeployStatus status, ApplicationDeployment copyFrom)
             : this(
-                  copyFrom.Cluster,
-                  status,
-                  copyFrom.ImageStorePath,
-                  copyFrom.ApplicationTypeName,
-                  copyFrom.ApplicationTypeVersion,
-                  copyFrom.ApplicationInstanceName,
-                  copyFrom.PackagePath,
-                  copyFrom.DeploymentTimestamp)
+                copyFrom.Cluster,
+                status,
+                copyFrom.ImageStorePath,
+                copyFrom.ApplicationTypeName,
+                copyFrom.ApplicationTypeVersion,
+                copyFrom.ApplicationInstanceName,
+                copyFrom.PackagePath,
+                copyFrom.DeploymentTimestamp)
         {
         }
-           
+
         [DataMember]
         public string Cluster { get; private set; }
 

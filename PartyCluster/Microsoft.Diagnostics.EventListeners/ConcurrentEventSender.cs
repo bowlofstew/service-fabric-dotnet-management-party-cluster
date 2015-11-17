@@ -69,10 +69,7 @@ namespace Microsoft.Diagnostics.EventListeners
             {
                 // Just drop the event. 
                 this.eventLossThrottle.Execute(
-                    () =>
-                    {
-                        this.healthReporter.ReportProblem("Diagnostic events buffer overflow occurred. Some diagnostics data was lost.");
-                    });
+                    () => { this.healthReporter.ReportProblem("Diagnostic events buffer overflow occurred. Some diagnostics data was lost."); });
             }
         }
 

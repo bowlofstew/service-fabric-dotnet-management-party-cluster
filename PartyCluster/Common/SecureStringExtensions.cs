@@ -1,9 +1,14 @@
-﻿using System;
-using System.Runtime.InteropServices;
-using System.Security;
+﻿// ------------------------------------------------------------
+//  Copyright (c) Microsoft Corporation.  All rights reserved.
+//  Licensed under the MIT License (MIT). See License.txt in the repo root for license information.
+// ------------------------------------------------------------
 
 namespace Common
 {
+    using System;
+    using System.Runtime.InteropServices;
+    using System.Security;
+
     /// <summary>
     /// Extensions methods for SecureString.
     /// </summary>

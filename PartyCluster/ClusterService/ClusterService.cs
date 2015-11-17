@@ -99,8 +99,8 @@ namespace ClusterService
 
             IReliableDictionary<int, Cluster> clusterDictionary =
                 await this.reliableStateManager.GetOrAddAsync<IReliableDictionary<int, Cluster>>(ClusterDictionaryName);
-            
-            foreach (var item in clusterDictionary)
+
+            foreach (KeyValuePair<int, Cluster> item in clusterDictionary)
             {
                 if (item.Value.Users.Any(x => String.Equals(x.Email, userEmail, StringComparison.OrdinalIgnoreCase)))
                 {

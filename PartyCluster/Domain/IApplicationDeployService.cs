@@ -13,11 +13,8 @@ namespace Domain
     public interface IApplicationDeployService : IService
     {
         Task<IEnumerable<Guid>> QueueApplicationDeploymentAsync(string cluster);
-
         Task<ApplicationDeployStatus> GetStatusAsync(Guid deployId);
-
         Task<int> GetApplicationCountyAsync(string cluster);
-
         Task<int> GetServiceCountAsync(string cluster);
     }
 }

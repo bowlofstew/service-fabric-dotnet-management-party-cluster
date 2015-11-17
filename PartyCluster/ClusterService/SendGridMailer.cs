@@ -13,8 +13,8 @@ namespace ClusterService
     using System.Net;
     using System.Net.Mail;
     using System.Threading.Tasks;
-    using Domain;
     using Common;
+    using Domain;
     using SendGrid;
 
     internal class SendGridMailer : ISendMail

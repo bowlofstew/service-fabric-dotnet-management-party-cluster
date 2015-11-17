@@ -892,7 +892,7 @@ namespace ClusterService.UnitTests
                 0,
                 0,
                 "",
-                new[] { 80, 81 },
+                new[] {80, 81},
                 new ClusterUser[0],
                 DateTimeOffset.UtcNow);
 

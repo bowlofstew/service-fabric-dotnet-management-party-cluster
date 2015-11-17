@@ -64,7 +64,7 @@ namespace Microsoft.Diagnostics.EventListeners
 
         private void CreateConnectionData(object sender)
         {
-            IConfigurationProvider configurationProvider = (IConfigurationProvider)sender;
+            IConfigurationProvider configurationProvider = (IConfigurationProvider) sender;
 
             this.connectionData = new ElasticSearchConnectionData();
             this.connectionData.Client = this.CreateElasticClient(configurationProvider);
@@ -117,11 +117,11 @@ namespace Microsoft.Diagnostics.EventListeners
                     this.ReportEsRequestError(response, "Bulk upload");
                 }
 
-                ReportListenerHealthy();
+                this.ReportListenerHealthy();
             }
             catch (Exception e)
             {
-                ReportListenerProblem("Diagnostics data upload has failed." + Environment.NewLine + e.ToString());
+                this.ReportListenerProblem("Diagnostics data upload has failed." + Environment.NewLine + e.ToString());
             }
         }
 
@@ -172,17 +172,22 @@ namespace Microsoft.Diagnostics.EventListeners
 
             if (response.ServerError != null)
             {
-                ReportListenerProblem(string.Format("ElasticSearch communication attempt resulted in an error: {0} \n ExceptionType: {1} \n Status code: {2}",
-                    response.ServerError.Error, response.ServerError.ExceptionType, response.ServerError.Status));
+                this.ReportListenerProblem(
+                    string.Format(
+                        "ElasticSearch communication attempt resulted in an error: {0} \n ExceptionType: {1} \n Status code: {2}",
+                        response.ServerError.Error,
+                        response.ServerError.ExceptionType,
+                        response.ServerError.Status));
             }
             else if (response.ConnectionStatus != null)
             {
-                ReportListenerProblem("ElasticSearch communication attempt resulted in an error. Connection status: " + response.ConnectionStatus.ToString());
+                this.ReportListenerProblem(
+                    "ElasticSearch communication attempt resulted in an error. Connection status: " + response.ConnectionStatus.ToString());
             }
             else
             {
                 // Hopefully never happens
-                ReportListenerProblem("ElasticSearch communication attempt resulted in an error. No further error information is available");
+                this.ReportListenerProblem("ElasticSearch communication attempt resulted in an error. No further error information is available");
             }
         }
 

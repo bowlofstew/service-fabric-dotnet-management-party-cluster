@@ -12,9 +12,8 @@ namespace ClusterService
     using System.Fabric.Description;
     using System.IO;
     using System.Threading.Tasks;
-    using System.Security;
-    using Domain;
     using Common;
+    using Domain;
     using Microsoft.Azure;
     using Microsoft.Azure.Management.Resources;
     using Microsoft.Azure.Management.Resources.Models;
@@ -120,19 +119,29 @@ namespace ClusterService
             //string result = dpResult.Deployment.Properties.ProvisioningState + rgResult.ResourceGroup.ProvisioningState;
             //result = result.Replace("Succeeded", "");
             if (rgResult.ResourceGroup.ProvisioningState.Contains("Failed"))
+            {
                 return ClusterOperationStatus.DeleteFailed;
+            }
 
             if (rgResult.ResourceGroup.ProvisioningState.Contains("Deleting"))
+            {
                 return ClusterOperationStatus.Deleting;
+            }
 
             if (dpResult.Deployment.Properties.ProvisioningState.Contains("Accepted") || dpResult.Deployment.Properties.ProvisioningState.Contains("Running"))
+            {
                 return ClusterOperationStatus.Creating;
+            }
 
             if (dpResult.Deployment.Properties.ProvisioningState.Contains("Failed"))
+            {
                 return ClusterOperationStatus.CreateFailed;
+            }
 
             if (dpResult.Deployment.Properties.ProvisioningState.Contains("Succeeded"))
+            {
                 return ClusterOperationStatus.Ready;
+            }
 
 
             return ClusterOperationStatus.Unknown;
@@ -230,7 +239,6 @@ namespace ClusterService
                 clusterConfigParameters["Username"].DecryptValue(),
                 clusterConfigParameters["Password"].DecryptValue());
         }
-        
 
         private void UpdateArmTemplateContent(string templateDataPath)
         {

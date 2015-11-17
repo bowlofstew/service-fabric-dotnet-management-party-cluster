@@ -73,9 +73,17 @@ namespace ApplicationDeployService.UnitTests
             };
 
             ApplicationDeployService target = new ApplicationDeployService(stateManager, applicationOperator, this.CreateServiceParameters());
-            ApplicationDeployment appDeployment = new ApplicationDeployment("", ApplicationDeployStatus.Register, "", "type1", "1.0.0", "", "", DateTimeOffset.UtcNow);
+            ApplicationDeployment appDeployment = new ApplicationDeployment(
+                "",
+                ApplicationDeployStatus.Register,
+                "",
+                "type1",
+                "1.0.0",
+                "",
+                "",
+                DateTimeOffset.UtcNow);
             ApplicationDeployment actual = await target.ProcessApplicationDeployment(appDeployment);
-            
+
             Assert.AreEqual(ApplicationDeployStatus.Create, actual.Status);
         }
 
@@ -89,7 +97,15 @@ namespace ApplicationDeployService.UnitTests
             };
 
             ApplicationDeployService target = new ApplicationDeployService(stateManager, applicationOperator, this.CreateServiceParameters());
-            ApplicationDeployment appDeployment = new ApplicationDeployment("", ApplicationDeployStatus.Create, "", "type1", "1.0.0", "", "", DateTimeOffset.UtcNow);
+            ApplicationDeployment appDeployment = new ApplicationDeployment(
+                "",
+                ApplicationDeployStatus.Create,
+                "",
+                "type1",
+                "1.0.0",
+                "",
+                "",
+                DateTimeOffset.UtcNow);
             ApplicationDeployment actual = await target.ProcessApplicationDeployment(appDeployment);
 
             Assert.AreEqual(ApplicationDeployStatus.Complete, actual.Status);
