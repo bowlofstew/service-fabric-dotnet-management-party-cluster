@@ -13,6 +13,7 @@ namespace Domain
         Task CreateApplicationAsync(string cluster, string applicationInstanceName, string applicationTypeName, string applicationTypeVersion);
         Task<string> CopyPackageToImageStoreAsync(string cluster, string applicationPackagePath, string applicationTypeName, string applicationTypeVersion);
         Task RegisterApplicationAsync(string cluster, string imageStorePath);
-        void CloseConnection(string cluster);
+        Task<int> GetApplicationCountAsync(string cluster);
+        Task<int> GetServiceCountAsync(string cluster);
     }
 }

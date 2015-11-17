@@ -93,7 +93,7 @@
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>
-    <Folder Include="PackageRoot\ApplicationPackages\" />
+    <Content Include="PackageRoot\ApplicationPackages\readme.txt" />
   </ItemGroup>
   <ItemGroup>
     <None Include="PackageRoot\Config\ApplicationPackages.json" />

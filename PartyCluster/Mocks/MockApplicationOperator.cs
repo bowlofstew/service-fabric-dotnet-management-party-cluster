@@ -43,6 +43,16 @@ namespace Mocks
         {
         }
 
+        public Task<int> GetApplicationCountAsync(string cluster)
+        {
+            throw new NotImplementedException();
+        }
+
+        public Task<int> GetServiceCountAsync(string cluster)
+        {
+            throw new NotImplementedException();
+        }
+
         public Task RegisterApplicationAsync(string cluster, string imageStorePath)
         {
             return this.RegisterApplicationAsyncFunc(cluster, imageStorePath);

@@ -10,6 +10,7 @@ namespace ApplicationDeployService
     using System.Collections.Generic;
     using System.Fabric;
     using System.Fabric.Description;
+    using System.Fabric.Query;
     using System.Threading.Tasks;
     using Common;
     using Domain;
@@ -65,6 +66,31 @@ namespace ApplicationDeployService
             return applicationClient.ProvisionApplicationAsync(imageStorePath);
         }
 
+        public async Task<int> GetApplicationCountAsync(string cluster)
+        {
+            FabricClient fabricClient = this.GetClient(cluster);
+
+            ApplicationList applicationList = await fabricClient.QueryManager.GetApplicationListAsync();
+
+            return applicationList.Count;
+        }
+
+        public async Task<int> GetServiceCountAsync(string cluster)
+        {
+            FabricClient fabricClient = this.GetClient(cluster);
+
+            ApplicationList applicationList = await fabricClient.QueryManager.GetApplicationListAsync();
+
+            int count = 0;
+            foreach (var application in applicationList)
+            {
+                ServiceList serviceList = await fabricClient.QueryManager.GetServiceListAsync(application.ApplicationName);
+                count += serviceList.Count;
+            }
+
+            return count;
+        }
+
         public void Dispose()
         {
             if (!this.disposing)
@@ -84,24 +110,7 @@ namespace ApplicationDeployService
                 this.fabricClients.Clear();
             }
         }
-
-        public void CloseConnection(string cluster)
-        {
-            FabricClient fabricClient;
-            if (this.fabricClients.TryGetValue(cluster, out fabricClient))
-            {
-                try
-                {
-                    fabricClient.Dispose();
-                }
-                catch (ObjectDisposedException)
-                {
-                }
-
-                this.fabricClients.Remove(cluster);
-            }
-        }
-
+        
         private FabricClient GetClient(string cluster)
         {
             if (!this.fabricClients.ContainsKey(cluster))

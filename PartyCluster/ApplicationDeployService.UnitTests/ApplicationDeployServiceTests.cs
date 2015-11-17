@@ -30,9 +30,7 @@ namespace ApplicationDeployService.UnitTests
                 new ApplicationPackageInfo("type2", "2.0", "path/to/type2")
             };
 
-            string clusterAddress = "test";
-
-            IEnumerable<Guid> result = await target.QueueApplicationDeploymentAsync(clusterAddress);
+            IEnumerable<Guid> result = await target.QueueApplicationDeploymentAsync("localhost", 19000);
 
             Assert.AreEqual(2, result.Count());
 

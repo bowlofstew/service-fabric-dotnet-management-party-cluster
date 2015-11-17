@@ -29,10 +29,40 @@ namespace ClusterService
         internal const string ClusterDictionaryName = "clusterDictionary";
         internal const string SickClusterDictionaryName = "sickClusterDictionary";
         private readonly Random random = new Random();
+
+        /// <summary>
+        /// Does cluster-related functions. 
+        /// This could could also be written as a separate service for better modularity.
+        /// </summary>
         private readonly IClusterOperator clusterOperator;
+
+        /// <summary>
+        /// A component that sends mail.
+        /// </summary>
         private readonly ISendMail mailer;
+
+        /// <summary>
+        /// The service that performs application deployments for the sample apps that are automatically deployed to each cluster.
+        /// This referece is a proxy that's created when the service instance is created.
+        /// Note that this really only works because the application deploy service only has one partition.
+        /// If that service had multiple partitions, we'd need to store a factory here to create a new proxy for each partition.
+        /// </summary>
+        private readonly IApplicationDeployService applicationDeployService;
+
+        /// <summary>
+        /// The reliable state manager that holds our collections.
+        /// </summary>
         private readonly IReliableStateManager reliableStateManager;
+
+        /// <summary>
+        /// A set of service parameters. Similar to StatefulServiceInitializationParameters, but we use this type
+        /// here because StatefulServiceInitializationParameters doesn't have public setters.
+        /// </summary>
         private readonly StatefulServiceParameters serviceParameters;
+
+        /// <summary>
+        /// Config options for managing clusters.
+        /// </summary>
         private ClusterConfig config;
 
         /// <summary>
@@ -46,12 +76,14 @@ namespace ClusterService
         public ClusterService(
             IClusterOperator clusterOperator,
             ISendMail mailer,
+            IApplicationDeployService applicationDeployService,
             IReliableStateManager stateManager,
             StatefulServiceParameters serviceParameters,
             ClusterConfig config)
         {
             this.config = config;
             this.clusterOperator = clusterOperator;
+            this.applicationDeployService = applicationDeployService;
             this.reliableStateManager = stateManager;
             this.mailer = mailer;
             this.StateManager = stateManager;
@@ -345,7 +377,11 @@ namespace ClusterService
                     }
                     catch (Exception e)
                     {
-                        ServiceEventSource.Current.ServiceMessage(this, "Failed to process cluster: {0}. {1}", item.Value.Address, e.Message);
+                        ServiceEventSource.Current.ServiceMessage(
+                            this, 
+                            "Failed to process cluster: {0}. {1}", 
+                            item.Value.Address, 
+                            (e is AggregateException)? ((AggregateException)e).InnerException.Message : e.Message);
 
                         //TODO: process sick clusters with multiple failures.
                         //await sickClusters.AddOrUpdateAsync(tx, cluster.Key, 1, (key, value) => ++value);
@@ -462,6 +498,20 @@ namespace ClusterService
                 case ClusterOperationStatus.Ready:
                     IEnumerable<int> ports = await this.clusterOperator.GetClusterPortsAsync(cluster.InternalName);
 
+                    try
+                    {
+                        await this.applicationDeployService.QueueApplicationDeploymentAsync(cluster.Address, 19000);
+                    }
+                    catch (Exception e)
+                    {
+                        // couldn't queue samples for deployment, but that shouldn't prevent starting the cluster.
+                        ServiceEventSource.Current.ServiceMessage(
+                            this,
+                            "Failed to queue sample deployment. Cluster: {0} Error: {1}",
+                            cluster.Address,
+                            e is AggregateException ? ((AggregateException)e).InnerException.Message : e.Message);
+                    }
+
                     ServiceEventSource.Current.ServiceMessage(
                         this,
                         "Cluster is ready: {0} with ports: {1}",
@@ -504,9 +554,19 @@ namespace ClusterService
                 case ClusterOperationStatus.Deleting:
                     return new Cluster(ClusterStatus.Deleting, cluster);
             }
+            
+            int deployedApplications = await this.applicationDeployService.GetApplicationCountAsync(cluster.Address, 19000);
+            int deployedServices = await this.applicationDeployService.GetApplicationCountAsync(cluster.Address, 19000);
 
-            //TODO: update application and service count
-            return cluster;
+            return new Cluster(
+                cluster.InternalName,
+                cluster.Status,
+                deployedApplications,
+                deployedServices,
+                cluster.Address,
+                cluster.Ports,
+                cluster.Users,
+                cluster.CreatedOn);
         }
 
         private async Task<Cluster> ProcessRemoveClusterAsync(Cluster cluster)

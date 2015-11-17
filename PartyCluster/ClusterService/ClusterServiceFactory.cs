@@ -8,7 +8,9 @@ namespace ClusterService
     using System;
     using System.Fabric;
     using Common;
+    using Domain;
     using Microsoft.ServiceFabric.Data;
+    using Microsoft.ServiceFabric.Services.Remoting.Client;
 
     internal class ClusterServiceFactory : IStatefulServiceFactory
     {
@@ -26,7 +28,8 @@ namespace ClusterService
 
             return new ClusterService(
                 new FakeClusterOperator(stateManager),
-                new SendGridMailer(parameters),
+                new FakeMailer(),
+                ServiceProxy.Create<IApplicationDeployService>(0, new ServiceUriBuilder("ApplicationDeployService").ToUri()),
                 stateManager,
                 parameters,
                 new ClusterConfig());

@@ -58,9 +58,10 @@ namespace ApplicationDeployService
         /// <summary>
         /// Queues deployment of application packages to the given cluster.
         /// </summary>
-        /// <param name="cluster"></param>
+        /// <param name="clusterAddress"></param>
+        /// <param name="connectionPort"></param>
         /// <returns></returns>
-        public async Task<IEnumerable<Guid>> QueueApplicationDeploymentAsync(string cluster)
+        public async Task<IEnumerable<Guid>> QueueApplicationDeploymentAsync(string clusterAddress, int clusterPort)
         {
             IReliableQueue<Guid> queue =
                 await this.StateManager.GetOrAddAsync<IReliableQueue<Guid>>(QueueName);
@@ -78,7 +79,7 @@ namespace ApplicationDeployService
 
                     Guid id = Guid.NewGuid();
                     ApplicationDeployment applicationDeployment = new ApplicationDeployment(
-                        cluster,
+                        GetClusterAddress(clusterAddress, clusterPort),
                         ApplicationDeployStatus.Copy,
                         null,
                         package.ApplicationTypeName,
@@ -121,14 +122,14 @@ namespace ApplicationDeployService
             }
         }
 
-        public Task<int> GetApplicationCountyAsync(string cluster)
+        public Task<int> GetApplicationCountAsync(string clusterAddress, int clusterPort)
         {
-            throw new NotImplementedException();
+            return this.applicationOperator.GetApplicationCountAsync(GetClusterAddress(clusterAddress, clusterPort));
         }
 
-        public Task<int> GetServiceCountAsync(string cluster)
+        public Task<int> GetServiceCountAsync(string clusterAddress, int clusterPort)
         {
-            throw new NotImplementedException();
+            return this.applicationOperator.GetServiceCountAsync(GetClusterAddress(clusterAddress, clusterPort));
         }
 
         protected override IEnumerable<ServiceReplicaListener> CreateServiceReplicaListeners()
@@ -377,6 +378,11 @@ namespace ApplicationDeployService
         private static string GetPackageDirectoryName(string fileName)
         {
             return fileName.Replace(".zip", String.Empty);
+        }
+
+        private static string GetClusterAddress(string address, int port)
+        {
+            return address + ":" + port;
         }
     }
 }
