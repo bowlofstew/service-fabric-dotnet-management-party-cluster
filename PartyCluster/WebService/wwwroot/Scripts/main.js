@@ -196,7 +196,7 @@ function PartyClusters(api) {
                 .append(
                     $('<td/>').text(jObject.UserCount))
                 .append(
-                    $('<td/>').text(jObject.AppCount))
+                    $('<td/>').text(jObject.ApplicationCount))
                 .append(
                     $('<td/>').text(jObject.ServiceCount))
                 .append(

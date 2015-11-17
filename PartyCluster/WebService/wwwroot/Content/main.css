@@ -214,7 +214,7 @@ section#main
 .cluster-list
 {
     width:595px;
-	min-height:550px;
+	min-height:580px;
     float:left;
     border-right: 1px solid #ccc;
 }
