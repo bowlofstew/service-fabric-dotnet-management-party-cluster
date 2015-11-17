@@ -14,7 +14,7 @@
   <CodePackage Name="Code" Version="1.0.0">
     <EntryPoint>
       <ExeHost>
-        <Program>ApplicationDeployService.exe</Program>
+        <Program>PartyCluster.ApplicationDeployService.exe</Program>
       </ExeHost>
     </EntryPoint>
   </CodePackage>
