@@ -8,19 +8,19 @@ namespace ApplicationDeployService
     internal struct ApplicationPackageInfo
     {
         public ApplicationPackageInfo(
-            string applicationType,
-            string applicationVersion,
-            string dataPackagePath)
+            string applicationTypeName,
+            string applicationTypeVersion,
+            string packageFileName)
         {
-            this.ApplicationType = applicationType;
-            this.ApplicationVersion = applicationVersion;
-            this.DataPackageDirectoryName = dataPackagePath;
+            this.ApplicationTypeName = applicationTypeName;
+            this.ApplicationTypeVersion = applicationTypeVersion;
+            this.PackageFileName = packageFileName;
         }
 
-        public string ApplicationType { get; private set; }
+        public string ApplicationTypeName { get; set; }
 
-        public string ApplicationVersion { get; private set; }
+        public string ApplicationTypeVersion { get; set; }
 
-        public string DataPackageDirectoryName { get; private set; }
+        public string PackageFileName { get; set; }
     }
 }

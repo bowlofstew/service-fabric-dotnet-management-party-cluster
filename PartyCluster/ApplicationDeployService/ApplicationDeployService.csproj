@@ -62,6 +62,7 @@
       <HintPath>..\packages\Microsoft.ServiceFabric.4.4.78-preview\lib\net45\System.Fabric.dll</HintPath>
       <Private>True</Private>
     </Reference>
+    <Reference Include="System.IO.Compression.FileSystem" />
     <Reference Include="System.Runtime.Serialization" />
     <Reference Include="System.ServiceModel" />
   </ItemGroup>
@@ -95,7 +96,7 @@
     <Folder Include="PackageRoot\ApplicationPackages\" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="PackageRoot\Config\ApplicationPackage.json" />
+    <None Include="PackageRoot\Config\ApplicationPackages.json" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 

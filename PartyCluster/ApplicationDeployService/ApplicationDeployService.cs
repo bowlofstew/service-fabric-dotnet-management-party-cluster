@@ -9,6 +9,7 @@ namespace ApplicationDeployService
     using System.Collections.Generic;
     using System.Fabric;
     using System.IO;
+    using System.IO.Compression;
     using System.Linq;
     using System.Threading;
     using System.Threading.Tasks;
@@ -29,6 +30,7 @@ namespace ApplicationDeployService
         private const string QueueName = "WorkQueue";
         private const string DictionaryName = "WorkTable";
         private readonly TimeSpan transactionTimeout = TimeSpan.FromSeconds(4);
+        private readonly TimeSpan DeploymentRetainment = TimeSpan.FromMinutes(30);
         private readonly StatefulServiceParameters serviceParameters;
         private readonly IApplicationOperator applicationOperator;
         private string applicationPackagePath;
@@ -58,7 +60,7 @@ namespace ApplicationDeployService
         /// </summary>
         /// <param name="cluster"></param>
         /// <returns></returns>
-        public async Task<IEnumerable<Guid>> QueueApplicationDeployment(string cluster)
+        public async Task<IEnumerable<Guid>> QueueApplicationDeploymentAsync(string cluster)
         {
             IReliableQueue<Guid> queue =
                 await this.StateManager.GetOrAddAsync<IReliableQueue<Guid>>(QueueName);
@@ -72,15 +74,18 @@ namespace ApplicationDeployService
             {
                 foreach (ApplicationPackageInfo package in this.ApplicationPackages)
                 {
+                    string packageDirectory = GetPackageDirectoryName(package.PackageFileName);
+
                     Guid id = Guid.NewGuid();
                     ApplicationDeployment applicationDeployment = new ApplicationDeployment(
                         cluster,
                         ApplicationDeployStatus.Copy,
                         null,
-                        package.ApplicationType,
-                        package.ApplicationVersion,
-                        package.DataPackageDirectoryName,
-                        Path.Combine(this.applicationPackagePath, package.DataPackageDirectoryName));
+                        package.ApplicationTypeName,
+                        package.ApplicationTypeVersion,
+                        packageDirectory,
+                        Path.Combine(this.applicationPackagePath, packageDirectory),
+                        DateTimeOffset.UtcNow);
 
                     await dictionary.AddAsync(tx, id, applicationDeployment);
                     await queue.EnqueueAsync(tx, id);
@@ -99,7 +104,7 @@ namespace ApplicationDeployService
         /// </summary>
         /// <param name="deployId"></param>
         /// <returns></returns>
-        public async Task<ApplicationDeployStatus> Status(Guid deployId)
+        public async Task<ApplicationDeployStatus> GetStatusAsync(Guid deployId)
         {
             IReliableDictionary<Guid, ApplicationDeployment> dictionary =
                 await this.StateManager.GetOrAddAsync<IReliableDictionary<Guid, ApplicationDeployment>>(DictionaryName);
@@ -127,6 +132,8 @@ namespace ApplicationDeployService
 
             try
             {
+                ServiceEventSource.Current.ServiceMessage(this, "Application deployment request processing started.");
+
                 while (true)
                 {
                     cancellationToken.ThrowIfCancellationRequested();
@@ -143,11 +150,15 @@ namespace ApplicationDeployService
 
                     // The queue was empty, delay for a little while before looping again
                     await Task.Delay(delayTime, cancellationToken);
+
+                    //TODO: periodically remove completed deployments so the dictionary doesn't grow indefinitely.
                 }
             }
             finally
             {
                 this.applicationOperator.Dispose();
+
+                ServiceEventSource.Current.ServiceMessage(this, "Application deployment request processing ended.");
             }
         }
 
@@ -173,17 +184,47 @@ namespace ApplicationDeployService
                 ConditionalResult<ApplicationDeployment> appDeployment = await dictionary.TryGetValueAsync(tx, workItemId);
                 if (!appDeployment.HasValue)
                 {
-                    return false;
+                    ServiceEventSource.Current.ServiceMessage(this, "Found queued application deployment request with no associated deployment information. Discarding.");
+                    return true;
                 }
 
-                ApplicationDeployment processedDeployment = await this.ProcessApplicationDeployment(appDeployment.Value);
-
-                if (processedDeployment.Status != ApplicationDeployStatus.Complete)
+                try
                 {
-                    await queue.EnqueueAsync(tx, workItemId);
+                    ApplicationDeployment processedDeployment = await this.ProcessApplicationDeployment(appDeployment.Value);
+
+                    if (processedDeployment.Status != ApplicationDeployStatus.Complete)
+                    {
+                        await queue.EnqueueAsync(tx, workItemId);
+                    }
+
+                    await dictionary.SetAsync(tx, workItemId, processedDeployment);
+
+                    ServiceEventSource.Current.ServiceMessage(this, "Application deployment request successfully processed. Cluster: {0}. Status: {1}",
+                        processedDeployment.Cluster,
+                        processedDeployment.Status);
+                }
+                catch (FileNotFoundException fnfe)
+                {
+                    ServiceEventSource.Current.ServiceMessage(this, "Found corrupt application package. Package: {0}. Error: {1}", appDeployment.Value.PackagePath, fnfe.Message);
+
+                    // corrupt application, remove it so we don't keep trying to reprocess it.
+                    await dictionary.TryRemoveAsync(tx, workItemId);
+                }
+                catch (FabricElementAlreadyExistsException)
+                {
+                    ServiceEventSource.Current.ServiceMessage(this, "Application package is already registered. Package: {0}.", appDeployment.Value.PackagePath);
+
+                    // application already exists, remove it so we don't keep failing on this.
+                    await dictionary.TryRemoveAsync(tx, workItemId);
+                }
+                catch (Exception e)
+                {
+                    ServiceEventSource.Current.ServiceMessage(this, "Application package processing failed.. Package: {0}. Error: {1}", appDeployment.Value.PackagePath, e.ToString());
+
+                    //TODO: for now, remove any requests that fail to deploy so the service doesn't get stuck on any one deployment.
+                    await dictionary.TryRemoveAsync(tx, workItemId);
                 }
 
-                await dictionary.SetAsync(tx, workItemId, processedDeployment);
                 await tx.CommitAsync();
 
                 return true;
@@ -195,6 +236,12 @@ namespace ApplicationDeployService
             switch (applicationDeployment.Status)
             {
                 case ApplicationDeployStatus.Copy:
+                    ServiceEventSource.Current.ServiceMessage(this, 
+                        "Application deployment: Copying to image store. Cluster: {0}. Application: {1}. Package path: {2}",
+                        applicationDeployment.Cluster,
+                        applicationDeployment.ApplicationInstanceName, 
+                        applicationDeployment.PackagePath);
+
                     string imageStorePath = await this.applicationOperator.CopyPackageToImageStoreAsync(
                         applicationDeployment.Cluster,
                         applicationDeployment.PackagePath,
@@ -208,9 +255,16 @@ namespace ApplicationDeployService
                         applicationDeployment.ApplicationTypeName,
                         applicationDeployment.ApplicationTypeVersion,
                         applicationDeployment.ApplicationInstanceName,
-                        applicationDeployment.PackagePath);
+                        applicationDeployment.PackagePath,
+                        applicationDeployment.DeploymentTimestamp);
 
                 case ApplicationDeployStatus.Register:
+                    ServiceEventSource.Current.ServiceMessage(this, 
+                        "Application deployment: Registering. Cluster: {0}. Application: {1}, Imagestore path: {2}",
+                        applicationDeployment.Cluster,
+                        applicationDeployment.ApplicationInstanceName,
+                        applicationDeployment.ImageStorePath);
+
                     await this.applicationOperator.RegisterApplicationAsync(
                         applicationDeployment.Cluster,
                         applicationDeployment.ImageStorePath);
@@ -218,6 +272,11 @@ namespace ApplicationDeployService
                     return new ApplicationDeployment(ApplicationDeployStatus.Create, applicationDeployment);
 
                 case ApplicationDeployStatus.Create:
+                    ServiceEventSource.Current.ServiceMessage(this,
+                        "Application deployment: Creating. Cluster: {0}. Application: {1}",
+                        applicationDeployment.Cluster,
+                        applicationDeployment.ApplicationInstanceName);
+
                     await this.applicationOperator.CreateApplicationAsync(
                         applicationDeployment.Cluster,
                         applicationDeployment.ApplicationInstanceName,
@@ -238,25 +297,71 @@ namespace ApplicationDeployService
                 ConfigurationPackage configPackage = this.serviceParameters.CodePackageActivationContext.GetConfigurationPackageObject("Config");
                 DataPackage dataPackage = this.serviceParameters.CodePackageActivationContext.GetDataPackageObject("ApplicationPackages");
 
-                this.applicationPackagePath = dataPackage.Path;
                 this.UpdateApplicationPackageConfig(configPackage.Path);
+                this.UpdateApplicationPackageData(dataPackage.Path);
+
+                this.serviceParameters.CodePackageActivationContext.DataPackageModifiedEvent += 
+                    this.CodePackageActivationContext_DataPackageModifiedEvent;
 
                 this.serviceParameters.CodePackageActivationContext.ConfigurationPackageModifiedEvent +=
                     this.CodePackageActivationContext_ConfigurationPackageModifiedEvent;
             }
         }
 
+        private void UpdateApplicationPackageData(string path)
+        {
+            DirectoryInfo directory = new DirectoryInfo(path);
+            DirectoryInfo packageLocation = new DirectoryInfo(Path.Combine(this.serviceParameters.CodePackageActivationContext.WorkDirectory, "Packages"));
+
+            this.applicationPackagePath = packageLocation.FullName;
+
+            // delete all the things.
+            // we'll copy everything over from the new data package.
+            if (packageLocation.Exists)
+            {
+                packageLocation.Delete(true);
+            }
+
+            foreach (FileInfo file in directory.EnumerateFiles("*.zip", SearchOption.TopDirectoryOnly))
+            {
+                string extractPath = 
+                    Path.Combine(packageLocation.FullName, GetPackageDirectoryName(file.Name));
+                
+                ZipFile.ExtractToDirectory(file.FullName, extractPath);
+            }
+        }
+
         private void UpdateApplicationPackageConfig(string configPath)
         {
-            using (StreamReader reader = new StreamReader(Path.Combine(configPath, "RequestSettings.json")))
+            using (StreamReader reader = new StreamReader(Path.Combine(configPath, "ApplicationPackages.json")))
             {
                 this.ApplicationPackages = JsonConvert.DeserializeObject<IEnumerable<ApplicationPackageInfo>>(reader.ReadToEnd());
             }
         }
 
+        private void CodePackageActivationContext_DataPackageModifiedEvent(object sender, PackageModifiedEventArgs<DataPackage> e)
+        {
+            this.UpdateApplicationPackageData(e.NewPackage.Path);
+        }
+
         private void CodePackageActivationContext_ConfigurationPackageModifiedEvent(object sender, PackageModifiedEventArgs<ConfigurationPackage> e)
         {
             this.UpdateApplicationPackageConfig(e.NewPackage.Path);
+        }
+
+        private static string GetPackageDirectoryName(string fileName)
+        {
+            return fileName.Replace(".zip", String.Empty);
+        }
+
+        public Task<int> GetApplicationCountyAsync(string cluster)
+        {
+            throw new NotImplementedException();
+        }
+
+        public Task<int> GetServiceCountAsync(string cluster)
+        {
+            throw new NotImplementedException();
         }
     }
 }

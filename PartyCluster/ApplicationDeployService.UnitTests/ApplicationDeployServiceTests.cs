@@ -32,13 +32,13 @@ namespace ApplicationDeployService.UnitTests
 
             string clusterAddress = "test";
 
-            IEnumerable<Guid> result = await target.QueueApplicationDeployment(clusterAddress);
+            IEnumerable<Guid> result = await target.QueueApplicationDeploymentAsync(clusterAddress);
 
             Assert.AreEqual(2, result.Count());
 
             foreach (Guid actual in result)
             {
-                Assert.AreEqual<ApplicationDeployStatus>(ApplicationDeployStatus.Copy, await target.Status(actual));
+                Assert.AreEqual<ApplicationDeployStatus>(ApplicationDeployStatus.Copy, await target.GetStatusAsync(actual));
             }
         }
 
@@ -56,7 +56,7 @@ namespace ApplicationDeployService.UnitTests
             };
 
             ApplicationDeployService target = new ApplicationDeployService(stateManager, applicationOperator, this.CreateServiceParameters());
-            ApplicationDeployment appDeployment = new ApplicationDeployment("", ApplicationDeployStatus.Copy, "", type, version, "", "");
+            ApplicationDeployment appDeployment = new ApplicationDeployment("", ApplicationDeployStatus.Copy, "", type, version, "", "", DateTimeOffset.UtcNow);
             ApplicationDeployment actual = await target.ProcessApplicationDeployment(appDeployment);
 
             Assert.AreEqual(expected, actual.ImageStorePath);
@@ -73,7 +73,7 @@ namespace ApplicationDeployService.UnitTests
             };
 
             ApplicationDeployService target = new ApplicationDeployService(stateManager, applicationOperator, this.CreateServiceParameters());
-            ApplicationDeployment appDeployment = new ApplicationDeployment("", ApplicationDeployStatus.Register, "", "type1", "1.0.0", "", "");
+            ApplicationDeployment appDeployment = new ApplicationDeployment("", ApplicationDeployStatus.Register, "", "type1", "1.0.0", "", "", DateTimeOffset.UtcNow);
             ApplicationDeployment actual = await target.ProcessApplicationDeployment(appDeployment);
             
             Assert.AreEqual(ApplicationDeployStatus.Create, actual.Status);
@@ -89,7 +89,7 @@ namespace ApplicationDeployService.UnitTests
             };
 
             ApplicationDeployService target = new ApplicationDeployService(stateManager, applicationOperator, this.CreateServiceParameters());
-            ApplicationDeployment appDeployment = new ApplicationDeployment("", ApplicationDeployStatus.Create, "", "type1", "1.0.0", "", "");
+            ApplicationDeployment appDeployment = new ApplicationDeployment("", ApplicationDeployStatus.Create, "", "type1", "1.0.0", "", "", DateTimeOffset.UtcNow);
             ApplicationDeployment actual = await target.ProcessApplicationDeployment(appDeployment);
 
             Assert.AreEqual(ApplicationDeployStatus.Complete, actual.Status);

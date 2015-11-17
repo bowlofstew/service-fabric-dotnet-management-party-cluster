@@ -5,8 +5,11 @@
 
 namespace ApplicationDeployService
 {
+    using System;
+    using System.Runtime.Serialization;
     using Domain;
 
+    [DataContract]
     public struct ApplicationDeployment
     {
         public ApplicationDeployment(
@@ -16,7 +19,8 @@ namespace ApplicationDeployService
             string applicationTypeName,
             string applicationTypeVersion,
             string applicationInstanceName,
-            string packagePath)
+            string packagePath,
+            DateTimeOffset timestamp)
         {
             this.Cluster = cluster;
             this.Status = status;
@@ -25,6 +29,7 @@ namespace ApplicationDeployService
             this.ApplicationTypeVersion = applicationTypeVersion;
             this.ApplicationInstanceName = applicationInstanceName;
             this.PackagePath = packagePath;
+            this.DeploymentTimestamp = timestamp;
         }
 
         public ApplicationDeployment(ApplicationDeployStatus status, ApplicationDeployment copyFrom)
@@ -35,22 +40,33 @@ namespace ApplicationDeployService
                   copyFrom.ApplicationTypeName,
                   copyFrom.ApplicationTypeVersion,
                   copyFrom.ApplicationInstanceName,
-                  copyFrom.PackagePath)
+                  copyFrom.PackagePath,
+                  copyFrom.DeploymentTimestamp)
         {
         }
-            
-        public string Cluster { get; set; }
-        
-        public ApplicationDeployStatus Status { get; set; }
-        
-        public string ImageStorePath { get; set; }
+           
+        [DataMember]
+        public string Cluster { get; private set; }
 
+        [DataMember]
+        public ApplicationDeployStatus Status { get; private set; }
+
+        [DataMember]
+        public string ImageStorePath { get; private set; }
+
+        [DataMember]
         public string ApplicationTypeName { get; private set; }
 
+        [DataMember]
         public string ApplicationTypeVersion { get; private set; }
 
+        [DataMember]
         public string ApplicationInstanceName { get; private set; }
 
+        [DataMember]
         public string PackagePath { get; private set; }
+
+        [DataMember]
+        public DateTimeOffset DeploymentTimestamp { get; private set; }
     }
 }
