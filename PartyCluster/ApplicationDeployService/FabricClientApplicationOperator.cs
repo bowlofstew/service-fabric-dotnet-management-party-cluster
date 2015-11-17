@@ -11,6 +11,7 @@ namespace ApplicationDeployService
     using System.Fabric;
     using System.Fabric.Description;
     using System.Fabric.Query;
+    using System.Runtime.Caching;
     using System.Threading.Tasks;
     using Common;
     using Domain;
@@ -18,13 +19,14 @@ namespace ApplicationDeployService
     internal class FabricClientApplicationOperator : IApplicationOperator
     {
         private bool disposing = false;
-        private StatefulServiceParameters serviceParameters;
+        private readonly StatefulServiceParameters serviceParameters;
+        private readonly TimeSpan CacheSlidingExpiration = TimeSpan.FromMinutes(15);
 
         /// <summary>
         /// Mapping from cluster URIs -> active FabricClients.
         /// This doesn't need to be persisted since they can simply be recreated.
         /// </summary>
-        private IDictionary<string, FabricClient> fabricClients = new ConcurrentDictionary<string, FabricClient>();
+        private MemoryCache fabricClients = new MemoryCache("fabricClients");
 
         public FabricClientApplicationOperator(StatefulServiceParameters serviceParameters)
         {
@@ -96,24 +98,26 @@ namespace ApplicationDeployService
             if (!this.disposing)
             {
                 this.disposing = true;
-                foreach (FabricClient client in this.fabricClients.Values)
+                foreach (var client in this.fabricClients)
                 {
                     try
                     {
-                        client.Dispose();
+                        ((FabricClient)client.Value).Dispose();
                     }
                     catch
                     {
                         // move on
                     }
                 }
-                this.fabricClients.Clear();
+                this.fabricClients.Dispose();
             }
         }
         
         private FabricClient GetClient(string cluster)
         {
-            if (!this.fabricClients.ContainsKey(cluster))
+            FabricClient client = this.fabricClients.Get(cluster) as FabricClient;
+
+            if (client == null)
             {
                 string clientName = Environment.GetEnvironmentVariable("COMPUTERNAME");
                 if (string.IsNullOrWhiteSpace(clientName))
@@ -127,9 +131,10 @@ namespace ApplicationDeployService
                         clientName = "";
                     }
                 }
+
                 clientName = clientName + "_" + this.serviceParameters.ReplicaId.ToString();
 
-                FabricClient fc = new FabricClient(
+                client = new FabricClient(
                     new FabricClientSettings
                     {
                         ClientFriendlyName = clientName,
@@ -138,10 +143,25 @@ namespace ApplicationDeployService
                     },
                     cluster);
 
-                this.fabricClients[cluster] = fc;
+                this.fabricClients.Add(new CacheItem(cluster, client), new CacheItemPolicy()
+                {
+                    SlidingExpiration = this.CacheSlidingExpiration,
+                    RemovedCallback = args =>
+                    {
+                        IDisposable fc = args.CacheItem.Value as IDisposable;
+                        if (fc != null)
+                        {
+                            try
+                            {
+                                fc.Dispose();
+                            }
+                            catch { }
+                        }
+                    }
+                });
             }
 
-            return this.fabricClients[cluster];
+            return client;
         }
     }
 }
