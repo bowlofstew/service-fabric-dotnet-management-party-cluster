@@ -540,7 +540,13 @@ namespace ClusterService.UnitTests
                 await dictionary.SetAsync(tx, key, original);
             }
 
-            ClusterService target = new ClusterService(clusterOperator, null, new MockApplicationDeployService(), stateManager, this.CreateServiceParameters(), config);
+            ClusterService target = new ClusterService(
+                clusterOperator,
+                null,
+                new MockApplicationDeployService(),
+                stateManager,
+                this.CreateServiceParameters(),
+                config);
 
             await target.ProcessClustersAsync();
 
@@ -576,7 +582,13 @@ namespace ClusterService.UnitTests
                 await dictionary.SetAsync(tx, key, original);
             }
 
-            ClusterService target = new ClusterService(clusterOperator, null, new MockApplicationDeployService(), stateManager, this.CreateServiceParameters(), config);
+            ClusterService target = new ClusterService(
+                clusterOperator,
+                null,
+                new MockApplicationDeployService(),
+                stateManager,
+                this.CreateServiceParameters(),
+                config);
 
             await target.ProcessClustersAsync();
 
@@ -611,7 +623,13 @@ namespace ClusterService.UnitTests
             };
 
             ClusterConfig config = new ClusterConfig();
-            ClusterService target = new ClusterService(clusterOperator, null, new MockApplicationDeployService(), stateManager, this.CreateServiceParameters(), config);
+            ClusterService target = new ClusterService(
+                clusterOperator,
+                null,
+                new MockApplicationDeployService(),
+                stateManager,
+                this.CreateServiceParameters(),
+                config);
 
             Cluster cluster = this.CreateCluster(ClusterStatus.New);
 
@@ -636,7 +654,13 @@ namespace ClusterService.UnitTests
             };
 
             ClusterConfig config = new ClusterConfig();
-            ClusterService target = new ClusterService(clusterOperator, null, new MockApplicationDeployService(), stateManager, this.CreateServiceParameters(), config);
+            ClusterService target = new ClusterService(
+                clusterOperator,
+                null,
+                new MockApplicationDeployService(),
+                stateManager,
+                this.CreateServiceParameters(),
+                config);
             Cluster cluster = this.CreateCluster(ClusterStatus.Creating);
 
             Cluster actual = await target.ProcessClusterStatusAsync(cluster);
@@ -660,7 +684,13 @@ namespace ClusterService.UnitTests
             };
 
             ClusterConfig config = new ClusterConfig();
-            ClusterService target = new ClusterService(clusterOperator, null, new MockApplicationDeployService(), stateManager, this.CreateServiceParameters(), config);
+            ClusterService target = new ClusterService(
+                clusterOperator,
+                null,
+                new MockApplicationDeployService(),
+                stateManager,
+                this.CreateServiceParameters(),
+                config);
             Cluster cluster = this.CreateCluster(ClusterStatus.Creating);
 
             Cluster actual = await target.ProcessClusterStatusAsync(cluster);
@@ -692,7 +722,13 @@ namespace ClusterService.UnitTests
             };
 
             ClusterConfig config = new ClusterConfig();
-            ClusterService target = new ClusterService(clusterOperator, null, new MockApplicationDeployService(), stateManager, this.CreateServiceParameters(), config);
+            ClusterService target = new ClusterService(
+                clusterOperator,
+                null,
+                new MockApplicationDeployService(),
+                stateManager,
+                this.CreateServiceParameters(),
+                config);
 
             Cluster cluster = this.CreateCluster(ClusterStatus.Remove);
 
@@ -716,7 +752,13 @@ namespace ClusterService.UnitTests
             };
 
             ClusterConfig config = new ClusterConfig();
-            ClusterService target = new ClusterService(clusterOperator, null, new MockApplicationDeployService(), stateManager, this.CreateServiceParameters(), config);
+            ClusterService target = new ClusterService(
+                clusterOperator,
+                null,
+                new MockApplicationDeployService(),
+                stateManager,
+                this.CreateServiceParameters(),
+                config);
 
             Cluster cluster = this.CreateCluster(ClusterStatus.Deleting);
 
@@ -760,7 +802,13 @@ namespace ClusterService.UnitTests
         {
             ClusterConfig config = new ClusterConfig();
             MockReliableStateManager stateManager = new MockReliableStateManager();
-            ClusterService target = new ClusterService(null, new MockMailer(), new MockApplicationDeployService(), stateManager, this.CreateServiceParameters(), config);
+            ClusterService target = new ClusterService(
+                null,
+                new MockMailer(),
+                new MockApplicationDeployService(),
+                stateManager,
+                this.CreateServiceParameters(),
+                config);
 
             int id = 5;
             string email = "test@test.com";
@@ -871,7 +919,13 @@ namespace ClusterService.UnitTests
             ClusterConfig config = new ClusterConfig() {MaximumUsersPerCluster = 2};
             MockReliableStateManager stateManager = new MockReliableStateManager();
             MockMailer mockMailer = new MockMailer();
-            ClusterService target = new ClusterService(null, mockMailer, new MockApplicationDeployService(), stateManager, this.CreateServiceParameters(), config);
+            ClusterService target = new ClusterService(
+                null,
+                mockMailer,
+                new MockApplicationDeployService(),
+                stateManager,
+                this.CreateServiceParameters(),
+                config);
 
             int idWithUser = 5;
             string email = "test@test.com";

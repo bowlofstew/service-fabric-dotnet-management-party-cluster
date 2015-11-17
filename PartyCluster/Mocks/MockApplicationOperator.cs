@@ -24,10 +24,6 @@ namespace Mocks
 
         public Func<string, string, Task> RegisterApplicationAsyncFunc { get; set; }
 
-        public void CloseConnection(string cluster)
-        {
-        }
-
         public Task<string> CopyPackageToImageStoreAsync(
             string cluster, string applicationPackagePath, string applicationTypeName, string applicationTypeVersion)
         {
@@ -56,6 +52,10 @@ namespace Mocks
         public Task RegisterApplicationAsync(string cluster, string imageStorePath)
         {
             return this.RegisterApplicationAsyncFunc(cluster, imageStorePath);
+        }
+
+        public void CloseConnection(string cluster)
+        {
         }
     }
 }

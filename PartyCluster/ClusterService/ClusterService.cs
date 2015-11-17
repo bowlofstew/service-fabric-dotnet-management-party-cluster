@@ -378,10 +378,10 @@ namespace ClusterService
                     catch (Exception e)
                     {
                         ServiceEventSource.Current.ServiceMessage(
-                            this, 
-                            "Failed to process cluster: {0}. {1}", 
-                            item.Value.Address, 
-                            (e is AggregateException)? ((AggregateException)e).InnerException.Message : e.Message);
+                            this,
+                            "Failed to process cluster: {0}. {1}",
+                            item.Value.Address,
+                            (e is AggregateException) ? ((AggregateException) e).InnerException.Message : e.Message);
 
                         //TODO: process sick clusters with multiple failures.
                         //await sickClusters.AddOrUpdateAsync(tx, cluster.Key, 1, (key, value) => ++value);
@@ -509,7 +509,7 @@ namespace ClusterService
                             this,
                             "Failed to queue sample deployment. Cluster: {0} Error: {1}",
                             cluster.Address,
-                            e is AggregateException ? ((AggregateException)e).InnerException.Message : e.Message);
+                            e is AggregateException ? ((AggregateException) e).InnerException.Message : e.Message);
                     }
 
                     ServiceEventSource.Current.ServiceMessage(
@@ -554,7 +554,7 @@ namespace ClusterService
                 case ClusterOperationStatus.Deleting:
                     return new Cluster(ClusterStatus.Deleting, cluster);
             }
-            
+
             int deployedApplications = await this.applicationDeployService.GetApplicationCountAsync(cluster.Address, 19000);
             int deployedServices = await this.applicationDeployService.GetApplicationCountAsync(cluster.Address, 19000);
 

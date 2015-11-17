@@ -6,7 +6,6 @@
 namespace ApplicationDeployService
 {
     using System;
-    using System.Collections.Concurrent;
     using System.Collections.Generic;
     using System.Fabric;
     using System.Fabric.Description;
@@ -18,9 +17,9 @@ namespace ApplicationDeployService
 
     internal class FabricClientApplicationOperator : IApplicationOperator
     {
-        private bool disposing = false;
         private readonly StatefulServiceParameters serviceParameters;
-        private readonly TimeSpan CacheSlidingExpiration = TimeSpan.FromMinutes(15);
+        private readonly TimeSpan cacheSlidingExpiration = TimeSpan.FromMinutes(15);
+        private bool disposing = false;
 
         /// <summary>
         /// Mapping from cluster URIs -> active FabricClients.
@@ -84,7 +83,7 @@ namespace ApplicationDeployService
             ApplicationList applicationList = await fabricClient.QueryManager.GetApplicationListAsync();
 
             int count = 0;
-            foreach (var application in applicationList)
+            foreach (Application application in applicationList)
             {
                 ServiceList serviceList = await fabricClient.QueryManager.GetServiceListAsync(application.ApplicationName);
                 count += serviceList.Count;
@@ -98,11 +97,11 @@ namespace ApplicationDeployService
             if (!this.disposing)
             {
                 this.disposing = true;
-                foreach (var client in this.fabricClients)
+                foreach (KeyValuePair<string, object> client in this.fabricClients)
                 {
                     try
                     {
-                        ((FabricClient)client.Value).Dispose();
+                        ((FabricClient) client.Value).Dispose();
                     }
                     catch
                     {
@@ -112,7 +111,7 @@ namespace ApplicationDeployService
                 this.fabricClients.Dispose();
             }
         }
-        
+
         private FabricClient GetClient(string cluster)
         {
             FabricClient client = this.fabricClients.Get(cluster) as FabricClient;
@@ -143,22 +142,26 @@ namespace ApplicationDeployService
                     },
                     cluster);
 
-                this.fabricClients.Add(new CacheItem(cluster, client), new CacheItemPolicy()
-                {
-                    SlidingExpiration = this.CacheSlidingExpiration,
-                    RemovedCallback = args =>
+                this.fabricClients.Add(
+                    new CacheItem(cluster, client),
+                    new CacheItemPolicy()
                     {
-                        IDisposable fc = args.CacheItem.Value as IDisposable;
-                        if (fc != null)
+                        SlidingExpiration = this.cacheSlidingExpiration,
+                        RemovedCallback = args =>
                         {
-                            try
+                            IDisposable fc = args.CacheItem.Value as IDisposable;
+                            if (fc != null)
                             {
-                                fc.Dispose();
+                                try
+                                {
+                                    fc.Dispose();
+                                }
+                                catch
+                                {
+                                }
                             }
-                            catch { }
                         }
-                    }
-                });
+                    });
             }
 
             return client;
