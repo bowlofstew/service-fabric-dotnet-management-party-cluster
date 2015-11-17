@@ -15,7 +15,7 @@ namespace ClusterService
     internal class FakeClusterOperator : IClusterOperator
     {
         private readonly IReliableStateManager stateManager;
-        private string addressFormat = "{0}.westus.cloudapp.azure.com";
+        private string addressFormat = "localhost";
         private Random random = new Random();
 
         public FakeClusterOperator(IReliableStateManager stateManager)
@@ -31,7 +31,7 @@ namespace ClusterService
             IReliableDictionary<string, DateTimeOffset> clusterCreateDelay =
                 await this.stateManager.GetOrAddAsync<IReliableDictionary<string, DateTimeOffset>>(new Uri("fakeclusterops:/clusterCreateDelay"));
 
-            string domain = String.Format(this.addressFormat, name);
+            string domain = addressFormat;
 
             using (ITransaction tx = this.stateManager.CreateTransaction())
             {

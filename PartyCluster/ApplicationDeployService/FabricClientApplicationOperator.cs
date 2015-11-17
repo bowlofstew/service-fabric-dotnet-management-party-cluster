@@ -11,6 +11,7 @@ namespace ApplicationDeployService
     using System.Fabric.Description;
     using System.Fabric.Query;
     using System.Runtime.Caching;
+    using System.Threading;
     using System.Threading.Tasks;
     using Common;
     using Domain;
@@ -18,6 +19,8 @@ namespace ApplicationDeployService
     internal class FabricClientApplicationOperator : IApplicationOperator
     {
         private readonly StatefulServiceParameters serviceParameters;
+        private readonly TimeSpan readOperationTimeout = TimeSpan.FromSeconds(5);
+        private readonly TimeSpan writeOperationTimeout = TimeSpan.FromMinutes(1);
         private readonly TimeSpan cacheSlidingExpiration = TimeSpan.FromMinutes(15);
         private bool disposing = false;
 
@@ -32,8 +35,17 @@ namespace ApplicationDeployService
             this.serviceParameters = serviceParameters;
         }
 
+        /// <summary>
+        /// Copies an application package to the given cluster's image store.
+        /// This expects the cluster to have the ImageStore service running.
+        /// </summary>
+        /// <param name="cluster"></param>
+        /// <param name="applicationPackagePath"></param>
+        /// <param name="applicationTypeName"></param>
+        /// <param name="applicationTypeVersion"></param>
+        /// <returns></returns>
         public Task<string> CopyPackageToImageStoreAsync(
-            string cluster, string applicationPackagePath, string applicationTypeName, string applicationTypeVersion)
+            string cluster, string applicationPackagePath, string applicationTypeName, string applicationTypeVersion, CancellationToken token)
         {
             FabricClient fabricClient = this.GetClient(cluster);
             FabricClient.ApplicationManagementClient applicationClient = fabricClient.ApplicationManager;
@@ -46,7 +58,15 @@ namespace ApplicationDeployService
             return Task.FromResult(imagestorePath);
         }
 
-        public Task CreateApplicationAsync(string cluster, string applicationInstanceName, string applicationTypeName, string applicationTypeVersion)
+        /// <summary>
+        /// Creates an instance of an application.
+        /// </summary>
+        /// <param name="cluster"></param>
+        /// <param name="applicationInstanceName"></param>
+        /// <param name="applicationTypeName"></param>
+        /// <param name="applicationTypeVersion"></param>
+        /// <returns></returns>
+        public Task CreateApplicationAsync(string cluster, string applicationInstanceName, string applicationTypeName, string applicationTypeVersion, CancellationToken token)
         {
             FabricClient fabricClient = this.GetClient(cluster);
             FabricClient.ApplicationManagementClient applicationClient = fabricClient.ApplicationManager;
@@ -55,37 +75,56 @@ namespace ApplicationDeployService
 
             ApplicationDescription appDescription = new ApplicationDescription(appName, applicationTypeName, applicationTypeVersion);
 
-            return applicationClient.CreateApplicationAsync(appDescription);
+            return applicationClient.CreateApplicationAsync(appDescription, this.writeOperationTimeout, token);
         }
 
-        public Task RegisterApplicationAsync(string cluster, string imageStorePath)
+        /// <summary>
+        /// Registers an application type.
+        /// </summary>
+        /// <param name="cluster"></param>
+        /// <param name="imageStorePath"></param>
+        /// <param name="token"></param>
+        /// <returns></returns>
+        public Task RegisterApplicationAsync(string cluster, string imageStorePath, CancellationToken token)
         {
             FabricClient fabricClient = this.GetClient(cluster);
             FabricClient.ApplicationManagementClient applicationClient = fabricClient.ApplicationManager;
 
             // TODO: Error handling
-            return applicationClient.ProvisionApplicationAsync(imageStorePath);
+            return applicationClient.ProvisionApplicationAsync(imageStorePath, writeOperationTimeout, token);
         }
 
-        public async Task<int> GetApplicationCountAsync(string cluster)
+        /// <summary>
+        /// Gets the number of application deployed to the given cluster.
+        /// </summary>
+        /// <param name="cluster"></param>
+        /// <param name="token"></param>
+        /// <returns></returns>
+        public async Task<int> GetApplicationCountAsync(string cluster, CancellationToken token)
         {
             FabricClient fabricClient = this.GetClient(cluster);
 
-            ApplicationList applicationList = await fabricClient.QueryManager.GetApplicationListAsync();
+            ApplicationList applicationList = await fabricClient.QueryManager.GetApplicationListAsync(null, this.readOperationTimeout, token);
 
             return applicationList.Count;
         }
 
-        public async Task<int> GetServiceCountAsync(string cluster)
+        /// <summary>
+        /// Gets the total number of service deployed to the given cluster.
+        /// </summary>
+        /// <param name="cluster"></param>
+        /// <param name="token"></param>
+        /// <returns></returns>
+        public async Task<int> GetServiceCountAsync(string cluster, CancellationToken token)
         {
             FabricClient fabricClient = this.GetClient(cluster);
 
-            ApplicationList applicationList = await fabricClient.QueryManager.GetApplicationListAsync();
+            ApplicationList applicationList = await fabricClient.QueryManager.GetApplicationListAsync(null, this.readOperationTimeout, token);
 
             int count = 0;
             foreach (Application application in applicationList)
             {
-                ServiceList serviceList = await fabricClient.QueryManager.GetServiceListAsync(application.ApplicationName);
+                ServiceList serviceList = await fabricClient.QueryManager.GetServiceListAsync(application.ApplicationName, null, this.readOperationTimeout, token);
                 count += serviceList.Count;
             }
 

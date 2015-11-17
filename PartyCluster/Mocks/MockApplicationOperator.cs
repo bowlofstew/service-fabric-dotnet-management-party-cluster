@@ -6,6 +6,7 @@
 namespace Mocks
 {
     using System;
+    using System.Threading;
     using System.Threading.Tasks;
     using Domain;
 
@@ -25,12 +26,12 @@ namespace Mocks
         public Func<string, string, Task> RegisterApplicationAsyncFunc { get; set; }
 
         public Task<string> CopyPackageToImageStoreAsync(
-            string cluster, string applicationPackagePath, string applicationTypeName, string applicationTypeVersion)
+            string cluster, string applicationPackagePath, string applicationTypeName, string applicationTypeVersion, CancellationToken token)
         {
             return this.CopyPackageToImageStoreAsyncFunc(cluster, applicationPackagePath, applicationTypeName, applicationTypeVersion);
         }
 
-        public Task CreateApplicationAsync(string cluster, string applicationInstanceName, string applicationTypeName, string applicationTypeVersion)
+        public Task CreateApplicationAsync(string cluster, string applicationInstanceName, string applicationTypeName, string applicationTypeVersion, CancellationToken token)
         {
             return this.CreateApplicationAsyncFunc(cluster, applicationInstanceName, applicationTypeName, applicationTypeVersion);
         }
@@ -39,17 +40,17 @@ namespace Mocks
         {
         }
 
-        public Task<int> GetApplicationCountAsync(string cluster)
+        public Task<int> GetApplicationCountAsync(string cluster, CancellationToken token)
         {
             throw new NotImplementedException();
         }
 
-        public Task<int> GetServiceCountAsync(string cluster)
+        public Task<int> GetServiceCountAsync(string cluster, CancellationToken token)
         {
             throw new NotImplementedException();
         }
 
-        public Task RegisterApplicationAsync(string cluster, string imageStorePath)
+        public Task RegisterApplicationAsync(string cluster, string imageStorePath, CancellationToken token)
         {
             return this.RegisterApplicationAsyncFunc(cluster, imageStorePath);
         }

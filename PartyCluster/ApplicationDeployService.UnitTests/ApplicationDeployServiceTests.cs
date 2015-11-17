@@ -8,6 +8,7 @@ namespace ApplicationDeployService.UnitTests
     using System;
     using System.Collections.Generic;
     using System.Linq;
+    using System.Threading;
     using System.Threading.Tasks;
     using Common;
     using Domain;
@@ -55,7 +56,7 @@ namespace ApplicationDeployService.UnitTests
 
             ApplicationDeployService target = new ApplicationDeployService(stateManager, applicationOperator, this.CreateServiceParameters());
             ApplicationDeployment appDeployment = new ApplicationDeployment("", ApplicationDeployStatus.Copy, "", type, version, "", "", DateTimeOffset.UtcNow);
-            ApplicationDeployment actual = await target.ProcessApplicationDeployment(appDeployment);
+            ApplicationDeployment actual = await target.ProcessApplicationDeployment(appDeployment, CancellationToken.None);
 
             Assert.AreEqual(expected, actual.ImageStorePath);
             Assert.AreEqual(ApplicationDeployStatus.Register, actual.Status);
@@ -80,7 +81,7 @@ namespace ApplicationDeployService.UnitTests
                 "",
                 "",
                 DateTimeOffset.UtcNow);
-            ApplicationDeployment actual = await target.ProcessApplicationDeployment(appDeployment);
+            ApplicationDeployment actual = await target.ProcessApplicationDeployment(appDeployment, CancellationToken.None);
 
             Assert.AreEqual(ApplicationDeployStatus.Create, actual.Status);
         }
@@ -104,7 +105,7 @@ namespace ApplicationDeployService.UnitTests
                 "",
                 "",
                 DateTimeOffset.UtcNow);
-            ApplicationDeployment actual = await target.ProcessApplicationDeployment(appDeployment);
+            ApplicationDeployment actual = await target.ProcessApplicationDeployment(appDeployment, CancellationToken.None);
 
             Assert.AreEqual(ApplicationDeployStatus.Complete, actual.Status);
         }

@@ -50,11 +50,6 @@ namespace ClusterService
         private readonly IApplicationDeployService applicationDeployService;
 
         /// <summary>
-        /// The reliable state manager that holds our collections.
-        /// </summary>
-        private readonly IReliableStateManager reliableStateManager;
-
-        /// <summary>
         /// A set of service parameters. Similar to StatefulServiceInitializationParameters, but we use this type
         /// here because StatefulServiceInitializationParameters doesn't have public setters.
         /// </summary>
@@ -84,7 +79,6 @@ namespace ClusterService
             this.config = config;
             this.clusterOperator = clusterOperator;
             this.applicationDeployService = applicationDeployService;
-            this.reliableStateManager = stateManager;
             this.mailer = mailer;
             this.StateManager = stateManager;
             this.serviceParameters = serviceParameters;
@@ -99,7 +93,7 @@ namespace ClusterService
         public async Task<IEnumerable<ClusterView>> GetClusterListAsync()
         {
             IReliableDictionary<int, Cluster> clusterDictionary =
-                await this.reliableStateManager.GetOrAddAsync<IReliableDictionary<int, Cluster>>(ClusterDictionaryName);
+                await this.StateManager.GetOrAddAsync<IReliableDictionary<int, Cluster>>(ClusterDictionaryName);
 
             return from item in clusterDictionary
                 where item.Value.Status == ClusterStatus.Ready
@@ -130,7 +124,7 @@ namespace ClusterService
             ServiceEventSource.Current.ServiceMessage(this, "Join cluster request. Cluster: {0}.", clusterId);
 
             IReliableDictionary<int, Cluster> clusterDictionary =
-                await this.reliableStateManager.GetOrAddAsync<IReliableDictionary<int, Cluster>>(ClusterDictionaryName);
+                await this.StateManager.GetOrAddAsync<IReliableDictionary<int, Cluster>>(ClusterDictionaryName);
 
             foreach (KeyValuePair<int, Cluster> item in clusterDictionary)
             {
@@ -145,7 +139,7 @@ namespace ClusterService
                 }
             }
 
-            using (ITransaction tx = this.reliableStateManager.CreateTransaction())
+            using (ITransaction tx = this.StateManager.CreateTransaction())
             {
                 ConditionalResult<Cluster> result = await clusterDictionary.TryGetValueAsync(tx, clusterId, LockMode.Update);
 
@@ -284,9 +278,9 @@ namespace ClusterService
         internal async Task BalanceClustersAsync(int target)
         {
             IReliableDictionary<int, Cluster> clusterDictionary =
-                await this.reliableStateManager.GetOrAddAsync<IReliableDictionary<int, Cluster>>(ClusterDictionaryName);
+                await this.StateManager.GetOrAddAsync<IReliableDictionary<int, Cluster>>(ClusterDictionaryName);
 
-            using (ITransaction tx = this.reliableStateManager.CreateTransaction())
+            using (ITransaction tx = this.StateManager.CreateTransaction())
             {
                 IEnumerable<KeyValuePair<int, Cluster>> activeClusters = this.GetActiveClusters(clusterDictionary);
                 int activeClusterCount = activeClusters.Count();
@@ -350,15 +344,15 @@ namespace ClusterService
         internal async Task ProcessClustersAsync()
         {
             IReliableDictionary<int, Cluster> clusterDictionary =
-                await this.reliableStateManager.GetOrAddAsync<IReliableDictionary<int, Cluster>>(ClusterDictionaryName);
+                await this.StateManager.GetOrAddAsync<IReliableDictionary<int, Cluster>>(ClusterDictionaryName);
 
             //TODO: process sick clusters with multiple failures.
             //IReliableDictionary<int, int> sickClusters =
-            //    await this.reliableStateManager.GetOrAddAsync<IReliableDictionary<int, int>>(SickClusterDictionaryName);
+            //    await this.StateManager.GetOrAddAsync<IReliableDictionary<int, int>>(SickClusterDictionaryName);
 
             foreach (KeyValuePair<int, Cluster> item in clusterDictionary)
             {
-                using (ITransaction tx = this.reliableStateManager.CreateTransaction())
+                using (ITransaction tx = this.StateManager.CreateTransaction())
                 {
                     try
                     {
@@ -401,7 +395,7 @@ namespace ClusterService
         internal async Task<int> GetTargetClusterCapacityAsync()
         {
             IReliableDictionary<int, Cluster> clusterDictionary =
-                await this.reliableStateManager.GetOrAddAsync<IReliableDictionary<int, Cluster>>(ClusterDictionaryName);
+                await this.StateManager.GetOrAddAsync<IReliableDictionary<int, Cluster>>(ClusterDictionaryName);
 
             IEnumerable<KeyValuePair<int, Cluster>> activeClusters = this.GetActiveClusters(clusterDictionary);
             int activeClusterCount = activeClusters.Count();
@@ -555,18 +549,29 @@ namespace ClusterService
                     return new Cluster(ClusterStatus.Deleting, cluster);
             }
 
-            int deployedApplications = await this.applicationDeployService.GetApplicationCountAsync(cluster.Address, 19000);
-            int deployedServices = await this.applicationDeployService.GetApplicationCountAsync(cluster.Address, 19000);
+            try
+            {
+                int deployedApplications = await this.applicationDeployService.GetApplicationCountAsync(cluster.Address, 19000);
+                int deployedServices = await this.applicationDeployService.GetApplicationCountAsync(cluster.Address, 19000);
 
-            return new Cluster(
-                cluster.InternalName,
-                cluster.Status,
-                deployedApplications,
-                deployedServices,
-                cluster.Address,
-                cluster.Ports,
-                cluster.Users,
-                cluster.CreatedOn);
+                return new Cluster(
+                    cluster.InternalName,
+                    cluster.Status,
+                    deployedApplications,
+                    deployedServices,
+                    cluster.Address,
+                    cluster.Ports,
+                    cluster.Users,
+                    cluster.CreatedOn);
+            }
+            catch (Exception e)
+            {
+                ServiceEventSource.Current.ServiceMessage(this, "Unable to determine application and service count. Cluster: {0}. Error: {1}",
+                    cluster.Address,
+                    e is AggregateException? ((AggregateException)e).InnerException.Message : e.Message);
+            }
+
+            return cluster;
         }
 
         private async Task<Cluster> ProcessRemoveClusterAsync(Cluster cluster)

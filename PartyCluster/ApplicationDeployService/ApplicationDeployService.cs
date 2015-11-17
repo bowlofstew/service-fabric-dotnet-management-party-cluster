@@ -33,6 +33,7 @@ namespace ApplicationDeployService
         private readonly TimeSpan DeploymentRetainment = TimeSpan.FromMinutes(30);
         private readonly StatefulServiceParameters serviceParameters;
         private readonly IApplicationOperator applicationOperator;
+        private CancellationToken replicaRunCancellationToken;
         private string applicationPackagePath;
 
         /// <summary>
@@ -124,12 +125,12 @@ namespace ApplicationDeployService
 
         public Task<int> GetApplicationCountAsync(string clusterAddress, int clusterPort)
         {
-            return this.applicationOperator.GetApplicationCountAsync(GetClusterAddress(clusterAddress, clusterPort));
+            return this.applicationOperator.GetApplicationCountAsync(GetClusterAddress(clusterAddress, clusterPort), this.replicaRunCancellationToken);
         }
 
         public Task<int> GetServiceCountAsync(string clusterAddress, int clusterPort)
         {
-            return this.applicationOperator.GetServiceCountAsync(GetClusterAddress(clusterAddress, clusterPort));
+            return this.applicationOperator.GetServiceCountAsync(GetClusterAddress(clusterAddress, clusterPort), this.replicaRunCancellationToken);
         }
 
         protected override IEnumerable<ServiceReplicaListener> CreateServiceReplicaListeners()
@@ -140,6 +141,7 @@ namespace ApplicationDeployService
         protected override async Task RunAsync(CancellationToken cancellationToken)
         {
             TimeSpan delayTime = TimeSpan.FromSeconds(5);
+            this.replicaRunCancellationToken = cancellationToken;
 
             try
             {
@@ -203,7 +205,7 @@ namespace ApplicationDeployService
 
                 try
                 {
-                    ApplicationDeployment processedDeployment = await this.ProcessApplicationDeployment(appDeployment.Value);
+                    ApplicationDeployment processedDeployment = await this.ProcessApplicationDeployment(appDeployment.Value, cancellationToken);
 
                     if (processedDeployment.Status != ApplicationDeployStatus.Complete)
                     {
@@ -254,7 +256,7 @@ namespace ApplicationDeployService
             }
         }
 
-        internal async Task<ApplicationDeployment> ProcessApplicationDeployment(ApplicationDeployment applicationDeployment)
+        internal async Task<ApplicationDeployment> ProcessApplicationDeployment(ApplicationDeployment applicationDeployment, CancellationToken cancellationToken)
         {
             switch (applicationDeployment.Status)
             {
@@ -270,7 +272,8 @@ namespace ApplicationDeployService
                         applicationDeployment.Cluster,
                         applicationDeployment.PackagePath,
                         applicationDeployment.ApplicationTypeName,
-                        applicationDeployment.ApplicationTypeVersion);
+                        applicationDeployment.ApplicationTypeVersion,
+                        cancellationToken);
 
                     return new ApplicationDeployment(
                         applicationDeployment.Cluster,
@@ -292,7 +295,8 @@ namespace ApplicationDeployService
 
                     await this.applicationOperator.RegisterApplicationAsync(
                         applicationDeployment.Cluster,
-                        applicationDeployment.ImageStorePath);
+                        applicationDeployment.ImageStorePath,
+                        cancellationToken);
 
                     return new ApplicationDeployment(ApplicationDeployStatus.Create, applicationDeployment);
 
@@ -307,7 +311,8 @@ namespace ApplicationDeployService
                         applicationDeployment.Cluster,
                         applicationDeployment.ApplicationInstanceName,
                         applicationDeployment.ApplicationTypeName,
-                        applicationDeployment.ApplicationTypeVersion);
+                        applicationDeployment.ApplicationTypeVersion,
+                        cancellationToken);
 
                     return new ApplicationDeployment(ApplicationDeployStatus.Complete, applicationDeployment);
 
