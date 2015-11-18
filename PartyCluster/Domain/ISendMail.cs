@@ -6,10 +6,11 @@
 namespace Domain
 {
     using System;
+    using System.Collections.Generic;
     using System.Threading.Tasks;
 
     public interface ISendMail
     {
-        Task SendJoinMail(string receipientAddress, string clusterAddress, int userPort, TimeSpan timeRemaining, DateTimeOffset clusterExpiration);
+        Task SendJoinMail(string receipientAddress, string clusterAddress, int userPort, TimeSpan timeRemaining, DateTimeOffset clusterExpiration, IEnumerable<HyperlinkView> links);
     }
 }

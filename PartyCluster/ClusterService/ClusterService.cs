@@ -215,7 +215,16 @@ namespace ClusterService
                 {
                     ServiceEventSource.Current.ServiceMessage(this, "Sending join mail. Cluster: {0}.", clusterId);
 
-                    await this.mailer.SendJoinMail(userEmail, clusterAddress, userPort, clusterTimeRemaining, clusterExpiration);
+                    await this.mailer.SendJoinMail(
+                        userEmail,
+                        clusterAddress + ":19000",
+                        userPort,
+                        clusterTimeRemaining,
+                        clusterExpiration, 
+                        new[]
+                        {
+                            new HyperlinkView("http://" + clusterAddress + ":19080/Explorer/index.html", "Service Fabric Explorer", "explore what's on the cluster with the built-in Service Fabric Explorer.")
+                        });
                 }
                 catch (Exception e)
                 {

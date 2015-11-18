@@ -1,20 +1,49 @@
 ﻿<!DOCTYPE html>
-<html>
-<body style="font-family:'Segoe UI Light','Segoe WP Light','Segoe UI','Segoe WP',Tahoma,Arial,sans-serif; color: #555;">
-<h1>Thanks for trying out Microsoft Azure Service Fabric!</h1>
-<h3>Your party cluster address is: <strong>__clusterAddress__</strong></h3>
-<h3>Your port number is: <strong>__userPort__</strong></h3>
-<p>This cluster will expire <strong>__clusterExpiration__</strong>. That gives you <strong>__clusterTimeRemaining__</strong> to deploy applications until the cluster is taken down, but you can connect to a new one as many times as you want.</p>
-<p>The cluster is shared but the port is yours to use in your applications. To connect to the cluster and deploy applications, please refer to the guides here and here. Please familiarize yourself with the rules <TBD:link> and the terms <TBD:link> of using this service. </p>
-<h3 style="color:red"> 
-All your applications will be publicly visible and can be deleted by other users on this cluster. Furthermore, the cluster can be reset earlier than the prescribed time per Microsoft’s discretion. 
-</h3>
-Please refer to the full terms of the service <TBD-link> for more details. 
-</p>
-<br>
-Thanks, and have fun!
-<br>
-- The Service Fabric Team
-
+<html style="padding:0px; margin:0px">
+<body style="background-color:#fcfcfc; font-family:'Segoe UI','Segoe WP','Segoe UI','Segoe WP',Tahoma,Arial,sans-serif; color: #555555; font-size:14px; padding:0px; margin:0px">
+    <div style="background-color:#303030;">
+        <h1 style="padding:20px 10px 20px 10px; text-align:center; font-family:'Segoe UI Light','Segoe WP Light','Segoe UI','Segoe WP',Tahoma,Arial,sans-serif; color:#FF8A00; font-size:32px; font-weight:lighter">Thanks for trying out Microsoft Azure Service Fabric!</h1>
+    </div>
+    <div sstyle="padding:10px 10px 10px 10px;">
+        <h2 style="font-family:'Segoe UI Light','Segoe WP Light','Segoe UI','Segoe WP',Tahoma,Arial,sans-serif; color:#222222; font-size:24px; font-weight:lighter">Welcome to the party!</h2>
+        <p>You can now connect to the cluster and try Service Fabric for free in Azure. Here's the important information you need to get started:</p>
+        <br />
+        <table border="0" cellspacing="0" cellpadding="5" style="font-family:'Segoe UI','Segoe WP','Segoe UI','Segoe WP',Tahoma,Arial,sans-serif; background-color:#89c402; color:#FFFFFF;">
+            <tr>
+                <td width="175" style="width:175px">Cluster connection address:</td>
+                <td width="300" style="width:300px"><b>__clusterAddress__</b></td>
+                <td style="font-size:12px">Use this address to connect and deploy applications to the cluster.</td>
+            </tr>
+            <tr>
+                <td width="175" style="width:175px">Your application port:</td>
+                <td width="300" style="width:300px"><b>__userPort__</b></td>
+                <td style="font-size:12px">This port is open on the cluster for you to use in your applications if you need it - for example, if you have a web front-end, use this for your endpoint in your Service Manifest. Each user gets their own application port to use while they're on the cluster. This one's yours.</td>
+            </tr>
+            <tr>
+                <td width="175" style="width:175px">Cluster expires on:</td>
+                <td width="300" style="width:300px"><b>__clusterExpiration__</b></td>
+                <td style="font-size:12px">That gives you <strong>__clusterTimeRemaining__</strong> to deploy applications until the cluster is taken down, but you can connect to a new one as many times as you want after that.</td>
+            </tr>
+        </table>
+        <br />
+        <p>You can also explore the cluster and some of the sample applications that we've already deployed to the party clusters. Just follow these links:</p>
+        <ul>
+            __links__
+        </ul>
+        <br />
+        Thanks, and have fun!
+        <br />
+        <br />
+        <i>- The Service Fabric Team</i>
+        <br />
+        <br />
+        <hr />
+        <h3 style="color:#DD0000">
+            Disclaimer: All your applications will be publicly visible and can be deleted by other users on this cluster. The cluster can be reset earlier than the prescribed time per Microsoft’s discretion.
+        </h3>
+        <p>
+            Please read over our <a href="http://tryazureservicefabric.eastus.cloudapp.azure.com/termsofuse.html">Terms of Use</a> and <a href="https://www.microsoft.com/privacystatement/en-us/OnlineServices/Default.aspx">Privacy Policy</a> for more details.
+        </p>
+    </div>
 </body>
 </html>
