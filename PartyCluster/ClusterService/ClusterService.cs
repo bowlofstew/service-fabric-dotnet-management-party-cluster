@@ -28,6 +28,9 @@ namespace ClusterService
     {
         internal const string ClusterDictionaryName = "clusterDictionary";
         internal const string SickClusterDictionaryName = "sickClusterDictionary";
+        internal const int ClusterConnectionPort = 19000;
+        internal const int ClusterHttpGatewayPort = 19080;
+
         private readonly Random random = new Random();
 
         /// <summary>
@@ -215,11 +218,11 @@ namespace ClusterService
                 {
                     ServiceEventSource.Current.ServiceMessage(this, "Sending join mail. Cluster: {0}.", clusterId);
                     List<HyperlinkView> links = new List<HyperlinkView>();
-                    links.Add(new HyperlinkView("http://" + clusterAddress + ":19080/Explorer/index.html", "Service Fabric Explorer", "explore what's on the cluster with the built-in Service Fabric Explorer."));
+                    links.Add(new HyperlinkView("http://" + clusterAddress + ":" + ClusterHttpGatewayPort + "/Explorer/index.html", "Service Fabric Explorer", "explore what's on the cluster with the built-in Service Fabric Explorer."));
 
                     try
                     {
-                        IEnumerable<ApplicationView> applications = await this.applicationDeployService.GetApplicationDeploymentsAsync(cluster.Address, 19000);
+                        IEnumerable<ApplicationView> applications = await this.applicationDeployService.GetApplicationDeploymentsAsync(cluster.Address, ClusterConnectionPort);
                         links.AddRange(applications.Select(x => x.EntryServiceInfo));
                     }
                     catch(Exception e)
@@ -229,7 +232,7 @@ namespace ClusterService
                     
                     await this.mailer.SendJoinMail(
                         userEmail,
-                        clusterAddress + ":19000",
+                        clusterAddress + ":" + ClusterConnectionPort,
                         userPort,
                         clusterTimeRemaining,
                         clusterExpiration, 
@@ -512,7 +515,7 @@ namespace ClusterService
 
                     try
                     {
-                        await this.applicationDeployService.QueueApplicationDeploymentAsync(cluster.Address, 19000);
+                        await this.applicationDeployService.QueueApplicationDeploymentAsync(cluster.Address, ClusterConnectionPort);
                     }
                     catch (Exception e)
                     {
@@ -569,7 +572,7 @@ namespace ClusterService
 
             try
             {
-                int deployedApplications = await this.applicationDeployService.GetApplicationCountAsync(cluster.Address, 19000);
+                int deployedApplications = await this.applicationDeployService.GetApplicationCountAsync(cluster.Address, ClusterConnectionPort);
                 int deployedServices = await this.applicationDeployService.GetApplicationCountAsync(cluster.Address, 19000);
 
                 return new Cluster(
