@@ -27,8 +27,8 @@ namespace ApplicationDeployService.UnitTests
 
             target.ApplicationPackages = new List<ApplicationPackageInfo>()
             {
-                new ApplicationPackageInfo("type1", "1.0", "path/to/type1"),
-                new ApplicationPackageInfo("type2", "2.0", "path/to/type2")
+                new ApplicationPackageInfo("type1", "1.0", "path/to/type1", "", "", ""),
+                new ApplicationPackageInfo("type2", "2.0", "path/to/type2", "", "", "")
             };
 
             IEnumerable<Guid> result = await target.QueueApplicationDeploymentAsync("localhost", 19000);
@@ -108,6 +108,30 @@ namespace ApplicationDeployService.UnitTests
             ApplicationDeployment actual = await target.ProcessApplicationDeployment(appDeployment, CancellationToken.None);
 
             Assert.AreEqual(ApplicationDeployStatus.Complete, actual.Status);
+        }
+
+        [TestMethod]
+        public async Task GetServiceEndpointWithDomain()
+        {
+            string expectedDomain = "test.cloudapp.azure.com";
+            string serviceAddress = "http://23.45.67.89/service/api";
+            string expected = "http://test.cloudapp.azure.com:80/service/api";
+
+            MockReliableStateManager stateManager = new MockReliableStateManager();
+            MockApplicationOperator applicationOperator = new MockApplicationOperator()
+            {
+                GetServiceEndpointFunc = (cluster, service) => Task.FromResult(serviceAddress)
+            };
+
+            ApplicationDeployService target = new ApplicationDeployService(stateManager, applicationOperator, this.CreateServiceParameters());
+            target.ApplicationPackages = new List<ApplicationPackageInfo>()
+            {
+                new ApplicationPackageInfo("type1", "1.0", "path/to/type1", "fabric:/app/service", "", "description")
+            };
+
+            IEnumerable<ApplicationView> actual = await target.GetApplicationDeploymentsAsync(expectedDomain, 19000);
+
+            Assert.AreEqual(expected, actual.First().EntryServiceInfo.Address); 
         }
 
         private StatefulServiceParameters CreateServiceParameters()

@@ -16,5 +16,6 @@ namespace Domain
         Task<ApplicationDeployStatus> GetStatusAsync(Guid deployId);
         Task<int> GetApplicationCountAsync(string clusterAddress, int clusterPort);
         Task<int> GetServiceCountAsync(string clusterAddress, int clusterPort);
+        Task<IEnumerable<ApplicationView>> GetApplicationDeploymentsAsync(string clusterAddress, int clusterPort);
     }
 }

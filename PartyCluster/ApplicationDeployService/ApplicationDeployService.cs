@@ -102,6 +102,47 @@ namespace ApplicationDeployService
         }
 
         /// <summary>
+        /// Gets information about all the applications that are deployed by this service.
+        /// </summary>
+        /// <returns></returns>
+        public async Task<IEnumerable<ApplicationView>> GetApplicationDeploymentsAsync(string clusterAddress, int clusterPort)
+        {
+            List<ApplicationView> applications = new List<ApplicationView>(this.ApplicationPackages.Count());
+
+            foreach (ApplicationPackageInfo package in this.ApplicationPackages)
+            {
+                try
+                {
+                    string address = await this.applicationOperator.GetServiceEndpoint(clusterAddress + ":19000", new Uri(package.EntryServiceInstanceUri), package.EntryServiceEndpointName);
+
+                    UriBuilder builder = new UriBuilder(address);
+                    builder.Host = clusterAddress;
+
+                    applications.Add(new ApplicationView(
+                                       new HyperlinkView(
+                                           builder.ToString(),
+                                           GetPackageDirectoryName(package.PackageFileName),
+                                           package.ApplicationDescription)));
+                }
+                catch (FabricServiceNotFoundException)
+                {
+                    // service isn't deployed yet, skip it.
+                }
+                catch(Exception e)
+                {
+                    ServiceEventSource.Current.ServiceMessage(this,
+                        "Failed to get an endpoint address. Application: {0}. Service: {1} Cluster: {2}. Error: {3}.",
+                        package.PackageFileName,
+                        package.EntryServiceInstanceUri,
+                        clusterAddress,
+                        e.GetActualMessage());
+                }
+            }
+
+            return applications;
+        }
+
+        /// <summary>
         /// Gets the status of a deployment.
         /// </summary>
         /// <param name="deployId"></param>
@@ -135,7 +176,7 @@ namespace ApplicationDeployService
 
         protected override IEnumerable<ServiceReplicaListener> CreateServiceReplicaListeners()
         {
-            return new[] {new ServiceReplicaListener(parameters => new ServiceRemotingListener<IApplicationDeployService>(parameters, this))};
+            return new[] { new ServiceReplicaListener(parameters => new ServiceRemotingListener<IApplicationDeployService>(parameters, this)) };
         }
 
         protected override async Task RunAsync(CancellationToken cancellationToken)
@@ -242,7 +283,7 @@ namespace ApplicationDeployService
                 {
                     ServiceEventSource.Current.ServiceMessage(
                         this,
-                        "Application package processing failed.. Package: {0}. Error: {1}",
+                        "Application package processing failed. Package: {0}. Error: {1}",
                         appDeployment.Value.PackagePath,
                         e.ToString());
 

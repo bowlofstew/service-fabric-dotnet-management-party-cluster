@@ -17,6 +17,7 @@ namespace Mocks
             this.CopyPackageToImageStoreAsyncFunc = (cluster, appPackage, appType, appVersion) => Task.FromResult(appType + "_" + appVersion);
             this.CreateApplicationAsyncFunc = (cluster, appName, appType, appVersion) => Task.FromResult(true);
             this.RegisterApplicationAsyncFunc = (cluster, path) => Task.FromResult(true);
+            this.GetServiceEndpointFunc = (cluster, service) => Task.FromResult("http://45.23.456.212/app/api");
         }
 
         public Func<string, string, string, string, Task<String>> CopyPackageToImageStoreAsyncFunc { get; set; }
@@ -24,6 +25,8 @@ namespace Mocks
         public Func<string, string, string, string, Task> CreateApplicationAsyncFunc { get; set; }
 
         public Func<string, string, Task> RegisterApplicationAsyncFunc { get; set; }
+
+        public Func<string, Uri, Task<string>> GetServiceEndpointFunc { get; set; }
 
         public Task<string> CopyPackageToImageStoreAsync(
             string cluster, string applicationPackagePath, string applicationTypeName, string applicationTypeVersion, CancellationToken token)
@@ -57,6 +60,11 @@ namespace Mocks
 
         public void CloseConnection(string cluster)
         {
+        }
+
+        public Task<string> GetServiceEndpoint(string cluster, Uri serviceInstanceUri, string serviceEndpointName)
+        {
+            return this.GetServiceEndpointFunc(cluster, serviceInstanceUri);
         }
     }
 }

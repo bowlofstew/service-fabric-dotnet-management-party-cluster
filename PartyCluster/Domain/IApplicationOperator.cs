@@ -16,5 +16,6 @@ namespace Domain
         Task RegisterApplicationAsync(string cluster, string imageStorePath, CancellationToken token);
         Task<int> GetApplicationCountAsync(string cluster, CancellationToken token);
         Task<int> GetServiceCountAsync(string cluster, CancellationToken token);
+        Task<string> GetServiceEndpoint(string cluster, Uri serviceInstanceUri, string serviceEndpointName);
     }
 }

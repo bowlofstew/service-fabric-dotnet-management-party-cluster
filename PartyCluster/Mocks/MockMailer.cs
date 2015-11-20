@@ -12,9 +12,16 @@ namespace Mocks
 
     public class MockMailer : ISendMail
     {
+        public Func<string, string, int, TimeSpan, DateTimeOffset, IEnumerable<HyperlinkView>, Task> SendJoinMailFunc { get; set; }
+
+        public MockMailer()
+        {
+            SendJoinMailFunc = (receipientAddress, clusterAddress, userPort, timeRemaining, clusterExpiration, links) => Task.FromResult(true);
+        }
+
         public Task SendJoinMail(string receipientAddress, string clusterAddress, int userPort, TimeSpan timeRemaining, DateTimeOffset clusterExpiration, IEnumerable<HyperlinkView> links)
         {
-            return Task.FromResult(true);
+            return SendJoinMailFunc(receipientAddress, clusterAddress, userPort, timeRemaining, clusterExpiration, links);
         }
     }
 }

@@ -50,8 +50,8 @@ namespace ClusterService
                           + String.Format("and {0} second{1}", clusterTimeRemaining.Seconds, clusterTimeRemaining.Seconds == 1 ? "" : "s");
 
             string linkList = String.Join("", links.Select(x =>
-                String.Format("<li><a href=\"{0}\">{1}</a> - {2}</li>", x.Link, x.Text, x.Description)));
-
+                String.Format("<li><a href=\"{0}\">{1}</a> - {2}</li>", x.Address, x.Text, x.Description)));
+            
             return this.SendMessageAsync(
                 new MailAddress(this.mailAddress, this.mailFrom),
                 receipientAddress,

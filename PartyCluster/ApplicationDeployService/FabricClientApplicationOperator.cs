@@ -15,6 +15,7 @@ namespace ApplicationDeployService
     using System.Threading.Tasks;
     using Common;
     using Domain;
+    using Newtonsoft.Json.Linq;
 
     internal class FabricClientApplicationOperator : IApplicationOperator
     {
@@ -33,6 +34,24 @@ namespace ApplicationDeployService
         public FabricClientApplicationOperator(StatefulServiceParameters serviceParameters)
         {
             this.serviceParameters = serviceParameters;
+        }
+
+        public async Task<string> GetServiceEndpoint(string cluster, Uri serviceInstanceUri, string serviceEndpointName)
+        {
+            FabricClient fabricClient = this.GetClient(cluster);
+
+            // this resolution may return a stale address if the service moved recently.
+            // However, for a single-partition stateless services it shouldn't matter because each instance will publish the same address.
+            ResolvedServicePartition rsp = await fabricClient.ServiceManager.ResolveServicePartitionAsync(serviceInstanceUri);
+
+            ResolvedServiceEndpoint endpoint = rsp.GetEndpoint();
+
+            // This assumes the service uses the Reliable Services framework,
+            // where the endpoint is always a JSON object that can contain multiple endpoints.
+            JObject endpointJson = JObject.Parse(endpoint.Address);
+
+            return endpointJson["Endpoints"][serviceEndpointName].Value<string>();
+            
         }
 
         /// <summary>

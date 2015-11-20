@@ -13,9 +13,20 @@ namespace Mocks
 
     public class MockApplicationDeployService : IApplicationDeployService
     {
+        public Func<string, int, Task<IEnumerable<ApplicationView>>> GetApplicationDeploymentsAsyncFunc { get; set; }
+
+        public MockApplicationDeployService()
+        {
+            GetApplicationDeploymentsAsyncFunc = (cluster, port) => Task.FromResult(Enumerable.Empty<ApplicationView>());
+        }
         public Task<int> GetApplicationCountAsync(string clusterAddress, int clusterPort)
         {
             return Task.FromResult(0);
+        }
+
+        public Task<IEnumerable<ApplicationView>> GetApplicationDeploymentsAsync(string clusterAddress, int port)
+        {
+            return GetApplicationDeploymentsAsyncFunc(clusterAddress, port);
         }
 
         public Task<int> GetServiceCountAsync(string clusterAddress, int clusterPort)

@@ -6,5 +6,7 @@ For each application package, add an entry in ApplicationPackages.json config pa
 	{
         "applicationTypeName": "applicationtype",
         "applicationTypeVersion": "1.0.0",
-        "packageFileName": "myapppackage.zip"
+        "packageFileName": "myapppackage.zip",
+        "entryServiceInstanceUri":  "fabric:/application/service",
+        "applicationDescription": "This is a fabulous app!"
     }

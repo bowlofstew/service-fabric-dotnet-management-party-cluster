@@ -214,21 +214,30 @@ namespace ClusterService
                 try
                 {
                     ServiceEventSource.Current.ServiceMessage(this, "Sending join mail. Cluster: {0}.", clusterId);
+                    List<HyperlinkView> links = new List<HyperlinkView>();
+                    links.Add(new HyperlinkView("http://" + clusterAddress + ":19080/Explorer/index.html", "Service Fabric Explorer", "explore what's on the cluster with the built-in Service Fabric Explorer."));
 
+                    try
+                    {
+                        IEnumerable<ApplicationView> applications = await this.applicationDeployService.GetApplicationDeploymentsAsync(cluster.Address, 19000);
+                        links.AddRange(applications.Select(x => x.EntryServiceInfo));
+                    }
+                    catch(Exception e)
+                    {
+                        ServiceEventSource.Current.ServiceMessage(this, "Failed to get application deployment info. {0}.", e.GetActualMessage());
+                    }
+                    
                     await this.mailer.SendJoinMail(
                         userEmail,
                         clusterAddress + ":19000",
                         userPort,
                         clusterTimeRemaining,
                         clusterExpiration, 
-                        new[]
-                        {
-                            new HyperlinkView("http://" + clusterAddress + ":19080/Explorer/index.html", "Service Fabric Explorer", "explore what's on the cluster with the built-in Service Fabric Explorer.")
-                        });
+                        links);
                 }
                 catch (Exception e)
                 {
-                    ServiceEventSource.Current.ServiceMessage(this, "Failed to send join mail. {0}.", e.Message);
+                    ServiceEventSource.Current.ServiceMessage(this, "Failed to send join mail. {0}.", e.GetActualMessage());
 
                     throw new JoinClusterFailedException(JoinClusterFailedReason.SendMailFailed);
                 }
@@ -384,7 +393,7 @@ namespace ClusterService
                             this,
                             "Failed to process cluster: {0}. {1}",
                             item.Value.Address,
-                            (e is AggregateException) ? ((AggregateException) e).InnerException.Message : e.Message);
+                            e.GetActualMessage());
 
                         //TODO: process sick clusters with multiple failures.
                         //await sickClusters.AddOrUpdateAsync(tx, cluster.Key, 1, (key, value) => ++value);
@@ -512,7 +521,7 @@ namespace ClusterService
                             this,
                             "Failed to queue sample deployment. Cluster: {0} Error: {1}",
                             cluster.Address,
-                            e is AggregateException ? ((AggregateException) e).InnerException.Message : e.Message);
+                            e.GetActualMessage());
                     }
 
                     ServiceEventSource.Current.ServiceMessage(
@@ -577,7 +586,7 @@ namespace ClusterService
             {
                 ServiceEventSource.Current.ServiceMessage(this, "Unable to determine application and service count. Cluster: {0}. Error: {1}",
                     cluster.Address,
-                    e is AggregateException? ((AggregateException)e).InnerException.Message : e.Message);
+                    e.GetActualMessage());
             }
 
             return cluster;

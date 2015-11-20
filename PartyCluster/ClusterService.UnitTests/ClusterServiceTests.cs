@@ -834,6 +834,78 @@ namespace ClusterService.UnitTests
         }
 
         [TestMethod]
+        public async Task JoinClusterEmailData()
+        {
+            ClusterConfig config = new ClusterConfig();
+            DateTimeOffset clusterCreated = DateTimeOffset.UtcNow;
+
+            string expectedEmail = "test@test.com";
+            string expectedClusterAddress = "test.azure.com";
+            int expectedUserPort = 543;
+            string expectedLinkAddress = "http://domain.com/app";
+            string expectedLinkText = "title";
+            string expectedLinkDesc = "desc";
+
+            string actualEmail = null;
+            string actualClusterAddress = null;
+            int actualUserPort = 0;
+            HyperlinkView actualExplorerLink = null;
+            HyperlinkView actualAppLink = null;
+
+            MockMailer mailer = new MockMailer();
+            MockApplicationDeployService appDeploy = new MockApplicationDeployService()
+            {
+                GetApplicationDeploymentsAsyncFunc = (c, p) => Task.FromResult<IEnumerable<ApplicationView>>(new[]
+                {
+                     new ApplicationView(new HyperlinkView(expectedLinkAddress, expectedLinkText, expectedLinkDesc))
+                })
+            };
+
+            mailer.SendJoinMailFunc = (receipientAddress, clusterAddress, userPort, timeRemaining, clusterExpiration, links) =>
+            {
+                actualEmail = receipientAddress;
+                actualClusterAddress = clusterAddress;
+                actualUserPort = userPort;
+                actualExplorerLink = links.ElementAt(0);
+                actualAppLink = links.ElementAt(1);
+
+                return Task.FromResult(true);
+            };
+
+            MockReliableStateManager stateManager = new MockReliableStateManager();
+            ClusterService target = new ClusterService(
+                null,
+                mailer,
+                appDeploy,
+                stateManager,
+                this.CreateServiceParameters(),
+                config);
+
+            int id = 5;
+            Cluster cluster = new Cluster("test", ClusterStatus.Ready, 0, 0, expectedClusterAddress, new[] { expectedUserPort }, new ClusterUser[0], DateTimeOffset.UtcNow);
+            
+            IReliableDictionary<int, Cluster> dictionary =
+                await stateManager.GetOrAddAsync<IReliableDictionary<int, Cluster>>(ClusterService.ClusterDictionaryName);
+
+            using (ITransaction tx = stateManager.CreateTransaction())
+            {
+                await dictionary.AddAsync(tx, id, cluster);
+                await tx.CommitAsync();
+            }
+
+            await target.JoinClusterAsync(id, expectedEmail);
+            
+            Assert.AreEqual(expectedEmail, actualEmail);
+            Assert.AreEqual(expectedClusterAddress + ":19000", actualClusterAddress);
+            Assert.AreEqual(expectedUserPort, actualUserPort);
+            Assert.AreEqual(expectedLinkAddress, actualAppLink.Address);
+            Assert.AreEqual(expectedLinkText, actualAppLink.Text);
+            Assert.AreEqual(expectedLinkDesc, actualAppLink.Description);
+            Assert.AreEqual("http://" + expectedClusterAddress + ":19080/Explorer/index.html", actualExplorerLink.Address);
+
+        }
+
+        [TestMethod]
         public async Task JoinClusterFull()
         {
             ClusterConfig config = new ClusterConfig() {MaximumUsersPerCluster = 1};

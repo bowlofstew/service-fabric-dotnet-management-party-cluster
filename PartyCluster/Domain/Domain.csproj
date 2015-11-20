@@ -63,6 +63,7 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="ApplicationView.cs" />
     <Compile Include="ClusterView.cs" />
     <Compile Include="ClusterOperationStatus.cs" />
     <Compile Include="ApplicationDeployStatus.cs" />
