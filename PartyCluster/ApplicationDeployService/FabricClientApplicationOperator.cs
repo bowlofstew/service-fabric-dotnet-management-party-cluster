@@ -10,6 +10,7 @@ namespace ApplicationDeployService
     using System.Fabric;
     using System.Fabric.Description;
     using System.Fabric.Query;
+    using System.Linq;
     using System.Runtime.Caching;
     using System.Threading;
     using System.Threading.Tasks;
@@ -85,16 +86,27 @@ namespace ApplicationDeployService
         /// <param name="applicationTypeName"></param>
         /// <param name="applicationTypeVersion"></param>
         /// <returns></returns>
-        public Task CreateApplicationAsync(string cluster, string applicationInstanceName, string applicationTypeName, string applicationTypeVersion, CancellationToken token)
+        public async Task CreateApplicationAsync(string cluster, string applicationInstanceName, string applicationTypeName, string applicationTypeVersion, CancellationToken token)
         {
             FabricClient fabricClient = this.GetClient(cluster);
             FabricClient.ApplicationManagementClient applicationClient = fabricClient.ApplicationManager;
 
             Uri appName = new Uri("fabric:/" + applicationInstanceName);
 
+            ApplicationList applications = await fabricClient.QueryManager.GetApplicationListAsync(appName, TimeSpan.FromSeconds(30), token);
+
+            if (applications.Any(x =>
+                x.ApplicationName == appName &&
+                x.ApplicationTypeName == applicationTypeName &&
+                x.ApplicationTypeVersion == applicationTypeVersion))
+            {
+                // application already exists, so we're done here.
+                return;
+            }
+              
             ApplicationDescription appDescription = new ApplicationDescription(appName, applicationTypeName, applicationTypeVersion);
 
-            return applicationClient.CreateApplicationAsync(appDescription, this.writeOperationTimeout, token);
+            await applicationClient.CreateApplicationAsync(appDescription, this.writeOperationTimeout, token);
         }
 
         /// <summary>

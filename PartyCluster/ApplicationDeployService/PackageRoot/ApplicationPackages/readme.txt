@@ -8,5 +8,7 @@ For each application package, add an entry in ApplicationPackages.json config pa
         "applicationTypeVersion": "1.0.0",
         "packageFileName": "myapppackage.zip",
         "entryServiceInstanceUri":  "fabric:/application/service",
+        "entryServiceEndpointName":  "",
+	"entryServiceUrl": "",
         "applicationDescription": "This is a fabulous app!"
     }

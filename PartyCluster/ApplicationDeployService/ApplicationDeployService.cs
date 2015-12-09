@@ -113,7 +113,12 @@ namespace ApplicationDeployService
             {
                 try
                 {
-                    string address = await this.applicationOperator.GetServiceEndpoint(clusterAddress + ":19000", new Uri(package.EntryServiceInstanceUri), package.EntryServiceEndpointName);
+                    string address = package.EntryServiceUrl;
+
+                    if (String.IsNullOrWhiteSpace(address))
+                    {
+                        address = await this.applicationOperator.GetServiceEndpoint(clusterAddress + ":" + clusterPort, new Uri(package.EntryServiceInstanceUri), package.EntryServiceEndpointName);
+                    }
 
                     UriBuilder builder = new UriBuilder(address);
                     builder.Host = clusterAddress;
@@ -241,13 +246,14 @@ namespace ApplicationDeployService
                     ServiceEventSource.Current.ServiceMessage(
                         this,
                         "Found queued application deployment request with no associated deployment information. Discarding.");
+
                     return true;
                 }
 
-                try
+                ApplicationDeployment processedDeployment = await this.ProcessApplicationDeployment(appDeployment.Value, cancellationToken);
+                
+                if (processedDeployment.Status != ApplicationDeployStatus.Failed)
                 {
-                    ApplicationDeployment processedDeployment = await this.ProcessApplicationDeployment(appDeployment.Value, cancellationToken);
-
                     if (processedDeployment.Status != ApplicationDeployStatus.Complete)
                     {
                         await queue.EnqueueAsync(tx, workItemId);
@@ -261,36 +267,11 @@ namespace ApplicationDeployService
                         processedDeployment.Cluster,
                         processedDeployment.Status);
                 }
-                catch (FileNotFoundException fnfe)
+                else
                 {
-                    ServiceEventSource.Current.ServiceMessage(
-                        this,
-                        "Found corrupt application package. Package: {0}. Error: {1}",
-                        appDeployment.Value.PackagePath,
-                        fnfe.Message);
-
-                    // corrupt application, remove it so we don't keep trying to reprocess it.
                     await dictionary.TryRemoveAsync(tx, workItemId);
                 }
-                catch (FabricElementAlreadyExistsException)
-                {
-                    ServiceEventSource.Current.ServiceMessage(this, "Application package is already registered. Package: {0}.", appDeployment.Value.PackagePath);
-
-                    // application already exists, remove it so we don't keep failing on this.
-                    await dictionary.TryRemoveAsync(tx, workItemId);
-                }
-                catch (Exception e)
-                {
-                    ServiceEventSource.Current.ServiceMessage(
-                        this,
-                        "Application package processing failed. Package: {0}. Error: {1}",
-                        appDeployment.Value.PackagePath,
-                        e.ToString());
-
-                    //TODO: for now, remove any requests that fail to deploy so the service doesn't get stuck on any one deployment.
-                    await dictionary.TryRemoveAsync(tx, workItemId);
-                }
-
+                
                 await tx.CommitAsync();
 
                 return true;
@@ -299,66 +280,102 @@ namespace ApplicationDeployService
 
         internal async Task<ApplicationDeployment> ProcessApplicationDeployment(ApplicationDeployment applicationDeployment, CancellationToken cancellationToken)
         {
-            switch (applicationDeployment.Status)
+            try
             {
-                case ApplicationDeployStatus.Copy:
-                    ServiceEventSource.Current.ServiceMessage(
-                        this,
-                        "Application deployment: Copying to image store. Cluster: {0}. Application: {1}. Package path: {2}",
-                        applicationDeployment.Cluster,
-                        applicationDeployment.ApplicationInstanceName,
-                        applicationDeployment.PackagePath);
+                switch (applicationDeployment.Status)
+                {
+                    case ApplicationDeployStatus.Copy:
+                        ServiceEventSource.Current.ServiceMessage(
+                            this,
+                            "Application deployment: Copying to image store. Cluster: {0}. Application: {1}. Package path: {2}",
+                            applicationDeployment.Cluster,
+                            applicationDeployment.ApplicationInstanceName,
+                            applicationDeployment.PackagePath);
 
-                    string imageStorePath = await this.applicationOperator.CopyPackageToImageStoreAsync(
-                        applicationDeployment.Cluster,
-                        applicationDeployment.PackagePath,
-                        applicationDeployment.ApplicationTypeName,
-                        applicationDeployment.ApplicationTypeVersion,
-                        cancellationToken);
+                        try
+                        {
+                            string imageStorePath = await this.applicationOperator.CopyPackageToImageStoreAsync(
+                                applicationDeployment.Cluster,
+                                applicationDeployment.PackagePath,
+                                applicationDeployment.ApplicationTypeName,
+                                applicationDeployment.ApplicationTypeVersion,
+                                cancellationToken);
 
-                    return new ApplicationDeployment(
-                        applicationDeployment.Cluster,
-                        ApplicationDeployStatus.Register,
-                        imageStorePath,
-                        applicationDeployment.ApplicationTypeName,
-                        applicationDeployment.ApplicationTypeVersion,
-                        applicationDeployment.ApplicationInstanceName,
-                        applicationDeployment.PackagePath,
-                        applicationDeployment.DeploymentTimestamp);
+                            return new ApplicationDeployment(
+                                applicationDeployment.Cluster,
+                                ApplicationDeployStatus.Register,
+                                imageStorePath,
+                                applicationDeployment.ApplicationTypeName,
+                                applicationDeployment.ApplicationTypeVersion,
+                                applicationDeployment.ApplicationInstanceName,
+                                applicationDeployment.PackagePath,
+                                applicationDeployment.DeploymentTimestamp);
+                        }
+                        catch (FileNotFoundException fnfe)
+                        {
+                            ServiceEventSource.Current.ServiceMessage(
+                                this,
+                                "Found corrupt application package. Package: {0}. Error: {1}",
+                                applicationDeployment.PackagePath,
+                                fnfe.Message);
 
-                case ApplicationDeployStatus.Register:
-                    ServiceEventSource.Current.ServiceMessage(
-                        this,
-                        "Application deployment: Registering. Cluster: {0}. Application: {1}, Imagestore path: {2}",
-                        applicationDeployment.Cluster,
-                        applicationDeployment.ApplicationInstanceName,
-                        applicationDeployment.ImageStorePath);
+                            return new ApplicationDeployment(ApplicationDeployStatus.Failed, applicationDeployment);
+                        }
 
-                    await this.applicationOperator.RegisterApplicationAsync(
-                        applicationDeployment.Cluster,
-                        applicationDeployment.ImageStorePath,
-                        cancellationToken);
+                    case ApplicationDeployStatus.Register:
+                        ServiceEventSource.Current.ServiceMessage(
+                            this,
+                            "Application deployment: Registering. Cluster: {0}. Application: {1}, Imagestore path: {2}",
+                            applicationDeployment.Cluster,
+                            applicationDeployment.ApplicationInstanceName,
+                            applicationDeployment.ImageStorePath);
 
-                    return new ApplicationDeployment(ApplicationDeployStatus.Create, applicationDeployment);
+                        try
+                        {
+                            await this.applicationOperator.RegisterApplicationAsync(
+                                applicationDeployment.Cluster,
+                                applicationDeployment.ImageStorePath,
+                                cancellationToken);
 
-                case ApplicationDeployStatus.Create:
-                    ServiceEventSource.Current.ServiceMessage(
-                        this,
-                        "Application deployment: Creating. Cluster: {0}. Application: {1}",
-                        applicationDeployment.Cluster,
-                        applicationDeployment.ApplicationInstanceName);
+                            return new ApplicationDeployment(ApplicationDeployStatus.Create, applicationDeployment);
+                        }
+                        catch (FabricElementAlreadyExistsException)
+                        {
+                            ServiceEventSource.Current.ServiceMessage(this, "Application package is already registered. Package: {0}.", applicationDeployment.PackagePath);
 
-                    await this.applicationOperator.CreateApplicationAsync(
-                        applicationDeployment.Cluster,
-                        applicationDeployment.ApplicationInstanceName,
-                        applicationDeployment.ApplicationTypeName,
-                        applicationDeployment.ApplicationTypeVersion,
-                        cancellationToken);
+                            // application already exists, set status to Create it so we don't keep failing on this.
+                            return new ApplicationDeployment(ApplicationDeployStatus.Create, applicationDeployment);
+                        }
 
-                    return new ApplicationDeployment(ApplicationDeployStatus.Complete, applicationDeployment);
+                    case ApplicationDeployStatus.Create:
+                        ServiceEventSource.Current.ServiceMessage(
+                            this,
+                            "Application deployment: Creating. Cluster: {0}. Application: {1}",
+                            applicationDeployment.Cluster,
+                            applicationDeployment.ApplicationInstanceName);
+                        
+                            await this.applicationOperator.CreateApplicationAsync(
+                                applicationDeployment.Cluster,
+                                applicationDeployment.ApplicationInstanceName,
+                                applicationDeployment.ApplicationTypeName,
+                                applicationDeployment.ApplicationTypeVersion,
+                                cancellationToken);
 
-                default:
-                    return applicationDeployment;
+                            return new ApplicationDeployment(ApplicationDeployStatus.Complete, applicationDeployment);
+                       
+                    default:
+                        return applicationDeployment;
+                }
+            }
+            catch (Exception e)
+            {
+                ServiceEventSource.Current.ServiceMessage(
+                    this,
+                    "Application package processing failed. Package: {0}. Error: {1}",
+                    applicationDeployment.PackagePath,
+                    e.ToString());
+
+                return new ApplicationDeployment(ApplicationDeployStatus.Failed, applicationDeployment);
             }
         }
 

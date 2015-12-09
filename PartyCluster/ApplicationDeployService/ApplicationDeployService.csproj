@@ -78,6 +78,7 @@
     <Compile Include="FabricClientApplicationOperator.cs" />
   </ItemGroup>
   <ItemGroup>
+    <None Include="PackageRoot\ApplicationPackages\Chatter.zip" />
     <None Include="PackageRoot\Config\Settings.xml" />
     <None Include="PackageRoot\ServiceManifest.xml" />
     <None Include="App.config" />

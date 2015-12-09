@@ -15,6 +15,8 @@ namespace Domain
 
         Create,
 
-        Complete
+        Complete,
+
+        Failed
     }
 }

@@ -27,8 +27,8 @@ namespace ApplicationDeployService.UnitTests
 
             target.ApplicationPackages = new List<ApplicationPackageInfo>()
             {
-                new ApplicationPackageInfo("type1", "1.0", "path/to/type1", "", "", ""),
-                new ApplicationPackageInfo("type2", "2.0", "path/to/type2", "", "", "")
+                new ApplicationPackageInfo("type1", "1.0", "path/to/type1", "", "", "", ""),
+                new ApplicationPackageInfo("type2", "2.0", "path/to/type2", "", "", "", "")
             };
 
             IEnumerable<Guid> result = await target.QueueApplicationDeploymentAsync("localhost", 19000);
@@ -126,7 +126,7 @@ namespace ApplicationDeployService.UnitTests
             ApplicationDeployService target = new ApplicationDeployService(stateManager, applicationOperator, this.CreateServiceParameters());
             target.ApplicationPackages = new List<ApplicationPackageInfo>()
             {
-                new ApplicationPackageInfo("type1", "1.0", "path/to/type1", "fabric:/app/service", "", "description")
+                new ApplicationPackageInfo("type1", "1.0", "path/to/type1", "fabric:/app/service", "", "description", "")
             };
 
             IEnumerable<ApplicationView> actual = await target.GetApplicationDeploymentsAsync(expectedDomain, 19000);

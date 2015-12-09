@@ -1,2 +1,11 @@
 ﻿[
+    {
+        "applicationTypeName": "ChatType",
+        "applicationTypeVersion": "1.0.0",
+        "packageFileName": "Chatter.zip",
+        "entryServiceInstanceUri": "fabric:/Chatter/ChatWebService",
+        "entryServiceEndpointName": "",
+        "entryServiceUrl": "http://+:80/chatter",
+        "applicationDescription": "A sample single-room chat application that persists chat messages in a Reliable Dictionary, where you can chat with others on the cluster."
+    }
 ]
