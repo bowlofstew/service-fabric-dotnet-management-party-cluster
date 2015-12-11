@@ -72,8 +72,22 @@ namespace ApplicationDeployService
 
             string imagestorePath = applicationTypeName + "_" + applicationTypeVersion;
 
-            // TODO: Error handling
-            applicationClient.CopyApplicationPackage("fabric:ImageStore", applicationPackagePath, imagestorePath);
+            try
+            {
+                applicationClient.CopyApplicationPackage("fabric:ImageStore", applicationPackagePath, imagestorePath);
+            }
+            catch (System.Reflection.TargetInvocationException e)
+            {
+                // CopyApplicationPackages uses MethodInvoke internally to upload.
+                // If that throws, we get TargetInvocationException.
+                // This will rethrow the actual inner exception for the caller.
+                if (e.InnerException != null)
+                {
+                    throw e.InnerException;
+                }
+
+                throw;
+            }
 
             return Task.FromResult(imagestorePath);
         }

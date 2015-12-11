@@ -8,10 +8,19 @@
       <Parameter Name="ClusterService_MinReplicaSetSize" DefaultValue="2" />
       <Parameter Name="ClusterService_PartitionCount" DefaultValue="1" />
       <Parameter Name="ClusterService_TargetReplicaSetSize" DefaultValue="3" />
+      <Parameter Name="PackageTempDirectory" DefaultValue="" />
    </Parameters>
    <ServiceManifestImport>
       <ServiceManifestRef ServiceManifestName="ApplicationDeployServicePkg" ServiceManifestVersion="1.0.0" />
-      <ConfigOverrides />
+      <ConfigOverrides>
+         <ConfigOverride Name="Config">
+            <Settings>
+               <Section Name="ApplicationDeploySettings">
+                  <Parameter Name="PackageTempDirectory" Value="[PackageTempDirectory]" />
+               </Section>
+            </Settings>
+         </ConfigOverride>
+      </ConfigOverrides>
    </ServiceManifestImport>
    <ServiceManifestImport>
       <ServiceManifestRef ServiceManifestName="WebServicePkg" ServiceManifestVersion="1.0.2" />

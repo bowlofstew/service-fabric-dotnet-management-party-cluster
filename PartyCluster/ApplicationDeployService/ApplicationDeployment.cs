@@ -6,6 +6,7 @@
 namespace ApplicationDeployService
 {
     using System;
+    using System.IO;
     using System.Runtime.Serialization;
     using Domain;
 
@@ -19,7 +20,7 @@ namespace ApplicationDeployService
             string applicationTypeName,
             string applicationTypeVersion,
             string applicationInstanceName,
-            string packagePath,
+            string packageZipFilePath,
             DateTimeOffset timestamp)
         {
             this.Cluster = cluster;
@@ -28,7 +29,7 @@ namespace ApplicationDeployService
             this.ApplicationTypeName = applicationTypeName;
             this.ApplicationTypeVersion = applicationTypeVersion;
             this.ApplicationInstanceName = applicationInstanceName;
-            this.PackagePath = packagePath;
+            this.PackageZipFilePath = packageZipFilePath;
             this.DeploymentTimestamp = timestamp;
         }
 
@@ -40,7 +41,7 @@ namespace ApplicationDeployService
                 copyFrom.ApplicationTypeName,
                 copyFrom.ApplicationTypeVersion,
                 copyFrom.ApplicationInstanceName,
-                copyFrom.PackagePath,
+                copyFrom.PackageZipFilePath,
                 copyFrom.DeploymentTimestamp)
         {
         }
@@ -64,7 +65,7 @@ namespace ApplicationDeployService
         public string ApplicationInstanceName { get; private set; }
 
         [DataMember]
-        public string PackagePath { get; private set; }
+        public string PackageZipFilePath { get; private set; }
 
         [DataMember]
         public DateTimeOffset DeploymentTimestamp { get; private set; }
