@@ -366,11 +366,7 @@ namespace ClusterService
         {
             IReliableDictionary<int, Cluster> clusterDictionary =
                 await this.StateManager.GetOrAddAsync<IReliableDictionary<int, Cluster>>(ClusterDictionaryName);
-
-            //TODO: process sick clusters with multiple failures.
-            //IReliableDictionary<int, int> sickClusters =
-            //    await this.StateManager.GetOrAddAsync<IReliableDictionary<int, int>>(SickClusterDictionaryName);
-
+            
             foreach (KeyValuePair<int, Cluster> item in clusterDictionary)
             {
                 using (ITransaction tx = this.StateManager.CreateTransaction())
@@ -397,9 +393,6 @@ namespace ClusterService
                             "Failed to process cluster: {0}. {1}",
                             item.Value.Address,
                             e.GetActualMessage());
-
-                        //TODO: process sick clusters with multiple failures.
-                        //await sickClusters.AddOrUpdateAsync(tx, cluster.Key, 1, (key, value) => ++value);
                     }
                 }
             }
@@ -573,7 +566,7 @@ namespace ClusterService
             try
             {
                 int deployedApplications = await this.applicationDeployService.GetApplicationCountAsync(cluster.Address, ClusterConnectionPort);
-                int deployedServices = await this.applicationDeployService.GetApplicationCountAsync(cluster.Address, 19000);
+                int deployedServices = await this.applicationDeployService.GetApplicationCountAsync(cluster.Address, ClusterConnectionPort);
 
                 return new Cluster(
                     cluster.InternalName,
