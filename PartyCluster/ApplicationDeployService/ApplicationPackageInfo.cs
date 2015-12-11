@@ -14,7 +14,7 @@ namespace ApplicationDeployService
             string entryServiceInstanceUri,
             string entryServiceEndpointName,
             string applicationDescription,
-            string entryServiceUrl)
+            string serviceInfoUrl)
         {
             this.ApplicationTypeName = applicationTypeName;
             this.ApplicationTypeVersion = applicationTypeVersion;
@@ -22,7 +22,7 @@ namespace ApplicationDeployService
             this.ApplicationDescription = applicationDescription;
             this.EntryServiceInstanceUri = entryServiceInstanceUri;
             this.EntryServiceEndpointName = entryServiceEndpointName;
-            this.EntryServiceUrl = entryServiceUrl;
+            this.ServiceInfoUrl = serviceInfoUrl;
 
         }
 
@@ -38,6 +38,6 @@ namespace ApplicationDeployService
 
         public string EntryServiceEndpointName { get; set; }
 
-        public string EntryServiceUrl { get; set; }
+        public string ServiceInfoUrl { get; set; }
     }
 }

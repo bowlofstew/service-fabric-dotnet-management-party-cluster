@@ -73,27 +73,9 @@ namespace ApplicationDeployService
         }
 
         [NonEvent]
-        public void ServiceMessage(StatelessService service, string message, params object[] args)
-        {
-            if (this.IsEnabled())
-            {
-                string finalMessage = string.Format(message, args);
-                this.ServiceMessage(
-                    service.ServiceInitializationParameters.ServiceName.ToString(),
-                    service.ServiceInitializationParameters.ServiceTypeName,
-                    service.ServiceInitializationParameters.InstanceId,
-                    service.ServiceInitializationParameters.PartitionId,
-                    service.ServiceInitializationParameters.CodePackageActivationContext.ApplicationName,
-                    service.ServiceInitializationParameters.CodePackageActivationContext.ApplicationTypeName,
-                    FabricRuntime.GetNodeContext().NodeName,
-                    finalMessage);
-            }
-        }
-
-        [NonEvent]
         public void ServiceMessage(StatefulService service, string message, params object[] args)
         {
-            if (this.IsEnabled())
+            if (this.IsEnabled() && service.ServiceInitializationParameters != null && service.ServiceInitializationParameters.CodePackageActivationContext != null)
             {
                 string finalMessage = string.Format(message, args);
                 this.ServiceMessage(

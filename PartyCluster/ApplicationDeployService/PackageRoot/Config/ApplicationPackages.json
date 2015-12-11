@@ -5,7 +5,7 @@
         "packageFileName": "Chatter.zip",
         "entryServiceInstanceUri": "fabric:/Chatter/ChatWebService",
         "entryServiceEndpointName": "",
-        "entryServiceUrl": "http://replacehost/chatter",
-        "applicationDescription": "A sample single-room chat application that persists chat messages in a Reliable Dictionary, where you can chat with others on the cluster. See the source on <a href=\"https://github.com/Azure-Samples/service-fabric-dotnet-getting-started/tree/master/Services/Chatter\">GitHub</a>"
+        "serviceInfoUrl": "https://github.com/Azure-Samples/service-fabric-dotnet-getting-started/tree/master/Services/Chatter",
+        "applicationDescription": "A sample single-room chat application that persists chat messages in a Reliable Dictionary, where you can chat with others on the cluster. Follow the link to see it on GitHub."
     }
 ]

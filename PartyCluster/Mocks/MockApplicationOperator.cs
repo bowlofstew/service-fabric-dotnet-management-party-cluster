@@ -62,9 +62,14 @@ namespace Mocks
         {
         }
 
-        public Task<string> GetServiceEndpoint(string cluster, Uri serviceInstanceUri, string serviceEndpointName)
+        public Task<string> GetServiceEndpoint(string cluster, Uri serviceInstanceUri, string serviceEndpointName, CancellationToken token)
         {
             return this.GetServiceEndpointFunc(cluster, serviceInstanceUri);
+        }
+
+        public Task<bool> ApplicationExistsAsync(string cluster, string applicationInstanceName, CancellationToken token)
+        {
+            throw new NotImplementedException();
         }
     }
 }

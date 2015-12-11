@@ -80,14 +80,14 @@ namespace ApplicationDeployService
                 {
                     Guid id = Guid.NewGuid();
                     ApplicationDeployment applicationDeployment = new ApplicationDeployment(
-                        GetClusterAddress(clusterAddress, clusterPort),
-                        ApplicationDeployStatus.Copy,
-                        null,
-                        package.ApplicationTypeName,
-                        package.ApplicationTypeVersion,
-                        GetPackageDirectoryName(package.PackageFileName),
-                        Path.Combine(this.applicationPackageDataPath.FullName, package.PackageFileName),
-                        DateTimeOffset.UtcNow);
+                        cluster:                    GetClusterAddress(clusterAddress, clusterPort),
+                        status:                     ApplicationDeployStatus.Copy,
+                        imageStorePath:             null,
+                        applicationTypeName:        package.ApplicationTypeName,
+                        applicationTypeVersion:     package.ApplicationTypeVersion,
+                        applicationInstanceName:    GetApplicationInstanceName(package.PackageFileName),
+                        packageZipFilePath:         Path.Combine(this.applicationPackageDataPath.FullName, package.PackageFileName),
+                        timestamp:                  DateTimeOffset.UtcNow);
 
                     await dictionary.AddAsync(tx, id, applicationDeployment);
                     await queue.EnqueueAsync(tx, id);
@@ -109,24 +109,37 @@ namespace ApplicationDeployService
         {
             List<ApplicationView> applications = new List<ApplicationView>(this.ApplicationPackages.Count());
 
+            string clusterEndpoint = clusterAddress + ":" + clusterPort;
             foreach (ApplicationPackageInfo package in this.ApplicationPackages)
             {
                 try
                 {
-                    string address = package.EntryServiceUrl;
-
-                    if (String.IsNullOrWhiteSpace(address))
+                    // skip applications that aren't deployed
+                    if (! (await this.applicationOperator.ApplicationExistsAsync(clusterEndpoint, GetApplicationInstanceName(package.PackageFileName), this.replicaRunCancellationToken)))
                     {
-                        address = await this.applicationOperator.GetServiceEndpoint(clusterAddress + ":" + clusterPort, new Uri(package.EntryServiceInstanceUri), package.EntryServiceEndpointName);
+                        continue;
                     }
 
-                    UriBuilder builder = new UriBuilder(address);
-                    builder.Host = clusterAddress;
+                    // if an info URL is provided in the package info, use that.
+                    string address = package.ServiceInfoUrl;
 
+                    // otherwise, get a URL for the service entry point.
+                    if (String.IsNullOrWhiteSpace(address))
+                    {
+                        string endpoint = await this.applicationOperator.GetServiceEndpoint(clusterEndpoint, new Uri(package.EntryServiceInstanceUri), package.EntryServiceEndpointName, this.replicaRunCancellationToken);
+
+                        // the host in the service URL will be the internal VM IP, FQDN, or "+", which isn't useful to external users.
+                        // replace it with the cluster address that external users can access.
+                        UriBuilder builder = new UriBuilder(endpoint);
+                        builder.Host = clusterAddress;
+
+                        address = builder.ToString();
+                    }
+                    
                     applications.Add(new ApplicationView(
                                        new HyperlinkView(
-                                           builder.ToString(),
-                                           GetPackageDirectoryName(package.PackageFileName),
+                                           address,
+                                           GetApplicationInstanceName(package.PackageFileName),
                                            package.ApplicationDescription)));
                 }
                 catch (FabricServiceNotFoundException)
@@ -339,6 +352,20 @@ namespace ApplicationDeployService
                                 applicationDeployment.PackageZipFilePath,
                                 applicationDeployment.DeploymentTimestamp);
                         }
+                        catch (FabricServiceNotFoundException fsnfe)
+                        {
+                            // image store service isn't ready yet. 
+                            // This is retry-able, just need to wait a bit for it to come up.
+                            // This can happen when an application deployment is attempted immediately after a cluster comes up.
+
+                            ServiceEventSource.Current.ServiceMessage(
+                                this,
+                                "Copy to image store failed with FabricServiceNotFoundException. Package: {0}. Error: {1}",
+                                applicationDeployment.PackageZipFilePath,
+                                fsnfe.Message);
+
+                            return applicationDeployment;
+                        }
                         catch (FileNotFoundException fnfe)
                         {
                             ServiceEventSource.Current.ServiceMessage(
@@ -473,7 +500,7 @@ namespace ApplicationDeployService
             this.UpdateSettings(e.NewPackage.Settings);
         }
 
-        private static string GetPackageDirectoryName(string fileName)
+        private static string GetApplicationInstanceName(string fileName)
         {
             return fileName.Replace(".zip", String.Empty);
         }

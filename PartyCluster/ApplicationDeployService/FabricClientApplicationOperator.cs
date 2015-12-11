@@ -37,13 +37,13 @@ namespace ApplicationDeployService
             this.serviceParameters = serviceParameters;
         }
 
-        public async Task<string> GetServiceEndpoint(string cluster, Uri serviceInstanceUri, string serviceEndpointName)
+        public async Task<string> GetServiceEndpoint(string cluster, Uri serviceInstanceUri, string serviceEndpointName, CancellationToken token)
         {
             FabricClient fabricClient = this.GetClient(cluster);
 
             // this resolution may return a stale address if the service moved recently.
             // However, for a single-partition stateless services it shouldn't matter because each instance will publish the same address.
-            ResolvedServicePartition rsp = await fabricClient.ServiceManager.ResolveServicePartitionAsync(serviceInstanceUri);
+            ResolvedServicePartition rsp = await fabricClient.ServiceManager.ResolveServicePartitionAsync(serviceInstanceUri, this.readOperationTimeout, token);
 
             ResolvedServiceEndpoint endpoint = rsp.GetEndpoint();
 
@@ -107,17 +107,11 @@ namespace ApplicationDeployService
 
             Uri appName = new Uri("fabric:/" + applicationInstanceName);
 
-            ApplicationList applications = await fabricClient.QueryManager.GetApplicationListAsync(appName, TimeSpan.FromSeconds(30), token);
-
-            if (applications.Any(x =>
-                x.ApplicationName == appName &&
-                x.ApplicationTypeName == applicationTypeName &&
-                x.ApplicationTypeVersion == applicationTypeVersion))
+            if ( await ApplicationExistsAsync(cluster, applicationInstanceName, token))
             {
-                // application already exists, so we're done here.
                 return;
             }
-              
+ 
             ApplicationDescription appDescription = new ApplicationDescription(appName, applicationTypeName, applicationTypeVersion);
 
             await applicationClient.CreateApplicationAsync(appDescription, this.writeOperationTimeout, token);
@@ -136,7 +130,7 @@ namespace ApplicationDeployService
             FabricClient.ApplicationManagementClient applicationClient = fabricClient.ApplicationManager;
 
             // TODO: Error handling
-            return applicationClient.ProvisionApplicationAsync(imageStorePath, writeOperationTimeout, token);
+            return applicationClient.ProvisionApplicationAsync(imageStorePath, this.writeOperationTimeout, token);
         }
 
         /// <summary>
@@ -174,6 +168,16 @@ namespace ApplicationDeployService
             }
 
             return count;
+        }
+
+        public async Task<bool> ApplicationExistsAsync(string cluster, string applicationInstanceName, CancellationToken token)
+        {
+            FabricClient fabricClient = this.GetClient(cluster);
+            Uri appName = new Uri("fabric:/" + applicationInstanceName);
+
+            ApplicationList applications = await fabricClient.QueryManager.GetApplicationListAsync(appName, TimeSpan.FromSeconds(30), token);
+
+            return applications.Any(x => x.ApplicationName == appName);
         }
 
         public void Dispose()
