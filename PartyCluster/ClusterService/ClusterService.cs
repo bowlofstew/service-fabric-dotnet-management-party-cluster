@@ -566,7 +566,7 @@ namespace ClusterService
             try
             {
                 int deployedApplications = await this.applicationDeployService.GetApplicationCountAsync(cluster.Address, ClusterConnectionPort);
-                int deployedServices = await this.applicationDeployService.GetApplicationCountAsync(cluster.Address, ClusterConnectionPort);
+                int deployedServices = await this.applicationDeployService.GetServiceCountAsync(cluster.Address, ClusterConnectionPort);
 
                 return new Cluster(
                     cluster.InternalName,
