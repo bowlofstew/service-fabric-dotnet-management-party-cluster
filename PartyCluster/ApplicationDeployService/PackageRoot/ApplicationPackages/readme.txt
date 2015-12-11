@@ -9,6 +9,6 @@ For each application package, add an entry in ApplicationPackages.json config pa
         "packageFileName": "myapppackage.zip",
         "entryServiceInstanceUri":  "fabric:/application/service",
         "entryServiceEndpointName":  "",
-	"entryServiceUrl": "",
+		"serviceInfoUrl": "",
         "applicationDescription": "This is a fabulous app!"
     }
