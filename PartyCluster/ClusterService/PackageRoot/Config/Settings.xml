@@ -12,11 +12,11 @@
     <Parameter Name="MinimumClusterCount" Value="5"/>
     <Parameter Name="MaximumClusterCount" Value="10" />
     <Parameter Name="MaximumUsersPerCluster" Value="5"/>
-    <Parameter Name="MaximumClusterUptime" Value="02:00:00" />
+    <Parameter Name="MaximumClusterUptime" Value="05:00:00" />
     <Parameter Name="UserCapacityHighPercentThreshold" Value="0.75"/>
     <Parameter Name="UserCapacityLowPercentThreshold" Value="0.25" />
   </Section>
-  
+
   <Section Name="SendGridSettings">
     <Parameter Name="Username" IsEncrypted="true" Value="" />
     <Parameter Name="Password" IsEncrypted="true" Value="" />
@@ -24,7 +24,7 @@
     <Parameter Name="MailFrom" Value="Service Fabric Party Cluster Team" />
     <Parameter Name="MailSubject" Value="Welcome to the Azure Service Fabric party" />
   </Section>
-  
+
   <Section Name="AzureSubscriptionSettings">
     <Parameter Name="Region" Value="westus" />
     <Parameter Name="ClientID" IsEncrypted="true" Value="" />
