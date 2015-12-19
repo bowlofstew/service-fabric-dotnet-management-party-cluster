@@ -67,7 +67,6 @@ namespace Microsoft.Diagnostics.EventListeners
             {
                 foreach (var e in events)
                 {
-                    e.ToMessagingEventData();
                     var properties = new Dictionary<string, string>
                     {
                         {nameof(e.EventName), e.EventName },
