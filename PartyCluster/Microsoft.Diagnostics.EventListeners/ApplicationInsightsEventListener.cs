@@ -89,7 +89,7 @@ namespace Microsoft.Diagnostics.EventListeners
 
                 }
                 telemetry.Flush();
-                this.ReportListenerHealthy();                
+                this.ReportListenerHealthy();
             }
             catch (Exception e)
             {
