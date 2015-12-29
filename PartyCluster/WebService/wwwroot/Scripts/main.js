@@ -155,7 +155,7 @@ function PartyClusters(api) {
         var clusterName = '';
         for (var i = 0; i < tableRows.length; ++i) {
             var $row = $(tableRows[i]);
-            if ($row.attr('data-users') < $row.attr('data-capacity')) {
+            if ($row.attr('data-users') < $row.attr('data-maxusers')) {
                 return $row.attr('data-id');
             }
         }
@@ -174,7 +174,7 @@ function PartyClusters(api) {
                        .append(
                            $('<th/>').text('Name'))
                        .append(
-                           $('<th/>').text('Users'))
+                           $('<th/>').text('Capacity'))
                        .append(
                            $('<th/>').text('Applications'))
                        .append(
@@ -190,11 +190,11 @@ function PartyClusters(api) {
 				.appendTo(clusterTable);
 
             $.each(data, function (id, jObject) {
-                $('<tr data-id="' + jObject.ClusterId + '" data-users="' + jObject.UserCount + '" data-capacity="' + jObject.Capacity + '" />')
+                $('<tr data-id="' + jObject.ClusterId + '" data-users="' + jObject.UserCount + '" data-maxusers="' + jObject.MaxUsers + '" />')
                 .append(
                     $('<td/>').text(jObject.Name))
                 .append(
-                    $('<td/>').text(jObject.UserCount))
+                    $('<td/>').text(jObject.Capacity))
                 .append(
                     $('<td/>').text(jObject.ApplicationCount))
                 .append(

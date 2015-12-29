@@ -138,11 +138,17 @@
     <Compile Include="OwinCommunicationListener.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Recaptcha.cs" />
+    <Compile Include="Resources\ClusterNames.Designer.cs">
+      <DependentUpon>ClusterNames.resx</DependentUpon>
+      <AutoGen>True</AutoGen>
+      <DesignTime>True</DesignTime>
+    </Compile>
     <Compile Include="Resources\Messages.Designer.cs">
       <AutoGen>True</AutoGen>
       <DesignTime>True</DesignTime>
       <DependentUpon>Messages.resx</DependentUpon>
     </Compile>
+    <Compile Include="Resources\Resx.cs" />
     <Compile Include="ServiceUriBuilder.cs" />
     <Compile Include="Startup.cs" />
     <Compile Include="ViewModels\BadRequestViewModel.cs" />
@@ -177,8 +183,8 @@
     <Content Include="wwwroot\Content\main.css">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
-    <Content Include="wwwroot\Content\partycluster-background.png">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    <Content Include="wwwroot\Content\partycluster-background.jpg">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
     <Content Include="wwwroot\Content\partycluster.png">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
@@ -212,6 +218,10 @@
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>
+    <EmbeddedResource Include="Resources\ClusterNames.resx">
+      <Generator>ResXFileCodeGenerator</Generator>
+      <LastGenOutput>ClusterNames.Designer.cs</LastGenOutput>
+    </EmbeddedResource>
     <EmbeddedResource Include="Resources\Messages.resx">
       <Generator>ResXFileCodeGenerator</Generator>
       <LastGenOutput>Messages.Designer.cs</LastGenOutput>

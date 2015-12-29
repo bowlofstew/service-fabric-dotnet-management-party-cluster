@@ -117,46 +117,76 @@
   <resheader name="writer">
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
-  <data name="CapacityCrowded" xml:space="preserve">
-    <value>Getting crowded</value>
+  <data name="Name0" xml:space="preserve">
+    <value>Omega</value>
   </data>
-  <data name="CapacityEmpty" xml:space="preserve">
-    <value>Lots of room</value>
+  <data name="Name1" xml:space="preserve">
+    <value>Alpha</value>
   </data>
-  <data name="CapacityFull" xml:space="preserve">
-    <value>Full</value>
+  <data name="Name10" xml:space="preserve">
+    <value>Kappa</value>
   </data>
-  <data name="ClusterDoesNotExist" xml:space="preserve">
-    <value>Sorry, that cluster doesn't exist! Please try a different one.</value>
+  <data name="Name11" xml:space="preserve">
+    <value>Lambda</value>
   </data>
-  <data name="ClusterExpired" xml:space="preserve">
-    <value>Sorry, this cluster has expired and is being replaced with a new one. Please try a different one.</value>
+  <data name="Name12" xml:space="preserve">
+    <value>Mu</value>
   </data>
-  <data name="ClusterFull" xml:space="preserve">
-    <value>Sorry, this cluster is at capacity. Please try a different one.</value>
+  <data name="Name13" xml:space="preserve">
+    <value>Nu</value>
   </data>
-  <data name="ClusterNotReady" xml:space="preserve">
-    <value>Sorry, this cluster isn't ready yet. Please try a different one in the meantime.</value>
+  <data name="Name14" xml:space="preserve">
+    <value>Xi</value>
   </data>
-  <data name="InvalidCaptcha" xml:space="preserve">
-    <value>Sorry, that captcha response was incorrect. Please try again.</value>
+  <data name="Name15" xml:space="preserve">
+    <value>Omicron</value>
   </data>
-  <data name="InvalidEmail" xml:space="preserve">
-    <value>Please provide a valid email address.</value>
+  <data name="Name16" xml:space="preserve">
+    <value>Pi</value>
   </data>
-  <data name="MissingInput" xml:space="preserve">
-    <value>Please provide an email address and verify that you are not a robot.</value>
+  <data name="Name17" xml:space="preserve">
+    <value>Rho</value>
   </data>
-  <data name="NoPortsAvailable" xml:space="preserve">
-    <value>Sorry, there are no ports available for your application to use on this cluster. Please try a different one.</value>
+  <data name="Name18" xml:space="preserve">
+    <value>Sigma</value>
   </data>
-  <data name="SendMailFailed" xml:space="preserve">
-    <value>Sorry, we couldn't send an invitation to that email. Please check for typos or try a different email.</value>
+  <data name="Name19" xml:space="preserve">
+    <value>Tau</value>
   </data>
-  <data name="ServerError" xml:space="preserve">
-    <value>Sorry, something went wrong with this cluster. Please try a different one.</value>
+  <data name="Name2" xml:space="preserve">
+    <value>Beta</value>
   </data>
-  <data name="UserAlreadyJoined" xml:space="preserve">
-    <value>You've already joined a cluster! You can only join one cluster at a time. When that cluster expires, you can join another one. Please check your email inbox for your invitation (don't forget to check your junk folder too!).</value>
+  <data name="Name20" xml:space="preserve">
+    <value>Upsilon</value>
+  </data>
+  <data name="Name21" xml:space="preserve">
+    <value>Phi</value>
+  </data>
+  <data name="Name22" xml:space="preserve">
+    <value>Chi</value>
+  </data>
+  <data name="Name23" xml:space="preserve">
+    <value>Psi</value>
+  </data>
+  <data name="Name3" xml:space="preserve">
+    <value>Gamma</value>
+  </data>
+  <data name="Name4" xml:space="preserve">
+    <value>Delta</value>
+  </data>
+  <data name="Name5" xml:space="preserve">
+    <value>Epsilon</value>
+  </data>
+  <data name="Name6" xml:space="preserve">
+    <value>Zeta</value>
+  </data>
+  <data name="Name7" xml:space="preserve">
+    <value>Eta</value>
+  </data>
+  <data name="Name8" xml:space="preserve">
+    <value>Theta</value>
+  </data>
+  <data name="Name9" xml:space="preserve">
+    <value>Iota</value>
   </data>
 </root>

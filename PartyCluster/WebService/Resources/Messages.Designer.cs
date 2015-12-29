@@ -61,6 +61,33 @@ namespace WebService.Resources {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to Getting crowded.
+        /// </summary>
+        internal static string CapacityCrowded {
+            get {
+                return ResourceManager.GetString("CapacityCrowded", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Lots of room.
+        /// </summary>
+        internal static string CapacityEmpty {
+            get {
+                return ResourceManager.GetString("CapacityEmpty", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Full.
+        /// </summary>
+        internal static string CapacityFull {
+            get {
+                return ResourceManager.GetString("CapacityFull", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to Sorry, that cluster doesn&apos;t exist! Please try a different one..
         /// </summary>
         internal static string ClusterDoesNotExist {

@@ -103,7 +103,6 @@ namespace ClusterService
                 orderby item.Value.CreatedOn descending
                 select new ClusterView(
                     item.Key,
-                    "Party Cluster " + item.Key,
                     item.Value.AppCount,
                     item.Value.ServiceCount,
                     item.Value.Users.Count(),
@@ -682,7 +681,7 @@ namespace ClusterService
         {
             return this.random.Next();
         }
-
+        
         private string CreateClusterInternalName()
         {
             return "party" + (ushort) this.random.Next();

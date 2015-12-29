@@ -11,25 +11,18 @@ namespace Domain
     [DataContract]
     public struct ClusterView
     {
-        public ClusterView(int clusterId, string name, int appCount, int serviceCount, int userCount, int capacity, TimeSpan timeRemaining)
+        public ClusterView(int clusterId, int appCount, int serviceCount, int userCount, int maxUsers, TimeSpan timeRemaining)
         {
             this.ClusterId = clusterId;
-            this.Name = name;
             this.ApplicationCount = appCount;
             this.ServiceCount = serviceCount;
             this.UserCount = userCount;
-            this.Capacity = capacity;
-
-            this.TimeRemaining = timeRemaining > TimeSpan.Zero
-                ? String.Format("{0:hh\\:mm\\:ss}", timeRemaining)
-                : "expired";
+            this.MaxUsers = maxUsers;
+            this.TimeRemaining = timeRemaining;
         }
 
         [DataMember]
         public int ClusterId { get; private set; }
-
-        [DataMember]
-        public string Name { get; private set; }
 
         [DataMember]
         public int ApplicationCount { get; private set; }
@@ -41,9 +34,9 @@ namespace Domain
         public int UserCount { get; private set; }
 
         [DataMember]
-        public int Capacity { get; private set; }
+        public int MaxUsers { get; private set; }
 
         [DataMember]
-        public string TimeRemaining { get; private set; }
+        public TimeSpan TimeRemaining { get; private set; }
     }
 }

@@ -7,7 +7,7 @@ namespace WebService
 {
     using System.Fabric;
     using System.Web.Http;
-    using global::WebService.Controllers;
+    using Controllers;
     using Microsoft.Practices.Unity;
     using Unity.WebApi;
 
