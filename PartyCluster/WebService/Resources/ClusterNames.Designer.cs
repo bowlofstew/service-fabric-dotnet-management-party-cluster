@@ -61,7 +61,7 @@ namespace WebService.Resources {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Omega.
+        ///   Looks up a localized string similar to Omega Cluster.
         /// </summary>
         internal static string Name0 {
             get {
@@ -70,7 +70,7 @@ namespace WebService.Resources {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Alpha.
+        ///   Looks up a localized string similar to Alpha Cluster.
         /// </summary>
         internal static string Name1 {
             get {
@@ -79,7 +79,7 @@ namespace WebService.Resources {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Kappa.
+        ///   Looks up a localized string similar to Kappa Cluster.
         /// </summary>
         internal static string Name10 {
             get {
@@ -88,7 +88,7 @@ namespace WebService.Resources {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Lambda.
+        ///   Looks up a localized string similar to Lambda Cluster.
         /// </summary>
         internal static string Name11 {
             get {
@@ -97,7 +97,7 @@ namespace WebService.Resources {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Mu.
+        ///   Looks up a localized string similar to Mu Cluster.
         /// </summary>
         internal static string Name12 {
             get {
@@ -106,7 +106,7 @@ namespace WebService.Resources {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Nu.
+        ///   Looks up a localized string similar to Nu Cluster.
         /// </summary>
         internal static string Name13 {
             get {
@@ -115,7 +115,7 @@ namespace WebService.Resources {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Xi.
+        ///   Looks up a localized string similar to Xi Cluster.
         /// </summary>
         internal static string Name14 {
             get {
@@ -124,7 +124,7 @@ namespace WebService.Resources {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Omicron.
+        ///   Looks up a localized string similar to Omicron Cluster.
         /// </summary>
         internal static string Name15 {
             get {
@@ -133,7 +133,7 @@ namespace WebService.Resources {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Pi.
+        ///   Looks up a localized string similar to Pi Cluster.
         /// </summary>
         internal static string Name16 {
             get {
@@ -142,7 +142,7 @@ namespace WebService.Resources {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Rho.
+        ///   Looks up a localized string similar to Rho Cluster.
         /// </summary>
         internal static string Name17 {
             get {
@@ -151,7 +151,7 @@ namespace WebService.Resources {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Sigma.
+        ///   Looks up a localized string similar to Sigma Cluster.
         /// </summary>
         internal static string Name18 {
             get {
@@ -160,7 +160,7 @@ namespace WebService.Resources {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Tau.
+        ///   Looks up a localized string similar to Tau Cluster.
         /// </summary>
         internal static string Name19 {
             get {
@@ -169,7 +169,7 @@ namespace WebService.Resources {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Beta.
+        ///   Looks up a localized string similar to Beta Cluster.
         /// </summary>
         internal static string Name2 {
             get {
@@ -178,7 +178,7 @@ namespace WebService.Resources {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Upsilon.
+        ///   Looks up a localized string similar to Upsilon Cluster.
         /// </summary>
         internal static string Name20 {
             get {
@@ -187,7 +187,7 @@ namespace WebService.Resources {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Phi.
+        ///   Looks up a localized string similar to Phi Cluster.
         /// </summary>
         internal static string Name21 {
             get {
@@ -196,7 +196,7 @@ namespace WebService.Resources {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Chi.
+        ///   Looks up a localized string similar to Chi Cluster.
         /// </summary>
         internal static string Name22 {
             get {
@@ -205,7 +205,7 @@ namespace WebService.Resources {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Psi.
+        ///   Looks up a localized string similar to Psi Cluster.
         /// </summary>
         internal static string Name23 {
             get {
@@ -214,7 +214,7 @@ namespace WebService.Resources {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Gamma.
+        ///   Looks up a localized string similar to Gamma Cluster.
         /// </summary>
         internal static string Name3 {
             get {
@@ -223,7 +223,7 @@ namespace WebService.Resources {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Delta.
+        ///   Looks up a localized string similar to Delta Cluster.
         /// </summary>
         internal static string Name4 {
             get {
@@ -232,7 +232,7 @@ namespace WebService.Resources {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Epsilon.
+        ///   Looks up a localized string similar to Epsilon Cluster.
         /// </summary>
         internal static string Name5 {
             get {
@@ -241,7 +241,7 @@ namespace WebService.Resources {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Zeta.
+        ///   Looks up a localized string similar to Zeta Cluster.
         /// </summary>
         internal static string Name6 {
             get {
@@ -250,7 +250,7 @@ namespace WebService.Resources {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Eta.
+        ///   Looks up a localized string similar to Eta Cluster.
         /// </summary>
         internal static string Name7 {
             get {
@@ -259,7 +259,7 @@ namespace WebService.Resources {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Theta.
+        ///   Looks up a localized string similar to Theta Cluster.
         /// </summary>
         internal static string Name8 {
             get {
@@ -268,7 +268,7 @@ namespace WebService.Resources {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Iota.
+        ///   Looks up a localized string similar to Iota Cluster.
         /// </summary>
         internal static string Name9 {
             get {

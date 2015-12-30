@@ -118,75 +118,75 @@
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
   <data name="Name0" xml:space="preserve">
-    <value>Omega</value>
+    <value>Omega Cluster</value>
   </data>
   <data name="Name1" xml:space="preserve">
-    <value>Alpha</value>
+    <value>Alpha Cluster</value>
   </data>
   <data name="Name10" xml:space="preserve">
-    <value>Kappa</value>
+    <value>Kappa Cluster</value>
   </data>
   <data name="Name11" xml:space="preserve">
-    <value>Lambda</value>
+    <value>Lambda Cluster</value>
   </data>
   <data name="Name12" xml:space="preserve">
-    <value>Mu</value>
+    <value>Mu Cluster</value>
   </data>
   <data name="Name13" xml:space="preserve">
-    <value>Nu</value>
+    <value>Nu Cluster</value>
   </data>
   <data name="Name14" xml:space="preserve">
-    <value>Xi</value>
+    <value>Xi Cluster</value>
   </data>
   <data name="Name15" xml:space="preserve">
-    <value>Omicron</value>
+    <value>Omicron Cluster</value>
   </data>
   <data name="Name16" xml:space="preserve">
-    <value>Pi</value>
+    <value>Pi Cluster</value>
   </data>
   <data name="Name17" xml:space="preserve">
-    <value>Rho</value>
+    <value>Rho Cluster</value>
   </data>
   <data name="Name18" xml:space="preserve">
-    <value>Sigma</value>
+    <value>Sigma Cluster</value>
   </data>
   <data name="Name19" xml:space="preserve">
-    <value>Tau</value>
+    <value>Tau Cluster</value>
   </data>
   <data name="Name2" xml:space="preserve">
-    <value>Beta</value>
+    <value>Beta Cluster</value>
   </data>
   <data name="Name20" xml:space="preserve">
-    <value>Upsilon</value>
+    <value>Upsilon Cluster</value>
   </data>
   <data name="Name21" xml:space="preserve">
-    <value>Phi</value>
+    <value>Phi Cluster</value>
   </data>
   <data name="Name22" xml:space="preserve">
-    <value>Chi</value>
+    <value>Chi Cluster</value>
   </data>
   <data name="Name23" xml:space="preserve">
-    <value>Psi</value>
+    <value>Psi Cluster</value>
   </data>
   <data name="Name3" xml:space="preserve">
-    <value>Gamma</value>
+    <value>Gamma Cluster</value>
   </data>
   <data name="Name4" xml:space="preserve">
-    <value>Delta</value>
+    <value>Delta Cluster</value>
   </data>
   <data name="Name5" xml:space="preserve">
-    <value>Epsilon</value>
+    <value>Epsilon Cluster</value>
   </data>
   <data name="Name6" xml:space="preserve">
-    <value>Zeta</value>
+    <value>Zeta Cluster</value>
   </data>
   <data name="Name7" xml:space="preserve">
-    <value>Eta</value>
+    <value>Eta Cluster</value>
   </data>
   <data name="Name8" xml:space="preserve">
-    <value>Theta</value>
+    <value>Theta Cluster</value>
   </data>
   <data name="Name9" xml:space="preserve">
-    <value>Iota</value>
+    <value>Iota Cluster</value>
   </data>
 </root>

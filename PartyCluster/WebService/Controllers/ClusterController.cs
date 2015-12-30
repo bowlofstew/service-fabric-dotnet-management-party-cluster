@@ -20,6 +20,10 @@ namespace WebService.Controllers
     [RoutePrefix("api")]
     public class ClusterController : ApiController
     {
+        private static Resx messageResources = new Resx("WebService.Resources.Messages");
+
+        private static Resx clusterNameResources = new Resx("WebService.Resources.ClusterNames");
+
         private readonly ICaptcha captcha;
 
         public ClusterController(ICaptcha captcha)
@@ -55,15 +59,13 @@ namespace WebService.Controllers
         [Route("clusters/join/{clusterId}")]
         public async Task<HttpResponseMessage> Join(int clusterId, [FromBody] JoinClusterRequest user)
         {
-            Resx messages = new Resx("WebService.Resources.Messages");
-
             try
             {
                 if (user == null || String.IsNullOrWhiteSpace(user.UserEmail) || String.IsNullOrWhiteSpace(user.CaptchaResponse))
                 {
                     return this.Request.CreateResponse(
                         HttpStatusCode.BadRequest,
-                        new BadRequestViewModel("MissingInput", messages.Manager.GetString("MissingInput"), "Missing input."));
+                        new BadRequestViewModel("MissingInput", messageResources.Manager.GetString("MissingInput"), "Missing input."));
                 }
 
                 // validate captcha.
@@ -72,7 +74,7 @@ namespace WebService.Controllers
                 {
                     return this.Request.CreateResponse(
                         HttpStatusCode.Forbidden,
-                        new BadRequestViewModel("InvalidCaptcha", messages.Manager.GetString("InvalidCaptcha"), "Invalid parameter: captcha"));
+                        new BadRequestViewModel("InvalidCaptcha", messageResources.Manager.GetString("InvalidCaptcha"), "Invalid parameter: captcha"));
                 }
 
                 ServiceUriBuilder builder = new ServiceUriBuilder("ClusterService");
@@ -89,7 +91,7 @@ namespace WebService.Controllers
                 {
                     return this.Request.CreateResponse(
                         HttpStatusCode.BadRequest,
-                        new BadRequestViewModel("InvalidEmail", messages.Manager.GetString("InvalidEmail"), argumentEx.Message));
+                        new BadRequestViewModel("InvalidEmail", messageResources.Manager.GetString("InvalidEmail"), argumentEx.Message));
                 }
 
                 JoinClusterFailedException joinFailedEx = ae.InnerException as JoinClusterFailedException;
@@ -97,45 +99,43 @@ namespace WebService.Controllers
                 {
                     return this.Request.CreateResponse(
                         HttpStatusCode.BadRequest,
-                        new BadRequestViewModel(joinFailedEx.Reason.ToString(), messages.Manager.GetString(joinFailedEx.Reason.ToString()), joinFailedEx.Message));
+                        new BadRequestViewModel(joinFailedEx.Reason.ToString(), messageResources.Manager.GetString(joinFailedEx.Reason.ToString()), joinFailedEx.Message));
                 }
 
                 return this.Request.CreateResponse(
                     HttpStatusCode.InternalServerError,
-                    new BadRequestViewModel("ServerError", messages.Manager.GetString("ServerError"), ae.InnerException.Message));
+                    new BadRequestViewModel("ServerError", messageResources.Manager.GetString("ServerError"), ae.InnerException.Message));
             }
             catch (Exception e)
             {
                 return this.Request.CreateResponse(
                     HttpStatusCode.InternalServerError,
-                    new BadRequestViewModel("ServerError", messages.Manager.GetString("ServerError"), e.Message));
+                    new BadRequestViewModel("ServerError", messageResources.Manager.GetString("ServerError"), e.Message));
             }
         }
 
         private string GetClusterName(int key)
         {
-            Resx messages = new Resx("WebService.Resources.ClusterNames");
 
-            return messages.Manager.GetString("Name" + (messages.Count % key));
+            return clusterNameResources.Manager.GetString("Name" + (key % clusterNameResources.Count));
         }
 
         private string GetUserCapacity(int count, int max)
         {
-            Resx messages = new Resx("WebService.Resources.Messages");
 
             if (count == max)
             {
-                return messages.Manager.GetString("CapacityFull");
+                return messageResources.Manager.GetString("CapacityFull");
             }
 
             double p = (double)count / (double)max;
 
             if (p < 0.3)
             {
-                return messages.Manager.GetString("CapacityEmpty");
+                return messageResources.Manager.GetString("CapacityEmpty");
             }
 
-            return messages.Manager.GetString("CapacityCrowded");
+            return messageResources.Manager.GetString("CapacityCrowded");
         }
     }
 }

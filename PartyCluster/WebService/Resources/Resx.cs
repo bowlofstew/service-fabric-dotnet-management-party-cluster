@@ -14,35 +14,26 @@ namespace WebService.Resources
     /// </summary>
     internal class Resx
     {
-        private static ResourceManager resources;
-
-        private static int count;
-
         public Resx(string name)
         {
-            if (resources == null)
+            this.Manager = new ResourceManager(name, Assembly.GetExecutingAssembly());
+
+            ResourceSet set = this.Manager.GetResourceSet(CultureInfo.CurrentUICulture, true, true);
+           
+            foreach (var item in set)
             {
-                resources = new ResourceManager(name, Assembly.GetExecutingAssembly());
-
-                ResourceSet set = resources.GetResourceSet(CultureInfo.CurrentUICulture, true, true);
-                int total = 0;
-                foreach (var item in set)
-                {
-                    ++total;
-                }
-
-                count = total;
+                ++this.Count;
             }
         }
 
         /// <summary>
         /// Gets the number of entries in the RESX file.
         /// </summary>
-        public int Count { get { return count; } }
+        public int Count { get; private set; }
 
         /// <summary>
         /// Gets a ResourceManager for the RESX file.
         /// </summary>
-        public ResourceManager Manager { get { return resources; } }
+        public ResourceManager Manager { get; private set; }
     }
 }
