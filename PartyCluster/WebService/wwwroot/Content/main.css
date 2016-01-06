@@ -67,6 +67,10 @@ font-weight:200;
     z-index: 11;
 	
 }
+.dialog.join-cluster-progress > h3 {
+    margin-top: 120px;
+    text-align: center;
+}
 .join-cluster-dialog-success
 {
 	height:200px;

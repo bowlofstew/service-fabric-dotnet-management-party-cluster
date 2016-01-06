@@ -105,8 +105,11 @@ function PartyClusters(api) {
 
     this.JoinCluster = function () {
         var joinClusterWindow = $('.join-cluster-dialog');
+        var joinClusterProgressWindow = $('.join-cluster-progress');
         var email = $('#join-useremail').val();
         var captchaResponse = $("#g-recaptcha-response").val();
+
+        self.joinClusterDialog.Change(joinClusterWindow, joinClusterProgressWindow);
 
         self.api.JoinCluster(
             self.selectedCluster.Id,
@@ -114,7 +117,7 @@ function PartyClusters(api) {
 			captchaResponse,
             function (data) {
                 var joinClusterSuccessWindow = $('.join-cluster-dialog-success');
-                self.joinClusterDialog.Change(joinClusterWindow, joinClusterSuccessWindow);
+                self.joinClusterDialog.Change(joinClusterProgressWindow, joinClusterSuccessWindow);
             },
             function (data) {
                 if (self.selectedCluster.AutoRetry) {
@@ -134,7 +137,7 @@ function PartyClusters(api) {
                 var failedClusterWindow = $('.join-cluster-dialog-failed');
                 $('p', failedClusterWindow).text(data.Message);
 
-                self.joinClusterDialog.Change(joinClusterWindow, failedClusterWindow);
+                self.joinClusterDialog.Change(joinClusterProgressWindow, failedClusterWindow);
             }
         );
     }
