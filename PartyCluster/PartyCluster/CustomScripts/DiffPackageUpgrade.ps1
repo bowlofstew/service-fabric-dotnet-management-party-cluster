@@ -5,7 +5,7 @@ $applicationDir = (Get-Item "$dp0\..\").FullName
 $applicationPackageDir = "$applicationDir\pkg\Release"
 
 # The application version that we're upgrading to. This needs to match the application type version in ApplicationManifest.xml.
-$newVersion = "1.0.8"
+$newVersion = "1.0.9"
 
 # Connect to the cluster. This cluster is secured, so we provide a certificate thumbprint for the certificate that is used to authenticate with the cluster. 
 # This certificate's private key must be installed on the machine that is connecting to the secure cluster.
