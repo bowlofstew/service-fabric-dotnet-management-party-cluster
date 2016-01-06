@@ -23,12 +23,17 @@ namespace ClusterService
                 serviceName,
                 serviceTypeName,
                 replicaId);
-
+            
             IReliableStateManager stateManager = new ReliableStateManager();
 
             return new ClusterService(
+#if LOCAL
                 new FakeClusterOperator(stateManager),
                 new FakeMailer(),
+#else
+                new ArmClusterOperator(parameters),
+                new SendGridMailer(parameters),
+#endif
                 ServiceProxy.Create<IApplicationDeployService>(0, new ServiceUriBuilder("ApplicationDeployService").ToUri()),
                 stateManager,
                 parameters,

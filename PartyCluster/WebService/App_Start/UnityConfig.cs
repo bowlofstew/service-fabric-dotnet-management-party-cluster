@@ -19,7 +19,12 @@ namespace WebService
 
             container.RegisterType<ClusterController>(
                 new TransientLifetimeManager(),
-                new InjectionConstructor(new FakeCaptcha()));
+                new InjectionConstructor(
+#if LOCAL
+                    new FakeCaptcha()));
+#else
+                    new Recaptcha(serviceParameters)));
+#endif
 
             config.DependencyResolver = new UnityDependencyResolver(container);
         }
