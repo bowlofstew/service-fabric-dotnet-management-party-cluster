@@ -40,15 +40,13 @@ namespace Microsoft.Diagnostics.EventListeners
                 healthReporter: healthReporter);
         }
 
-        private void CreateConnectionData(object sender)
+        private void CreateConnectionData(IConfigurationProvider configurationProvider)
         {
-            IConfigurationProvider configurationProvider = (IConfigurationProvider) sender;
-
             string serviceBusConnectionString = configurationProvider.GetValue("serviceBusConnectionString");
             if (string.IsNullOrWhiteSpace(serviceBusConnectionString))
             {
                 throw new ConfigurationErrorsException(
-                    "Configuraiton parameter 'serviceBusConnectionString' must be set to a valid Service Bus connection string");
+                    "Configuration parameter 'serviceBusConnectionString' must be set to a valid Service Bus connection string");
             }
 
             string eventHubName = configurationProvider.GetValue("eventHubName");
