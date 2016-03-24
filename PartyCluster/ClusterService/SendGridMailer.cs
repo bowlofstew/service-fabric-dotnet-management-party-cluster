@@ -27,18 +27,18 @@ namespace ClusterService
         private string mailFrom;
         private string mailSubject;
 
-        public SendGridMailer(StatefulServiceParameters serviceParameters)
+        public SendGridMailer(StatefulServiceContext serviceContext)
         {
-            ConfigurationPackage configPackage = serviceParameters.CodePackageActivationContext.GetConfigurationPackageObject("Config");
-            DataPackage dataPackage = serviceParameters.CodePackageActivationContext.GetDataPackageObject("Data");
+            ConfigurationPackage configPackage = serviceContext.CodePackageActivationContext.GetConfigurationPackageObject("Config");
+            DataPackage dataPackage = serviceContext.CodePackageActivationContext.GetDataPackageObject("Data");
 
             this.UpdateSendMailSettings(configPackage.Settings);
             this.UpdateJoinMailTemplateContent(dataPackage.Path);
 
-            serviceParameters.CodePackageActivationContext.ConfigurationPackageModifiedEvent +=
+            serviceContext.CodePackageActivationContext.ConfigurationPackageModifiedEvent +=
                 this.CodePackageActivationContext_ConfigurationPackageModifiedEvent;
 
-            serviceParameters.CodePackageActivationContext.DataPackageModifiedEvent
+            serviceContext.CodePackageActivationContext.DataPackageModifiedEvent
                 += this.CodePackageActivationContext_DataPackageModifiedEvent;
         }
 

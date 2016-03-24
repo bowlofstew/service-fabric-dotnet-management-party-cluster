@@ -8,12 +8,14 @@ namespace Mocks
     using System;
     using System.Collections.Concurrent;
     using System.Collections.Generic;
+    using System.Fabric;
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.ServiceFabric.Data;
     using Microsoft.ServiceFabric.Data.Collections;
+    using Microsoft.ServiceFabric.Data.Notifications;
 
-    public class MockReliableStateManager : IReliableStateManager
+    public class MockReliableStateManager : IReliableStateManagerReplica
     {
         private ConcurrentDictionary<Uri, IReliableState> store = new ConcurrentDictionary<Uri, IReliableState>();
 
@@ -22,6 +24,11 @@ namespace Mocks
             {typeof(IReliableDictionary<,>), typeof(MockReliableDictionary<,>)},
             {typeof(IReliableQueue<>), typeof(MockReliableQueue<>)}
         };
+
+        public Func<CancellationToken, Task<bool>> OnDataLossAsync { set; get; }
+
+        public event EventHandler<NotifyTransactionChangedEventArgs> TransactionChanged;
+        public event EventHandler<NotifyStateManagerChangedEventArgs> StateManagerChanged;
 
         public Task ClearAsync(ITransaction tx)
         {
@@ -104,30 +111,20 @@ namespace Mocks
             return Task.FromResult(true);
         }
 
-        public Task<ConditionalResult<T>> TryGetAsync<T>(string name) where T : IReliableState
+        public Task<ConditionalValue<T>> TryGetAsync<T>(string name) where T : IReliableState
         {
             IReliableState item;
             bool result = this.store.TryGetValue(this.ToUri(name), out item);
 
-            return Task.FromResult(ConditionalResultActivator.Create<T>(result, (T) item));
+            return Task.FromResult(new ConditionalValue<T>(result, (T) item));
         }
 
-        public Task<ConditionalResult<T>> TryGetAsync<T>(Uri name) where T : IReliableState
+        public Task<ConditionalValue<T>> TryGetAsync<T>(Uri name) where T : IReliableState
         {
             IReliableState item;
             bool result = this.store.TryGetValue(name, out item);
 
-            return Task.FromResult(ConditionalResultActivator.Create<T>(result, (T) item));
-        }
-
-        System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator()
-        {
-            return this.store.Values.GetEnumerator();
-        }
-
-        IEnumerator<IReliableState> IEnumerable<IReliableState>.GetEnumerator()
-        {
-            return this.store.Values.GetEnumerator();
+            return Task.FromResult(new ConditionalValue<T>(result, (T) item));
         }
 
         public Task<T> GetOrAddAsync<T>(string name) where T : IReliableState
@@ -170,27 +167,6 @@ namespace Mocks
             return Task.FromResult((T) this.store.GetOrAdd(name, this.GetDependency(typeof(T))));
         }
 
-        public Task<BackupInfo> BackupAsync(Func<BackupInfo, Task<bool>> backupCallback)
-        {
-            throw new NotImplementedException();
-        }
-
-        public Task<BackupInfo> BackupAsync(
-            BackupOption option, TimeSpan timeout, CancellationToken cancellationToken, Func<BackupInfo, Task<bool>> backupCallback)
-        {
-            throw new NotImplementedException();
-        }
-
-        public Task RestoreAsync(string backupFolderPath)
-        {
-            throw new NotImplementedException();
-        }
-
-        public Task RestoreAsync(string backupFolderPath, RestorePolicy restorePolicy, CancellationToken cancellationToken)
-        {
-            throw new NotImplementedException();
-        }
-
         public bool TryAddStateSerializer<T>(IStateSerializer<T> stateSerializer)
         {
             throw new NotImplementedException();
@@ -206,6 +182,55 @@ namespace Mocks
         private Uri ToUri(string name)
         {
             return new Uri("mock://" + name, UriKind.Absolute);
+        }
+
+        public IAsyncEnumerator<IReliableState> GetAsyncEnumerator()
+        {
+            return new MockAsyncEnumerator<IReliableState>(this.store.Values.GetEnumerator());
+        }
+
+        public void Initialize(StatefulServiceInitializationParameters initializationParameters)
+        {
+            
+        }
+
+        public Task<IReplicator> OpenAsync(ReplicaOpenMode openMode, IStatefulServicePartition partition, CancellationToken cancellationToken)
+        {
+            return null;
+        }
+
+        public Task ChangeRoleAsync(ReplicaRole newRole, CancellationToken cancellationToken)
+        {
+            return Task.FromResult(true);
+        }
+
+        public Task CloseAsync(CancellationToken cancellationToken)
+        {
+            return Task.FromResult(true);
+        }
+
+        public void Abort()
+        {
+        }
+
+        public Task BackupAsync(Func<BackupInfo, CancellationToken, Task<bool>> backupCallback)
+        {
+            throw new NotImplementedException();
+        }
+
+        public Task BackupAsync(BackupOption option, TimeSpan timeout, CancellationToken cancellationToken, Func<BackupInfo, CancellationToken, Task<bool>> backupCallback)
+        {
+            throw new NotImplementedException();
+        }
+
+        public Task RestoreAsync(string backupFolderPath)
+        {
+            throw new NotImplementedException();
+        }
+
+        public Task RestoreAsync(string backupFolderPath, RestorePolicy restorePolicy, CancellationToken cancellationToken)
+        {
+            throw new NotImplementedException();
         }
     }
 }

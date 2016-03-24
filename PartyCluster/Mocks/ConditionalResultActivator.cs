@@ -10,10 +10,10 @@ namespace Mocks
 
     internal static class ConditionalResultActivator
     {
-        public static ConditionalResult<T> Create<T>(bool result, T value)
+        public static ConditionalValue<T> Create<T>(bool result, T value)
         {
-            return (ConditionalResult<T>) Activator.CreateInstance(
-                typeof(ConditionalResult<T>),
+            return (ConditionalValue<T>) Activator.CreateInstance(
+                typeof(ConditionalValue<T>),
                 System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Instance,
                 null,
                 new object[] {result, value},

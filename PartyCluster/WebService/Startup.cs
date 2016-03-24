@@ -14,11 +14,11 @@ namespace WebService
 
     internal class Startup : IOwinAppBuilder
     {
-        private readonly ServiceInitializationParameters serviceParameters;
+        private readonly StatelessServiceContext serviceContext;
 
-        public Startup(ServiceInitializationParameters serviceParameters)
+        public Startup(StatelessServiceContext serviceContext)
         {
-            this.serviceParameters = serviceParameters;
+            this.serviceContext = serviceContext;
         }
 
         public void Configuration(IAppBuilder appBuilder)
@@ -26,7 +26,7 @@ namespace WebService
             HttpConfiguration config = new HttpConfiguration();
 
             FormatterConfig.ConfigureFormatters(config.Formatters);
-            UnityConfig.RegisterComponents(config, this.serviceParameters);
+            UnityConfig.RegisterComponents(config, this.serviceContext);
 
             PhysicalFileSystem physicalFileSystem = new PhysicalFileSystem(@".\wwwroot");
             FileServerOptions fileOptions = new FileServerOptions();

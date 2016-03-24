@@ -22,12 +22,12 @@ namespace WebService
         private SecureString key;
         private Uri verifyUrl;
 
-        public Recaptcha(ServiceInitializationParameters serviceParameters)
+        public Recaptcha(StatelessServiceContext serviceContext)
         {
-            serviceParameters.CodePackageActivationContext.ConfigurationPackageModifiedEvent
+            serviceContext.CodePackageActivationContext.ConfigurationPackageModifiedEvent
                 += this.CodePackageActivationContext_ConfigurationPackageModifiedEvent;
 
-            ConfigurationPackage configPackage = serviceParameters.CodePackageActivationContext.GetConfigurationPackageObject("Config");
+            ConfigurationPackage configPackage = serviceContext.CodePackageActivationContext.GetConfigurationPackageObject("Config");
 
             this.UpdateConfigSettings(configPackage.Settings);
         }

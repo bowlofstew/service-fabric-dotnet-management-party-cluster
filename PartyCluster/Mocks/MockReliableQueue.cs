@@ -31,52 +31,52 @@ namespace Mocks
             return Task.FromResult(true);
         }
 
-        public Task<ConditionalResult<T>> TryDequeueAsync(ITransaction tx, TimeSpan timeout, CancellationToken cancellationToken)
+        public Task<ConditionalValue<T>> TryDequeueAsync(ITransaction tx, TimeSpan timeout, CancellationToken cancellationToken)
         {
             T item;
             bool result = this.queue.TryDequeue(out item);
 
-            return Task.FromResult((ConditionalResult<T>) Activator.CreateInstance(typeof(ConditionalResult<T>), result, item));
+            return Task.FromResult((ConditionalValue<T>) Activator.CreateInstance(typeof(ConditionalValue<T>), result, item));
         }
 
-        public Task<ConditionalResult<T>> TryDequeueAsync(ITransaction tx)
+        public Task<ConditionalValue<T>> TryDequeueAsync(ITransaction tx)
         {
             T item;
             bool result = this.queue.TryDequeue(out item);
 
-            return Task.FromResult((ConditionalResult<T>) Activator.CreateInstance(typeof(ConditionalResult<T>), result, item));
+            return Task.FromResult((ConditionalValue<T>) Activator.CreateInstance(typeof(ConditionalValue<T>), result, item));
         }
 
-        public Task<ConditionalResult<T>> TryPeekAsync(ITransaction tx, LockMode lockMode, TimeSpan timeout, CancellationToken cancellationToken)
+        public Task<ConditionalValue<T>> TryPeekAsync(ITransaction tx, LockMode lockMode, TimeSpan timeout, CancellationToken cancellationToken)
         {
             T item;
             bool result = this.queue.TryPeek(out item);
 
-            return Task.FromResult((ConditionalResult<T>) Activator.CreateInstance(typeof(ConditionalResult<T>), result, item));
+            return Task.FromResult((ConditionalValue<T>) Activator.CreateInstance(typeof(ConditionalValue<T>), result, item));
         }
 
-        public Task<ConditionalResult<T>> TryPeekAsync(ITransaction tx, LockMode lockMode)
+        public Task<ConditionalValue<T>> TryPeekAsync(ITransaction tx, LockMode lockMode)
         {
             T item;
             bool result = this.queue.TryPeek(out item);
 
-            return Task.FromResult((ConditionalResult<T>) Activator.CreateInstance(typeof(ConditionalResult<T>), result, item));
+            return Task.FromResult((ConditionalValue<T>) Activator.CreateInstance(typeof(ConditionalValue<T>), result, item));
         }
 
-        public Task<ConditionalResult<T>> TryPeekAsync(ITransaction tx, TimeSpan timeout, CancellationToken cancellationToken)
+        public Task<ConditionalValue<T>> TryPeekAsync(ITransaction tx, TimeSpan timeout, CancellationToken cancellationToken)
         {
             T item;
             bool result = this.queue.TryPeek(out item);
 
-            return Task.FromResult((ConditionalResult<T>) Activator.CreateInstance(typeof(ConditionalResult<T>), result, item));
+            return Task.FromResult((ConditionalValue<T>) Activator.CreateInstance(typeof(ConditionalValue<T>), result, item));
         }
 
-        public Task<ConditionalResult<T>> TryPeekAsync(ITransaction tx)
+        public Task<ConditionalValue<T>> TryPeekAsync(ITransaction tx)
         {
             T item;
             bool result = this.queue.TryPeek(out item);
 
-            return Task.FromResult((ConditionalResult<T>) Activator.CreateInstance(typeof(ConditionalResult<T>), result, item));
+            return Task.FromResult((ConditionalValue<T>) Activator.CreateInstance(typeof(ConditionalValue<T>), result, item));
         }
 
         public Task ClearAsync()
@@ -95,16 +95,17 @@ namespace Mocks
             return Task.FromResult((long) this.queue.Count);
         }
 
+        public Task<IAsyncEnumerable<T>> CreateEnumerableAsync(ITransaction tx)
+        {
+            return Task.FromResult<IAsyncEnumerable<T>>(new MockAsyncEnumerable<T>(this.queue));
+        }
+
+        public Task<long> GetCountAsync(ITransaction tx)
+        {
+            return Task.FromResult<long>(this.queue.Count);
+        }
+
         public Uri Name { get; set; }
-
-        public IEnumerator<T> GetEnumerator()
-        {
-            return this.queue.GetEnumerator();
-        }
-
-        System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator()
-        {
-            return this.queue.GetEnumerator();
-        }
+        
     }
 }

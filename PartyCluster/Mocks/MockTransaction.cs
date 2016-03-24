@@ -5,14 +5,15 @@
 
 namespace Mocks
 {
+    using System;
     using System.Threading.Tasks;
     using Microsoft.ServiceFabric.Data;
 
     public class MockTransaction : ITransaction
     {
-        public Task<long> CommitAsync()
+        public Task CommitAsync()
         {
-            return Task.FromResult(0L);
+            return Task.FromResult(true);
         }
 
         public void Abort()
@@ -22,6 +23,14 @@ namespace Mocks
         public long TransactionId
         {
             get { return 0L; }
+        }
+
+        public long CommitSequenceNumber
+        {
+            get
+            {
+                throw new NotImplementedException();
+            }
         }
 
         public void Dispose()

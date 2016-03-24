@@ -5,6 +5,8 @@
 
 namespace ApplicationDeployService
 {
+    using Microsoft.ServiceFabric.Data;
+    using Microsoft.ServiceFabric.Services.Runtime;
     using System;
     using System.Diagnostics;
     using System.Fabric;
@@ -19,19 +21,15 @@ namespace ApplicationDeployService
         {
             try
             {
-                // Creating a FabricRuntime connects this host process to the Service Fabric runtime.
-                using (FabricRuntime fabricRuntime = FabricRuntime.Create())
-                {
-                    // The ServiceManifest.XML file defines one or more service type names.
-                    // RegisterServiceType maps a service type name to a .NET class.
-                    // When Service Fabric creates an instance of this service type,
-                    // an instance of the class is created in this host process.
-                    fabricRuntime.RegisterStatefulServiceFactory("ApplicationDeployServiceType", new ApplicationDeployServiceFactory());
+                ServiceRuntime.RegisterServiceAsync("ApplicationDeployServiceType", context =>
+                    new ApplicationDeployService(new ReliableStateManager(context), new FabricClientApplicationOperator(context), context)
+                )
+                .GetAwaiter().GetResult();
 
-                    ServiceEventSource.Current.ServiceTypeRegistered(Process.GetCurrentProcess().Id, typeof(ApplicationDeployService).Name);
+                ServiceEventSource.Current.ServiceTypeRegistered(Process.GetCurrentProcess().Id, typeof(ApplicationDeployService).Name);
 
-                    Thread.Sleep(Timeout.Infinite); // Prevents this host process from terminating to keep the service host process running.
-                }
+                Thread.Sleep(Timeout.Infinite); // Prevents this host process from terminating to keep the service host process running.
+
             }
             catch (Exception e)
             {

@@ -11,34 +11,52 @@ namespace ClusterService
     using System.Threading;
     using Microsoft.Diagnostics.EventListeners;
     using FabricEventListeners = Microsoft.Diagnostics.EventListeners.Fabric;
-
+    using Microsoft.ServiceFabric.Services.Runtime;
+    using Microsoft.ServiceFabric.Services.Remoting.Client;
+    using Domain;
+    using Common;
+    using Microsoft.ServiceFabric.Data;
+    using Microsoft.ServiceFabric.Services.Client;
     public class Program
     {
         public static void Main(string[] args)
         {
             try
             {
-                using (FabricRuntime fabricRuntime = FabricRuntime.Create())
+                const string ElasticSearchEventListenerId = "ElasticSearchEventListener";
+                FabricEventListeners.FabricConfigurationProvider configProvider =
+                    new FabricEventListeners.FabricConfigurationProvider(ElasticSearchEventListenerId);
+
+                ElasticSearchListener esListener = null;
+                if (configProvider.HasConfiguration)
                 {
-                    const string ElasticSearchEventListenerId = "ElasticSearchEventListener";
-                    FabricEventListeners.FabricConfigurationProvider configProvider =
-                        new FabricEventListeners.FabricConfigurationProvider(ElasticSearchEventListenerId);
-                    ElasticSearchListener esListener = null;
-                    if (configProvider.HasConfiguration)
-                    {
-                        esListener = new ElasticSearchListener(configProvider, new FabricEventListeners.FabricHealthReporter(ElasticSearchEventListenerId));
-                    }
-
-                    // This is the name of the ServiceType that is registered with FabricRuntime. 
-                    // This name must match the name defined in the ServiceManifest. If you change
-                    // this name, please change the name of the ServiceType in the ServiceManifest.
-                    fabricRuntime.RegisterStatefulServiceFactory("ClusterServiceType", new ClusterServiceFactory());
-
-                    ServiceEventSource.Current.ServiceTypeRegistered(Process.GetCurrentProcess().Id, typeof(ClusterService).Name);
-
-                    Thread.Sleep(Timeout.Infinite);
-                    GC.KeepAlive(esListener);
+                    esListener = new ElasticSearchListener(configProvider, new FabricEventListeners.FabricHealthReporter(ElasticSearchEventListenerId));
                 }
+                
+                ServiceRuntime.RegisterServiceAsync("ClusterServiceType", context =>
+                {
+                    IReliableStateManager stateManager = new ReliableStateManager(context);
+
+                    return new ClusterService(
+#if LOCAL
+                        new FakeClusterOperator(stateManager),
+                        new FakeMailer(),
+#else
+                        new ArmClusterOperator(context),
+                        new SendGridMailer(context),
+#endif
+                        ServiceProxy.Create<IApplicationDeployService>(new ServiceUriBuilder("ApplicationDeployService").ToUri(), new ServicePartitionKey(0)),
+                        stateManager,
+                        context,
+                        new ClusterConfig());
+                })
+                .GetAwaiter().GetResult();
+
+                ServiceEventSource.Current.ServiceTypeRegistered(Process.GetCurrentProcess().Id, typeof(ClusterService).Name);
+
+                Thread.Sleep(Timeout.Infinite);
+                GC.KeepAlive(esListener);
+
             }
             catch (Exception e)
             {

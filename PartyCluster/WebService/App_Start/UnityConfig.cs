@@ -13,7 +13,7 @@ namespace WebService
 
     public static class UnityConfig
     {
-        public static void RegisterComponents(HttpConfiguration config, ServiceInitializationParameters serviceParameters)
+        public static void RegisterComponents(HttpConfiguration config, StatelessServiceContext serviceContext)
         {
             UnityContainer container = new UnityContainer();
 
@@ -23,7 +23,7 @@ namespace WebService
 #if LOCAL
                     new FakeCaptcha()));
 #else
-                    new Recaptcha(serviceParameters)));
+                    new Recaptcha(serviceContext)));
 #endif
 
             config.DependencyResolver = new UnityDependencyResolver(container);

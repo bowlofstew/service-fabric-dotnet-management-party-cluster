@@ -11,34 +11,29 @@ namespace WebService
     using System.Threading;
     using Microsoft.Diagnostics.EventListeners;
     using FabricEventListeners = Microsoft.Diagnostics.EventListeners.Fabric;
-
+    using Microsoft.ServiceFabric.Services.Runtime;
     public class Program
     {
         public static void Main(string[] args)
         {
             try
             {
-                using (FabricRuntime fabricRuntime = FabricRuntime.Create())
+                const string ElasticSearchEventListenerId = "ElasticSearchEventListener";
+                FabricEventListeners.FabricConfigurationProvider configProvider =
+                    new FabricEventListeners.FabricConfigurationProvider(ElasticSearchEventListenerId);
+                ElasticSearchListener esListener = null;
+
+                if (configProvider.HasConfiguration)
                 {
-                    const string ElasticSearchEventListenerId = "ElasticSearchEventListener";
-                    FabricEventListeners.FabricConfigurationProvider configProvider =
-                        new FabricEventListeners.FabricConfigurationProvider(ElasticSearchEventListenerId);
-                    ElasticSearchListener esListener = null;
-                    if (configProvider.HasConfiguration)
-                    {
-                        esListener = new ElasticSearchListener(configProvider, new FabricEventListeners.FabricHealthReporter(ElasticSearchEventListenerId));
-                    }
-
-                    // This is the name of the ServiceType that is registered with FabricRuntime. 
-                    // This name must match the name defined in the ServiceManifest. If you change
-                    // this name, please change the name of the ServiceType in the ServiceManifest.
-                    fabricRuntime.RegisterServiceType("WebServiceType", typeof(WebService));
-
-                    ServiceEventSource.Current.ServiceTypeRegistered(Process.GetCurrentProcess().Id, typeof(WebService).Name);
-
-                    Thread.Sleep(Timeout.Infinite);
-                    GC.KeepAlive(esListener);
+                    esListener = new ElasticSearchListener(configProvider, new FabricEventListeners.FabricHealthReporter(ElasticSearchEventListenerId));
                 }
+
+                ServiceRuntime.RegisterServiceAsync("WebServiceType", context => new WebService(context)).GetAwaiter().GetResult();
+
+                ServiceEventSource.Current.ServiceTypeRegistered(Process.GetCurrentProcess().Id, typeof(WebService).Name);
+
+                Thread.Sleep(Timeout.Infinite);
+                GC.KeepAlive(esListener);
             }
             catch (Exception e)
             {

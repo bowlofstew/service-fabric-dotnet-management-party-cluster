@@ -5,6 +5,13 @@
 
 namespace ClusterService
 {
+    using Common;
+    using Domain;
+    using Microsoft.ServiceFabric.Data;
+    using Microsoft.ServiceFabric.Data.Collections;
+    using Microsoft.ServiceFabric.Services.Communication.Runtime;
+    using Microsoft.ServiceFabric.Services.Remoting.Runtime;
+    using Microsoft.ServiceFabric.Services.Runtime;
     using System;
     using System.Collections.Generic;
     using System.Collections.ObjectModel;
@@ -13,13 +20,6 @@ namespace ClusterService
     using System.Linq;
     using System.Threading;
     using System.Threading.Tasks;
-    using Common;
-    using Domain;
-    using Microsoft.ServiceFabric.Data;
-    using Microsoft.ServiceFabric.Data.Collections;
-    using Microsoft.ServiceFabric.Services.Communication.Runtime;
-    using Microsoft.ServiceFabric.Services.Remoting.Runtime;
-    using Microsoft.ServiceFabric.Services.Runtime;
 
     /// <summary>
     /// Stateful service that manages the lifetime of the party clusters.
@@ -53,12 +53,6 @@ namespace ClusterService
         private readonly IApplicationDeployService applicationDeployService;
 
         /// <summary>
-        /// A set of service parameters. Similar to StatefulServiceInitializationParameters, but we use this type
-        /// here because StatefulServiceInitializationParameters doesn't have public setters.
-        /// </summary>
-        private readonly StatefulServiceParameters serviceParameters;
-
-        /// <summary>
         /// Config options for managing clusters.
         /// </summary>
         private ClusterConfig config;
@@ -69,24 +63,28 @@ namespace ClusterService
         /// <param name="clusterOperator"></param>
         /// <param name="mailer"></param>
         /// <param name="stateManager"></param>
-        /// <param name="serviceParameters"></param>
+        /// <param name="serviceContext"></param>
         /// <param name="config"></param>
         public ClusterService(
             IClusterOperator clusterOperator,
             ISendMail mailer,
             IApplicationDeployService applicationDeployService,
             IReliableStateManager stateManager,
-            StatefulServiceParameters serviceParameters,
+            StatefulServiceContext serviceContext,
             ClusterConfig config)
+            :base(serviceContext, stateManager as IReliableStateManagerReplica)
         {
             this.config = config;
             this.clusterOperator = clusterOperator;
             this.applicationDeployService = applicationDeployService;
             this.mailer = mailer;
-            this.StateManager = stateManager;
-            this.serviceParameters = serviceParameters;
+        }
 
+        protected override Task OnOpenAsync(ReplicaOpenMode openMode, CancellationToken cancellationToken)
+        {
             this.ConfigureService();
+
+            return base.OnOpenAsync(openMode, cancellationToken);
         }
 
         /// <summary>
@@ -98,16 +96,22 @@ namespace ClusterService
             IReliableDictionary<int, Cluster> clusterDictionary =
                 await this.StateManager.GetOrAddAsync<IReliableDictionary<int, Cluster>>(ClusterDictionaryName);
 
-            return from item in clusterDictionary
-                where item.Value.Status == ClusterStatus.Ready
-                orderby item.Value.CreatedOn descending
-                select new ClusterView(
-                    item.Key,
-                    item.Value.AppCount,
-                    item.Value.ServiceCount,
-                    item.Value.Users.Count(),
-                    this.config.MaximumUsersPerCluster,
-                    this.config.MaximumClusterUptime - (DateTimeOffset.UtcNow - item.Value.CreatedOn.ToUniversalTime()));
+            using (ITransaction tx = this.StateManager.CreateTransaction())
+            {
+                var x = from item in (await clusterDictionary.CreateEnumerableAsync(tx)).ToEnumerable()
+                       where item.Value.Status == ClusterStatus.Ready
+                       orderby item.Value.CreatedOn descending
+                       select new ClusterView(
+                           item.Key,
+                           item.Value.AppCount,
+                           item.Value.ServiceCount,
+                           item.Value.Users.Count(),
+                           this.config.MaximumUsersPerCluster,
+                           this.config.MaximumClusterUptime - (DateTimeOffset.UtcNow - item.Value.CreatedOn.ToUniversalTime()));
+
+                // the enumerable that's created must be enumerated within the transaction.
+                return x.ToList();
+            }
         }
 
         /// <summary>
@@ -128,22 +132,25 @@ namespace ClusterService
             IReliableDictionary<int, Cluster> clusterDictionary =
                 await this.StateManager.GetOrAddAsync<IReliableDictionary<int, Cluster>>(ClusterDictionaryName);
 
-            foreach (KeyValuePair<int, Cluster> item in clusterDictionary)
-            {
-                if (item.Value.Users.Any(x => String.Equals(x.Email, userEmail, StringComparison.OrdinalIgnoreCase)))
-                {
-                    ServiceEventSource.Current.ServiceMessage(
-                        this,
-                        "Join cluster request failed. User already exists on cluster: {0}.",
-                        item.Key);
-
-                    throw new JoinClusterFailedException(JoinClusterFailedReason.UserAlreadyJoined);
-                }
-            }
 
             using (ITransaction tx = this.StateManager.CreateTransaction())
             {
-                ConditionalResult<Cluster> result = await clusterDictionary.TryGetValueAsync(tx, clusterId, LockMode.Update);
+                IAsyncEnumerable<KeyValuePair<int, Cluster>> clusterAsyncEnumerable = await clusterDictionary.CreateEnumerableAsync(tx);
+
+                await clusterAsyncEnumerable.ForeachAsync(CancellationToken.None, item =>
+                {
+                    if (item.Value.Users.Any(x => String.Equals(x.Email, userEmail, StringComparison.OrdinalIgnoreCase)))
+                    {
+                        ServiceEventSource.Current.ServiceMessage(
+                            this,
+                            "Join cluster request failed. User already exists on cluster: {0}.",
+                            item.Key);
+
+                        throw new JoinClusterFailedException(JoinClusterFailedReason.UserAlreadyJoined);
+                    }
+                });
+
+                ConditionalValue<Cluster> result = await clusterDictionary.TryGetValueAsync(tx, clusterId, LockMode.Update);
 
                 if (!result.HasValue)
                 {
@@ -266,7 +273,7 @@ namespace ClusterService
 
         protected override IEnumerable<ServiceReplicaListener> CreateServiceReplicaListeners()
         {
-            return new[] {new ServiceReplicaListener(parameters => new ServiceRemotingListener<IClusterService>(parameters, this))};
+            return new[] { new ServiceReplicaListener(context => this.CreateServiceRemotingListener(context)) };
         }
 
         protected override async Task RunAsync(CancellationToken cancellationToken)
@@ -302,7 +309,7 @@ namespace ClusterService
 
             using (ITransaction tx = this.StateManager.CreateTransaction())
             {
-                IEnumerable<KeyValuePair<int, Cluster>> activeClusters = this.GetActiveClusters(clusterDictionary);
+                IEnumerable<KeyValuePair<int, Cluster>> activeClusters = await this.GetActiveClusters(clusterDictionary);
                 int activeClusterCount = activeClusters.Count();
 
                 if (target < this.config.MinimumClusterCount)
@@ -365,35 +372,42 @@ namespace ClusterService
         {
             IReliableDictionary<int, Cluster> clusterDictionary =
                 await this.StateManager.GetOrAddAsync<IReliableDictionary<int, Cluster>>(ClusterDictionaryName);
-            
-            foreach (KeyValuePair<int, Cluster> item in clusterDictionary)
+
+            using (ITransaction enumTx = this.StateManager.CreateTransaction())
             {
-                using (ITransaction tx = this.StateManager.CreateTransaction())
+                IAsyncEnumerable<KeyValuePair<int, Cluster>> clusterAsyncEnumerable = await clusterDictionary.CreateEnumerableAsync(enumTx);
+
+                await clusterAsyncEnumerable.ForeachAsync(CancellationToken.None, async (item) =>
                 {
-                    try
+                    // use a separate transaction to process each cluster,
+                    // otherwise operations will begin to timeout.
+                    using (ITransaction tx = this.StateManager.CreateTransaction())
                     {
-                        Cluster updatedCluster = await this.ProcessClusterStatusAsync(item.Value);
-
-                        if (updatedCluster.Status == ClusterStatus.Deleted)
+                        try
                         {
-                            await clusterDictionary.TryRemoveAsync(tx, item.Key);
-                        }
-                        else
-                        {
-                            await clusterDictionary.SetAsync(tx, item.Key, updatedCluster);
-                        }
+                            Cluster updatedCluster = await this.ProcessClusterStatusAsync(item.Value);
 
-                        await tx.CommitAsync();
+                            if (updatedCluster.Status == ClusterStatus.Deleted)
+                            {
+                                await clusterDictionary.TryRemoveAsync(tx, item.Key);
+                            }
+                            else
+                            {
+                                await clusterDictionary.SetAsync(tx, item.Key, updatedCluster);
+                            }
+
+                            await tx.CommitAsync();
+                        }
+                        catch (Exception e)
+                        {
+                            ServiceEventSource.Current.ServiceMessage(
+                                this,
+                                "Failed to process cluster: {0}. {1}",
+                                item.Value.Address,
+                                e.GetActualMessage());
+                        }
                     }
-                    catch (Exception e)
-                    {
-                        ServiceEventSource.Current.ServiceMessage(
-                            this,
-                            "Failed to process cluster: {0}. {1}",
-                            item.Value.Address,
-                            e.GetActualMessage());
-                    }
-                }
+                });
             }
         }
 
@@ -410,7 +424,7 @@ namespace ClusterService
             IReliableDictionary<int, Cluster> clusterDictionary =
                 await this.StateManager.GetOrAddAsync<IReliableDictionary<int, Cluster>>(ClusterDictionaryName);
 
-            IEnumerable<KeyValuePair<int, Cluster>> activeClusters = this.GetActiveClusters(clusterDictionary);
+            IEnumerable<KeyValuePair<int, Cluster>> activeClusters = await this.GetActiveClusters(clusterDictionary);
             int activeClusterCount = activeClusters.Count();
 
             double totalCapacity = activeClusterCount*this.config.MaximumUsersPerCluster;
@@ -636,23 +650,36 @@ namespace ClusterService
             return cluster;
         }
 
-        private IEnumerable<KeyValuePair<int, Cluster>> GetActiveClusters(IReliableDictionary<int, Cluster> clusterDictionary)
+        private async Task<IEnumerable<KeyValuePair<int, Cluster>>> GetActiveClusters(IReliableDictionary<int, Cluster> clusterDictionary)
         {
-            return clusterDictionary.Where(
-                x =>
-                    x.Value.Status == ClusterStatus.New ||
-                    x.Value.Status == ClusterStatus.Creating ||
-                    x.Value.Status == ClusterStatus.Ready);
+            List<KeyValuePair<int, Cluster>> activeClusterList = new List<KeyValuePair<int, Cluster>>();
+
+            using (ITransaction tx = this.StateManager.CreateTransaction())
+            {
+                IAsyncEnumerable<KeyValuePair<int, Cluster>> clusterAsyncEnumerable = await clusterDictionary.CreateEnumerableAsync(tx);
+
+                await clusterAsyncEnumerable.ForeachAsync(CancellationToken.None, x =>
+                {
+                    if (x.Value.Status == ClusterStatus.New ||
+                        x.Value.Status == ClusterStatus.Creating ||
+                        x.Value.Status == ClusterStatus.Ready)
+                    {
+                        activeClusterList.Add(x);
+                    }
+                });
+            }
+
+            return activeClusterList;
         }
 
         private void ConfigureService()
         {
-            if (this.serviceParameters.CodePackageActivationContext != null)
+            if (this.Context.CodePackageActivationContext != null)
             {
-                this.serviceParameters.CodePackageActivationContext.ConfigurationPackageModifiedEvent
+                this.Context.CodePackageActivationContext.ConfigurationPackageModifiedEvent
                     += this.CodePackageActivationContext_ConfigurationPackageModifiedEvent;
 
-                ConfigurationPackage configPackage = this.serviceParameters.CodePackageActivationContext.GetConfigurationPackageObject("Config");
+                ConfigurationPackage configPackage = this.Context.CodePackageActivationContext.GetConfigurationPackageObject("Config");
 
                 this.UpdateClusterConfigSettings(configPackage.Settings);
             }

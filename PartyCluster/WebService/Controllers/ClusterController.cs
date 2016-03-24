@@ -16,7 +16,7 @@ namespace WebService.Controllers
     using Microsoft.ServiceFabric.Services.Remoting.Client;
     using Resources;
     using ViewModels;
-
+    using Microsoft.ServiceFabric.Services.Client;
     [RoutePrefix("api")]
     public class ClusterController : ApiController
     {
@@ -36,7 +36,7 @@ namespace WebService.Controllers
         public async Task<IHttpActionResult> Get()
         {
             ServiceUriBuilder builder = new ServiceUriBuilder("ClusterService");
-            IClusterService clusterService = ServiceProxy.Create<IClusterService>(1, builder.ToUri());
+            IClusterService clusterService = ServiceProxy.Create<IClusterService>(builder.ToUri(), new ServicePartitionKey(1));
 
             IEnumerable<ClusterView> clusters = await clusterService.GetClusterListAsync();
 
@@ -78,7 +78,7 @@ namespace WebService.Controllers
                 }
 
                 ServiceUriBuilder builder = new ServiceUriBuilder("ClusterService");
-                IClusterService clusterService = ServiceProxy.Create<IClusterService>(1, builder.ToUri());
+                IClusterService clusterService = ServiceProxy.Create<IClusterService>(builder.ToUri(), new ServicePartitionKey(1));
 
                 await clusterService.JoinClusterAsync(clusterId, user.UserEmail);
 

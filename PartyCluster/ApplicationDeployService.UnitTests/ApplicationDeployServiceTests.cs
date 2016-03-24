@@ -14,7 +14,7 @@ namespace ApplicationDeployService.UnitTests
     using Domain;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Mocks;
-
+    using System.Fabric;
     [TestClass]
     public class ApplicationDeployServiceTests
     {
@@ -23,7 +23,7 @@ namespace ApplicationDeployService.UnitTests
         {
             MockReliableStateManager stateManager = new MockReliableStateManager();
             MockApplicationOperator applicationOperator = new MockApplicationOperator();
-            ApplicationDeployService target = new ApplicationDeployService(stateManager, applicationOperator, this.CreateServiceParameters());
+            ApplicationDeployService target = new ApplicationDeployService(stateManager, applicationOperator, this.CreateServiceContext());
 
             target.ApplicationPackages = new List<ApplicationPackageInfo>()
             {
@@ -54,7 +54,7 @@ namespace ApplicationDeployService.UnitTests
                 CopyPackageToImageStoreAsyncFunc = (cluster, appPackage, appType, appVersion) => Task.FromResult(appType + "_" + appVersion)
             };
 
-            ApplicationDeployService target = new ApplicationDeployService(stateManager, applicationOperator, this.CreateServiceParameters());
+            ApplicationDeployService target = new ApplicationDeployService(stateManager, applicationOperator, this.CreateServiceContext());
             ApplicationDeployment appDeployment = new ApplicationDeployment("", ApplicationDeployStatus.Copy, "", type, version, "", "", DateTimeOffset.UtcNow);
             ApplicationDeployment actual = await target.ProcessApplicationDeployment(appDeployment, CancellationToken.None);
 
@@ -71,7 +71,7 @@ namespace ApplicationDeployService.UnitTests
                 CopyPackageToImageStoreAsyncFunc = (cluster, appPackage, appType, appVersion) => Task.FromResult(appType + "_" + appVersion)
             };
 
-            ApplicationDeployService target = new ApplicationDeployService(stateManager, applicationOperator, this.CreateServiceParameters());
+            ApplicationDeployService target = new ApplicationDeployService(stateManager, applicationOperator, this.CreateServiceContext());
             ApplicationDeployment appDeployment = new ApplicationDeployment(
                 "",
                 ApplicationDeployStatus.Register,
@@ -95,7 +95,7 @@ namespace ApplicationDeployService.UnitTests
                 CopyPackageToImageStoreAsyncFunc = (cluster, appPackage, appType, appVersion) => Task.FromResult(appType + "_" + appVersion)
             };
 
-            ApplicationDeployService target = new ApplicationDeployService(stateManager, applicationOperator, this.CreateServiceParameters());
+            ApplicationDeployService target = new ApplicationDeployService(stateManager, applicationOperator, this.CreateServiceContext());
             ApplicationDeployment appDeployment = new ApplicationDeployment(
                 "",
                 ApplicationDeployStatus.Create,
@@ -123,7 +123,7 @@ namespace ApplicationDeployService.UnitTests
                 GetServiceEndpointFunc = (cluster, service) => Task.FromResult(serviceAddress)
             };
 
-            ApplicationDeployService target = new ApplicationDeployService(stateManager, applicationOperator, this.CreateServiceParameters());
+            ApplicationDeployService target = new ApplicationDeployService(stateManager, applicationOperator, this.CreateServiceContext());
             target.ApplicationPackages = new List<ApplicationPackageInfo>()
             {
                 new ApplicationPackageInfo("type1", "1.0", "path/to/type1", "fabric:/app/service", "", "description", "")
@@ -134,9 +134,16 @@ namespace ApplicationDeployService.UnitTests
             Assert.AreEqual(expected, actual.First().EntryServiceInfo.Address); 
         }
 
-        private StatefulServiceParameters CreateServiceParameters()
+        private StatefulServiceContext CreateServiceContext()
         {
-            return new StatefulServiceParameters(null, null, Guid.NewGuid(), null, null, 0);
+            return new StatefulServiceContext(
+                new NodeContext(String.Empty, new NodeId(0, 0), 0, String.Empty, String.Empty),
+                new MockCodePackageActivationContext(),
+                String.Empty,
+                new Uri("fabric:/Mock"),
+                null,
+                Guid.NewGuid(),
+                0);
         }
     }
 }

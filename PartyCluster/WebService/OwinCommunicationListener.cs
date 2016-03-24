@@ -17,21 +17,21 @@ namespace WebService
     public class OwinCommunicationListener : ICommunicationListener
     {
         private readonly IOwinAppBuilder startup;
-        private readonly ServiceInitializationParameters serviceParameters;
+        private readonly StatelessServiceContext serviceContext;
         private readonly string appRoot;
         private IDisposable serverHandle;
         private string listeningAddress;
 
-        public OwinCommunicationListener(string appRoot, IOwinAppBuilder startup, ServiceInitializationParameters serviceParameters)
+        public OwinCommunicationListener(string appRoot, IOwinAppBuilder startup, StatelessServiceContext serviceContext)
         {
             this.startup = startup;
             this.appRoot = appRoot;
-            this.serviceParameters = serviceParameters;
+            this.serviceContext = serviceContext;
         }
 
         public Task<string> OpenAsync(CancellationToken cancellationToken)
         {
-            EndpointResourceDescription serviceEndpoint = this.serviceParameters.CodePackageActivationContext.GetEndpoint("ServiceEndpoint");
+            EndpointResourceDescription serviceEndpoint = this.serviceContext.CodePackageActivationContext.GetEndpoint("ServiceEndpoint");
             int port = serviceEndpoint.Port;
 
             this.listeningAddress = String.Format(

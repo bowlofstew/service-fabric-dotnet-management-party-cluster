@@ -25,19 +25,19 @@ namespace ClusterService
         private string armTemplate;
         private string armParameters;
 
-        public ArmClusterOperator(StatefulServiceParameters serviceParameters)
+        public ArmClusterOperator(StatefulServiceContext serviceContext)
         {
-            ConfigurationPackage configPackage = serviceParameters.CodePackageActivationContext.GetConfigurationPackageObject("Config");
-            DataPackage dataPackage = serviceParameters.CodePackageActivationContext.GetDataPackageObject("Data");
+            ConfigurationPackage configPackage = serviceContext.CodePackageActivationContext.GetConfigurationPackageObject("Config");
+            DataPackage dataPackage = serviceContext.CodePackageActivationContext.GetDataPackageObject("Data");
 
             this.UpdateClusterOperatorSettings(configPackage.Settings);
             this.UpdateArmTemplateContent(dataPackage.Path);
             this.UpdateArmParameterContent(dataPackage.Path);
 
-            serviceParameters.CodePackageActivationContext.ConfigurationPackageModifiedEvent
+            serviceContext.CodePackageActivationContext.ConfigurationPackageModifiedEvent
                 += this.CodePackageActivationContext_ConfigurationPackageModifiedEvent;
 
-            serviceParameters.CodePackageActivationContext.DataPackageModifiedEvent
+            serviceContext.CodePackageActivationContext.DataPackageModifiedEvent
                 += this.CodePackageActivationContext_DataPackageModifiedEvent;
         }
 

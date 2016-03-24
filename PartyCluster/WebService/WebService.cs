@@ -8,9 +8,13 @@ namespace WebService
     using System.Collections.Generic;
     using Microsoft.ServiceFabric.Services.Communication.Runtime;
     using Microsoft.ServiceFabric.Services.Runtime;
-
+    using System.Fabric;
     public class WebService : StatelessService
     {
+        public WebService(StatelessServiceContext context)
+            : base (context)
+        { }
+
         protected override IEnumerable<ServiceInstanceListener> CreateServiceInstanceListeners()
         {
             return new[]

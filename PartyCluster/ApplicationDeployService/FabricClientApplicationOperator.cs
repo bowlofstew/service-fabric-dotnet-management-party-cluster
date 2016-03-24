@@ -20,7 +20,7 @@ namespace ApplicationDeployService
 
     internal class FabricClientApplicationOperator : IApplicationOperator
     {
-        private readonly StatefulServiceParameters serviceParameters;
+        private readonly StatefulServiceContext serviceContext;
         private readonly TimeSpan readOperationTimeout = TimeSpan.FromSeconds(5);
         private readonly TimeSpan writeOperationTimeout = TimeSpan.FromMinutes(1);
         private readonly TimeSpan cacheSlidingExpiration = TimeSpan.FromMinutes(15);
@@ -32,9 +32,9 @@ namespace ApplicationDeployService
         /// </summary>
         private MemoryCache fabricClients = new MemoryCache("fabricClients");
 
-        public FabricClientApplicationOperator(StatefulServiceParameters serviceParameters)
+        public FabricClientApplicationOperator(StatefulServiceContext serviceContext)
         {
-            this.serviceParameters = serviceParameters;
+            this.serviceContext = serviceContext;
         }
 
         public async Task<string> GetServiceEndpoint(string cluster, Uri serviceInstanceUri, string serviceEndpointName, CancellationToken token)
@@ -219,7 +219,7 @@ namespace ApplicationDeployService
                     }
                 }
 
-                clientName = clientName + "_" + this.serviceParameters.ReplicaId.ToString();
+                clientName = clientName + "_" + this.serviceContext.ReplicaId.ToString();
 
                 client = new FabricClient(
                     new FabricClientSettings

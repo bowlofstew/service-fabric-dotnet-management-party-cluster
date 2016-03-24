@@ -15,7 +15,7 @@ namespace ClusterService.UnitTests
     using Microsoft.ServiceFabric.Data.Collections;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Mocks;
-
+    using System.Fabric;
     [TestClass]
     public class ClusterServiceTests
     {
@@ -31,7 +31,7 @@ namespace ClusterService.UnitTests
         {
             ClusterConfig config = new ClusterConfig();
             MockReliableStateManager stateManager = new MockReliableStateManager();
-            ClusterService target = new ClusterService(null, null, new MockApplicationDeployService(), stateManager, this.CreateServiceParameters(), config);
+            ClusterService target = new ClusterService(null, null, new MockApplicationDeployService(), stateManager, this.CreateServiceContext(), config);
 
             int readyClusters = 10;
             int deletingCluster = 4;
@@ -64,16 +64,16 @@ namespace ClusterService.UnitTests
         {
             ClusterConfig config = new ClusterConfig();
             MockReliableStateManager stateManager = new MockReliableStateManager();
-            ClusterService target = new ClusterService(null, null, new MockApplicationDeployService(), stateManager, this.CreateServiceParameters(), config);
+            ClusterService target = new ClusterService(null, null, new MockApplicationDeployService(), stateManager, this.CreateServiceContext(), config);
 
             await target.BalanceClustersAsync(config.MinimumClusterCount);
 
-            ConditionalResult<IReliableDictionary<int, Cluster>> result =
+            ConditionalValue<IReliableDictionary<int, Cluster>> result =
                 await stateManager.TryGetAsync<IReliableDictionary<int, Cluster>>(ClusterService.ClusterDictionaryName);
 
             Assert.IsTrue(result.HasValue);
-            Assert.AreEqual(config.MinimumClusterCount, await result.Value.GetCountAsync());
-            Assert.IsTrue(result.Value.All(x => x.Value.Status == ClusterStatus.New));
+            Assert.AreEqual(config.MinimumClusterCount, await result.Value.GetCountAsync(null));
+            Assert.IsTrue((await result.Value.CreateEnumerableAsync(null)).ToEnumerable().All(x => x.Value.Status == ClusterStatus.New));
         }
 
         /// <summary>
@@ -86,12 +86,12 @@ namespace ClusterService.UnitTests
         {
             ClusterConfig config = new ClusterConfig();
             MockReliableStateManager stateManager = new MockReliableStateManager();
-            ClusterService target = new ClusterService(null, null, new MockApplicationDeployService(), stateManager, this.CreateServiceParameters(), config);
+            ClusterService target = new ClusterService(null, null, new MockApplicationDeployService(), stateManager, this.CreateServiceContext(), config);
 
             IReliableDictionary<int, Cluster> dictionary =
                 await stateManager.GetOrAddAsync<IReliableDictionary<int, Cluster>>(ClusterService.ClusterDictionaryName);
 
-            int readyCount = (int) Math.Floor(config.MinimumClusterCount/5D);
+            int readyCount = (int)Math.Floor(config.MinimumClusterCount / 5D);
             int newCount = readyCount;
             int creatingCount = readyCount;
 
@@ -104,15 +104,17 @@ namespace ClusterService.UnitTests
                 await tx.CommitAsync();
             }
 
-            await target.BalanceClustersAsync(readyCount*4);
-
-            Assert.AreEqual(
-                config.MinimumClusterCount,
-                dictionary.Count(
-                    x =>
-                        x.Value.Status == ClusterStatus.Ready ||
-                        x.Value.Status == ClusterStatus.New ||
-                        x.Value.Status == ClusterStatus.Creating));
+            await target.BalanceClustersAsync(readyCount * 4);
+            using (ITransaction tx = stateManager.CreateTransaction())
+            {
+                Assert.AreEqual<int>(
+                    config.MinimumClusterCount,
+                    (await dictionary.CreateEnumerableAsync(tx)).ToEnumerable().Count(
+                        x =>
+                            x.Value.Status == ClusterStatus.Ready ||
+                            x.Value.Status == ClusterStatus.New ||
+                            x.Value.Status == ClusterStatus.Creating));
+            }
         }
 
         /// <summary>
@@ -125,7 +127,7 @@ namespace ClusterService.UnitTests
         {
             ClusterConfig config = new ClusterConfig();
             MockReliableStateManager stateManager = new MockReliableStateManager();
-            ClusterService target = new ClusterService(null, null, new MockApplicationDeployService(), stateManager, this.CreateServiceParameters(), config);
+            ClusterService target = new ClusterService(null, null, new MockApplicationDeployService(), stateManager, this.CreateServiceContext(), config);
 
             IReliableDictionary<int, Cluster> dictionary =
                 await stateManager.GetOrAddAsync<IReliableDictionary<int, Cluster>>(ClusterService.ClusterDictionaryName);
@@ -139,8 +141,14 @@ namespace ClusterService.UnitTests
 
             await target.BalanceClustersAsync(config.MinimumClusterCount - 2);
 
-            Assert.AreEqual(readyCount, dictionary.Count(x => x.Value.Status == ClusterStatus.Ready));
-            Assert.AreEqual(config.MinimumClusterCount - readyCount, dictionary.Count(x => x.Value.Status == ClusterStatus.New));
+            using (ITransaction tx = stateManager.CreateTransaction())
+            {
+                Assert.AreEqual<int>(readyCount,
+                    (await dictionary.CreateEnumerableAsync(tx)).ToEnumerable().Count(x => x.Value.Status == ClusterStatus.Ready));
+
+                Assert.AreEqual(config.MinimumClusterCount - readyCount,
+                    (await dictionary.CreateEnumerableAsync(tx)).ToEnumerable().Count(x => x.Value.Status == ClusterStatus.New));
+            }
         }
 
         /// <summary>
@@ -153,7 +161,7 @@ namespace ClusterService.UnitTests
         {
             ClusterConfig config = new ClusterConfig();
             MockReliableStateManager stateManager = new MockReliableStateManager();
-            ClusterService target = new ClusterService(null, null, new MockApplicationDeployService(), stateManager, this.CreateServiceParameters(), config);
+            ClusterService target = new ClusterService(null, null, new MockApplicationDeployService(), stateManager, this.CreateServiceContext(), config);
 
             IReliableDictionary<int, Cluster> dictionary =
                 await stateManager.GetOrAddAsync<IReliableDictionary<int, Cluster>>(ClusterService.ClusterDictionaryName);
@@ -166,8 +174,11 @@ namespace ClusterService.UnitTests
 
             await target.BalanceClustersAsync(config.MinimumClusterCount - 1);
 
-            Assert.AreEqual(config.MinimumClusterCount, await dictionary.GetCountAsync());
-            Assert.IsTrue(dictionary.All(x => x.Value.Status == ClusterStatus.Ready));
+            using (ITransaction tx = stateManager.CreateTransaction())
+            {
+                Assert.AreEqual(config.MinimumClusterCount, await dictionary.GetCountAsync(tx));
+                Assert.IsTrue((await dictionary.CreateEnumerableAsync(tx)).ToEnumerable().All(x => x.Value.Status == ClusterStatus.Ready));
+            }
         }
 
         /// <summary>.
@@ -180,7 +191,7 @@ namespace ClusterService.UnitTests
         {
             ClusterConfig config = new ClusterConfig();
             MockReliableStateManager stateManager = new MockReliableStateManager();
-            ClusterService target = new ClusterService(null, null, new MockApplicationDeployService(), stateManager, this.CreateServiceParameters(), config);
+            ClusterService target = new ClusterService(null, null, new MockApplicationDeployService(), stateManager, this.CreateServiceContext(), config);
 
             int readyClusters = 10;
             int deletingClusterCount = 20;
@@ -196,9 +207,16 @@ namespace ClusterService.UnitTests
 
             await target.BalanceClustersAsync(config.MaximumClusterCount + 1);
 
-            Assert.AreEqual(config.MaximumClusterCount + deletingClusterCount, await dictionary.GetCountAsync());
-            Assert.AreEqual(config.MaximumClusterCount - readyClusters, dictionary.Count(x => x.Value.Status == ClusterStatus.New));
-            Assert.AreEqual(readyClusters, dictionary.Count(x => x.Value.Status == ClusterStatus.Ready));
+            using (ITransaction tx = stateManager.CreateTransaction())
+            {
+                Assert.AreEqual(config.MaximumClusterCount + deletingClusterCount, await dictionary.GetCountAsync(tx));
+
+                Assert.AreEqual(config.MaximumClusterCount - readyClusters,
+                    (await dictionary.CreateEnumerableAsync(tx)).ToEnumerable().Count(x => x.Value.Status == ClusterStatus.New));
+
+                Assert.AreEqual(readyClusters,
+                    (await dictionary.CreateEnumerableAsync(tx)).ToEnumerable().Count(x => x.Value.Status == ClusterStatus.Ready));
+            }
         }
 
         /// <summary>.
@@ -211,7 +229,7 @@ namespace ClusterService.UnitTests
         {
             ClusterConfig config = new ClusterConfig();
             MockReliableStateManager stateManager = new MockReliableStateManager();
-            ClusterService target = new ClusterService(null, null, new MockApplicationDeployService(), stateManager, this.CreateServiceParameters(), config);
+            ClusterService target = new ClusterService(null, null, new MockApplicationDeployService(), stateManager, this.CreateServiceContext(), config);
 
             int aboveMax = 10;
             int readyClusters = config.MaximumClusterCount + aboveMax;
@@ -228,9 +246,17 @@ namespace ClusterService.UnitTests
 
             await target.BalanceClustersAsync(readyClusters + 10);
 
-            Assert.AreEqual(config.MaximumClusterCount, dictionary.Count(x => x.Value.Status == ClusterStatus.Ready));
-            Assert.AreEqual(aboveMax, dictionary.Count(x => x.Value.Status == ClusterStatus.Remove));
-            Assert.AreEqual(deletingClusterCount, dictionary.Count(x => x.Value.Status == ClusterStatus.Deleting));
+            using (ITransaction tx = stateManager.CreateTransaction())
+            {
+                Assert.AreEqual(config.MaximumClusterCount,
+                    (await dictionary.CreateEnumerableAsync(tx)).ToEnumerable().Count(x => x.Value.Status == ClusterStatus.Ready));
+
+                Assert.AreEqual(aboveMax,
+                    (await dictionary.CreateEnumerableAsync(tx)).ToEnumerable().Count(x => x.Value.Status == ClusterStatus.Remove));
+
+                Assert.AreEqual(deletingClusterCount,
+                    (await dictionary.CreateEnumerableAsync(tx)).ToEnumerable().Count(x => x.Value.Status == ClusterStatus.Deleting));
+            }
         }
 
         /// <summary>.
@@ -243,7 +269,7 @@ namespace ClusterService.UnitTests
         {
             ClusterConfig config = new ClusterConfig();
             MockReliableStateManager stateManager = new MockReliableStateManager();
-            ClusterService target = new ClusterService(null, null, new MockApplicationDeployService(), stateManager, this.CreateServiceParameters(), config);
+            ClusterService target = new ClusterService(null, null, new MockApplicationDeployService(), stateManager, this.CreateServiceContext(), config);
 
             int aboveMax = 10;
             int readyClusters = config.MaximumClusterCount + aboveMax;
@@ -258,11 +284,17 @@ namespace ClusterService.UnitTests
                 await tx.CommitAsync();
             }
 
-            await target.BalanceClustersAsync(readyClusters - (aboveMax/2));
+            await target.BalanceClustersAsync(readyClusters - (aboveMax / 2));
 
-            Assert.AreEqual(config.MaximumClusterCount, dictionary.Count(x => x.Value.Status == ClusterStatus.Ready));
-            Assert.AreEqual(aboveMax, dictionary.Count(x => x.Value.Status == ClusterStatus.Remove));
-            Assert.AreEqual(deletingClusterCount, dictionary.Count(x => x.Value.Status == ClusterStatus.Deleting));
+            using (ITransaction tx = stateManager.CreateTransaction())
+            {
+                Assert.AreEqual(config.MaximumClusterCount,
+                    (await dictionary.CreateEnumerableAsync(tx)).ToEnumerable().Count(x => x.Value.Status == ClusterStatus.Ready));
+                Assert.AreEqual(aboveMax,
+                    (await dictionary.CreateEnumerableAsync(tx)).ToEnumerable().Count(x => x.Value.Status == ClusterStatus.Remove));
+                Assert.AreEqual(deletingClusterCount,
+                    (await dictionary.CreateEnumerableAsync(tx)).ToEnumerable().Count(x => x.Value.Status == ClusterStatus.Deleting));
+            }
         }
 
         /// <summary>
@@ -274,14 +306,14 @@ namespace ClusterService.UnitTests
         {
             ClusterConfig config = new ClusterConfig();
             MockReliableStateManager stateManager = new MockReliableStateManager();
-            ClusterService target = new ClusterService(null, null, new MockApplicationDeployService(), stateManager, this.CreateServiceParameters(), config);
+            ClusterService target = new ClusterService(null, null, new MockApplicationDeployService(), stateManager, this.CreateServiceContext(), config);
 
             IReliableDictionary<int, Cluster> dictionary =
                 await stateManager.GetOrAddAsync<IReliableDictionary<int, Cluster>>(ClusterService.ClusterDictionaryName);
 
             int readyCount = 5 + config.MinimumClusterCount;
             int deletingCount = 10;
-            int targetCount = config.MinimumClusterCount/2;
+            int targetCount = config.MinimumClusterCount / 2;
 
             using (ITransaction tx = stateManager.CreateTransaction())
             {
@@ -293,9 +325,17 @@ namespace ClusterService.UnitTests
 
             await target.BalanceClustersAsync(targetCount);
 
-            Assert.AreEqual(readyCount - config.MinimumClusterCount, dictionary.Count(x => x.Value.Status == ClusterStatus.Remove));
-            Assert.AreEqual(config.MinimumClusterCount, dictionary.Count(x => x.Value.Status == ClusterStatus.Ready));
-            Assert.AreEqual(deletingCount, dictionary.Count(x => x.Value.Status == ClusterStatus.Deleting));
+            using (ITransaction tx = stateManager.CreateTransaction())
+            {
+                Assert.AreEqual(readyCount - config.MinimumClusterCount,
+                (await dictionary.CreateEnumerableAsync(tx)).ToEnumerable().Count(x => x.Value.Status == ClusterStatus.Remove));
+
+                Assert.AreEqual(config.MinimumClusterCount,
+                    (await dictionary.CreateEnumerableAsync(tx)).ToEnumerable().Count(x => x.Value.Status == ClusterStatus.Ready));
+
+                Assert.AreEqual(deletingCount,
+                    (await dictionary.CreateEnumerableAsync(tx)).ToEnumerable().Count(x => x.Value.Status == ClusterStatus.Deleting));
+            }
         }
 
         /// <summary>
@@ -308,7 +348,7 @@ namespace ClusterService.UnitTests
         {
             ClusterConfig config = new ClusterConfig();
             MockReliableStateManager stateManager = new MockReliableStateManager();
-            ClusterService target = new ClusterService(null, null, new MockApplicationDeployService(), stateManager, this.CreateServiceParameters(), config);
+            ClusterService target = new ClusterService(null, null, new MockApplicationDeployService(), stateManager, this.CreateServiceContext(), config);
 
             IReliableDictionary<int, Cluster> dictionary =
                 await stateManager.GetOrAddAsync<IReliableDictionary<int, Cluster>>(ClusterService.ClusterDictionaryName);
@@ -325,7 +365,7 @@ namespace ClusterService.UnitTests
                     withUsers,
                     () => this.CreateCluster(
                         ClusterStatus.Ready,
-                        new List<ClusterUser>() {new ClusterUser()}));
+                        new List<ClusterUser>() { new ClusterUser() }));
 
                 await this.AddClusters(tx, dictionary, withoutUsers, ClusterStatus.Ready);
 
@@ -333,9 +373,14 @@ namespace ClusterService.UnitTests
             }
 
             await target.BalanceClustersAsync(targetCount);
+            using (ITransaction tx = stateManager.CreateTransaction())
+            {
+                Assert.AreEqual(withUsers, 
+                    (await dictionary.CreateEnumerableAsync(tx)).ToEnumerable().Select(x => x.Value).Count(x => x.Status == ClusterStatus.Ready));
 
-            Assert.AreEqual(withUsers, dictionary.Select(x => x.Value).Count(x => x.Status == ClusterStatus.Ready));
-            Assert.AreEqual(withoutUsers, dictionary.Select(x => x.Value).Count(x => x.Status == ClusterStatus.Remove));
+                Assert.AreEqual(withoutUsers, 
+                    (await dictionary.CreateEnumerableAsync(tx)).ToEnumerable().Select(x => x.Value).Count(x => x.Status == ClusterStatus.Remove));
+            }
         }
 
         /// <summary>
@@ -348,7 +393,7 @@ namespace ClusterService.UnitTests
         {
             ClusterConfig config = new ClusterConfig();
             MockReliableStateManager stateManager = new MockReliableStateManager();
-            ClusterService target = new ClusterService(null, null, new MockApplicationDeployService(), stateManager, this.CreateServiceParameters(), config);
+            ClusterService target = new ClusterService(null, null, new MockApplicationDeployService(), stateManager, this.CreateServiceContext(), config);
 
             IReliableDictionary<int, Cluster> dictionary =
                 await stateManager.GetOrAddAsync<IReliableDictionary<int, Cluster>>(ClusterService.ClusterDictionaryName);
@@ -365,7 +410,7 @@ namespace ClusterService.UnitTests
                         new List<ClusterUser>(
                             Enumerable.Repeat(
                                 new ClusterUser(),
-                                (int) Math.Ceiling((double) config.MaximumUsersPerCluster*config.UserCapacityHighPercentThreshold)))));
+                                (int)Math.Ceiling((double)config.MaximumUsersPerCluster * config.UserCapacityHighPercentThreshold)))));
 
                 await this.AddClusters(
                     tx,
@@ -380,7 +425,7 @@ namespace ClusterService.UnitTests
                 await tx.CommitAsync();
             }
 
-            int expected = clusterCount + (int) Math.Ceiling(clusterCount*(1 - config.UserCapacityHighPercentThreshold));
+            int expected = clusterCount + (int)Math.Ceiling(clusterCount * (1 - config.UserCapacityHighPercentThreshold));
             int actual = await target.GetTargetClusterCapacityAsync();
 
             Assert.AreEqual(expected, actual);
@@ -396,7 +441,7 @@ namespace ClusterService.UnitTests
         {
             ClusterConfig config = new ClusterConfig();
             MockReliableStateManager stateManager = new MockReliableStateManager();
-            ClusterService target = new ClusterService(null, null, new MockApplicationDeployService(), stateManager, this.CreateServiceParameters(), config);
+            ClusterService target = new ClusterService(null, null, new MockApplicationDeployService(), stateManager, this.CreateServiceContext(), config);
 
             IReliableDictionary<int, Cluster> dictionary =
                 await stateManager.GetOrAddAsync<IReliableDictionary<int, Cluster>>(ClusterService.ClusterDictionaryName);
@@ -413,7 +458,7 @@ namespace ClusterService.UnitTests
                         new List<ClusterUser>(
                             Enumerable.Repeat(
                                 new ClusterUser(),
-                                (int) Math.Ceiling((double) config.MaximumUsersPerCluster*config.UserCapacityHighPercentThreshold)))));
+                                (int)Math.Ceiling((double)config.MaximumUsersPerCluster * config.UserCapacityHighPercentThreshold)))));
 
                 await this.AddClusters(
                     tx,
@@ -441,7 +486,7 @@ namespace ClusterService.UnitTests
         {
             ClusterConfig config = new ClusterConfig();
             MockReliableStateManager stateManager = new MockReliableStateManager();
-            ClusterService target = new ClusterService(null, null, new MockApplicationDeployService(), stateManager, this.CreateServiceParameters(), config);
+            ClusterService target = new ClusterService(null, null, new MockApplicationDeployService(), stateManager, this.CreateServiceContext(), config);
 
             IReliableDictionary<int, Cluster> dictionary =
                 await stateManager.GetOrAddAsync<IReliableDictionary<int, Cluster>>(ClusterService.ClusterDictionaryName);
@@ -458,7 +503,7 @@ namespace ClusterService.UnitTests
                         new List<ClusterUser>(
                             Enumerable.Repeat(
                                 new ClusterUser(),
-                                (int) Math.Floor((double) config.MaximumUsersPerCluster*config.UserCapacityLowPercentThreshold)))));
+                                (int)Math.Floor((double)config.MaximumUsersPerCluster * config.UserCapacityLowPercentThreshold)))));
 
                 await this.AddClusters(
                     tx,
@@ -471,7 +516,7 @@ namespace ClusterService.UnitTests
                 await tx.CommitAsync();
             }
 
-            int expected = clusterCount - (int) Math.Floor(clusterCount*(config.UserCapacityHighPercentThreshold - config.UserCapacityLowPercentThreshold));
+            int expected = clusterCount - (int)Math.Floor(clusterCount * (config.UserCapacityHighPercentThreshold - config.UserCapacityLowPercentThreshold));
             int actual = await target.GetTargetClusterCapacityAsync();
 
             Assert.AreEqual(expected, actual);
@@ -487,7 +532,7 @@ namespace ClusterService.UnitTests
         {
             ClusterConfig config = new ClusterConfig();
             MockReliableStateManager stateManager = new MockReliableStateManager();
-            ClusterService target = new ClusterService(null, null, new MockApplicationDeployService(), stateManager, this.CreateServiceParameters(), config);
+            ClusterService target = new ClusterService(null, null, new MockApplicationDeployService(), stateManager, this.CreateServiceContext(), config);
 
             IReliableDictionary<int, Cluster> dictionary =
                 await stateManager.GetOrAddAsync<IReliableDictionary<int, Cluster>>(ClusterService.ClusterDictionaryName);
@@ -504,7 +549,7 @@ namespace ClusterService.UnitTests
                         new List<ClusterUser>(
                             Enumerable.Repeat(
                                 new ClusterUser(),
-                                (int) Math.Floor((double) config.MaximumUsersPerCluster*config.UserCapacityLowPercentThreshold)))));
+                                (int)Math.Floor((double)config.MaximumUsersPerCluster * config.UserCapacityLowPercentThreshold)))));
 
                 await tx.CommitAsync();
             }
@@ -545,7 +590,7 @@ namespace ClusterService.UnitTests
                 null,
                 new MockApplicationDeployService(),
                 stateManager,
-                this.CreateServiceParameters(),
+                this.CreateServiceContext(),
                 config);
 
             await target.ProcessClustersAsync();
@@ -587,14 +632,14 @@ namespace ClusterService.UnitTests
                 null,
                 new MockApplicationDeployService(),
                 stateManager,
-                this.CreateServiceParameters(),
+                this.CreateServiceContext(),
                 config);
 
             await target.ProcessClustersAsync();
 
             using (ITransaction tx = stateManager.CreateTransaction())
             {
-                ConditionalResult<Cluster> actual = await dictionary.TryGetValueAsync(tx, key);
+                ConditionalValue<Cluster> actual = await dictionary.TryGetValueAsync(tx, key);
 
                 Assert.IsFalse(actual.HasValue);
             }
@@ -628,7 +673,7 @@ namespace ClusterService.UnitTests
                 null,
                 new MockApplicationDeployService(),
                 stateManager,
-                this.CreateServiceParameters(),
+                this.CreateServiceContext(),
                 config);
 
             Cluster cluster = this.CreateCluster(ClusterStatus.New);
@@ -659,7 +704,7 @@ namespace ClusterService.UnitTests
                 null,
                 new MockApplicationDeployService(),
                 stateManager,
-                this.CreateServiceParameters(),
+                this.CreateServiceContext(),
                 config);
             Cluster cluster = this.CreateCluster(ClusterStatus.Creating);
 
@@ -689,7 +734,7 @@ namespace ClusterService.UnitTests
                 null,
                 new MockApplicationDeployService(),
                 stateManager,
-                this.CreateServiceParameters(),
+                this.CreateServiceContext(),
                 config);
             Cluster cluster = this.CreateCluster(ClusterStatus.Creating);
 
@@ -727,7 +772,7 @@ namespace ClusterService.UnitTests
                 null,
                 new MockApplicationDeployService(),
                 stateManager,
-                this.CreateServiceParameters(),
+                this.CreateServiceContext(),
                 config);
 
             Cluster cluster = this.CreateCluster(ClusterStatus.Remove);
@@ -757,7 +802,7 @@ namespace ClusterService.UnitTests
                 null,
                 new MockApplicationDeployService(),
                 stateManager,
-                this.CreateServiceParameters(),
+                this.CreateServiceContext(),
                 config);
 
             Cluster cluster = this.CreateCluster(ClusterStatus.Deleting);
@@ -780,7 +825,7 @@ namespace ClusterService.UnitTests
             };
 
             MockReliableStateManager stateManager = new MockReliableStateManager();
-            ClusterService target = new ClusterService(null, null, new MockApplicationDeployService(), stateManager, this.CreateServiceParameters(), config);
+            ClusterService target = new ClusterService(null, null, new MockApplicationDeployService(), stateManager, this.CreateServiceContext(), config);
 
             Cluster cluster = new Cluster(
                 "test",
@@ -807,12 +852,12 @@ namespace ClusterService.UnitTests
                 new MockMailer(),
                 new MockApplicationDeployService(),
                 stateManager,
-                this.CreateServiceParameters(),
+                this.CreateServiceContext(),
                 config);
 
             int id = 5;
             string email = "test@test.com";
-            Cluster cluster = new Cluster("test", ClusterStatus.Ready, 0, 0, "", new[] {80}, new ClusterUser[0], DateTimeOffset.UtcNow);
+            Cluster cluster = new Cluster("test", ClusterStatus.Ready, 0, 0, "", new[] { 80 }, new ClusterUser[0], DateTimeOffset.UtcNow);
 
             IReliableDictionary<int, Cluster> dictionary =
                 await stateManager.GetOrAddAsync<IReliableDictionary<int, Cluster>>(ClusterService.ClusterDictionaryName);
@@ -878,12 +923,12 @@ namespace ClusterService.UnitTests
                 mailer,
                 appDeploy,
                 stateManager,
-                this.CreateServiceParameters(),
+                this.CreateServiceContext(),
                 config);
 
             int id = 5;
             Cluster cluster = new Cluster("test", ClusterStatus.Ready, 0, 0, expectedClusterAddress, new[] { expectedUserPort }, new ClusterUser[0], DateTimeOffset.UtcNow);
-            
+
             IReliableDictionary<int, Cluster> dictionary =
                 await stateManager.GetOrAddAsync<IReliableDictionary<int, Cluster>>(ClusterService.ClusterDictionaryName);
 
@@ -894,7 +939,7 @@ namespace ClusterService.UnitTests
             }
 
             await target.JoinClusterAsync(id, expectedEmail);
-            
+
             Assert.AreEqual(expectedEmail, actualEmail);
             Assert.AreEqual(expectedClusterAddress + ":19000", actualClusterAddress);
             Assert.AreEqual(expectedUserPort, actualUserPort);
@@ -908,9 +953,9 @@ namespace ClusterService.UnitTests
         [TestMethod]
         public async Task JoinClusterFull()
         {
-            ClusterConfig config = new ClusterConfig() {MaximumUsersPerCluster = 1};
+            ClusterConfig config = new ClusterConfig() { MaximumUsersPerCluster = 1 };
             MockReliableStateManager stateManager = new MockReliableStateManager();
-            ClusterService target = new ClusterService(null, null, new MockApplicationDeployService(), stateManager, this.CreateServiceParameters(), config);
+            ClusterService target = new ClusterService(null, null, new MockApplicationDeployService(), stateManager, this.CreateServiceContext(), config);
 
             int id = 5;
             Cluster cluster = new Cluster(
@@ -919,8 +964,8 @@ namespace ClusterService.UnitTests
                 0,
                 0,
                 "",
-                new[] {80},
-                new[] {new ClusterUser()},
+                new[] { 80 },
+                new[] { new ClusterUser() },
                 DateTimeOffset.UtcNow);
 
             IReliableDictionary<int, Cluster> dictionary =
@@ -946,9 +991,9 @@ namespace ClusterService.UnitTests
         [TestMethod]
         public async Task JoinClusterNotReady()
         {
-            ClusterConfig config = new ClusterConfig() {MaximumUsersPerCluster = 2};
+            ClusterConfig config = new ClusterConfig() { MaximumUsersPerCluster = 2 };
             MockReliableStateManager stateManager = new MockReliableStateManager();
-            ClusterService target = new ClusterService(null, null, new MockApplicationDeployService(), stateManager, this.CreateServiceParameters(), config);
+            ClusterService target = new ClusterService(null, null, new MockApplicationDeployService(), stateManager, this.CreateServiceContext(), config);
 
             int id = 5;
             Cluster cluster = new Cluster(
@@ -957,7 +1002,7 @@ namespace ClusterService.UnitTests
                 0,
                 0,
                 "",
-                new[] {80},
+                new[] { 80 },
                 new ClusterUser[0],
                 DateTimeOffset.UtcNow);
 
@@ -988,7 +1033,7 @@ namespace ClusterService.UnitTests
         [TestMethod]
         public async Task JoinClusterUserAlreadyExists()
         {
-            ClusterConfig config = new ClusterConfig() {MaximumUsersPerCluster = 2};
+            ClusterConfig config = new ClusterConfig() { MaximumUsersPerCluster = 2 };
             MockReliableStateManager stateManager = new MockReliableStateManager();
             MockMailer mockMailer = new MockMailer();
             ClusterService target = new ClusterService(
@@ -996,7 +1041,7 @@ namespace ClusterService.UnitTests
                 mockMailer,
                 new MockApplicationDeployService(),
                 stateManager,
-                this.CreateServiceParameters(),
+                this.CreateServiceContext(),
                 config);
 
             int idWithUser = 5;
@@ -1007,8 +1052,8 @@ namespace ClusterService.UnitTests
                 0,
                 0,
                 "",
-                new[] {80, 81},
-                new[] {new ClusterUser(email, 80)},
+                new[] { 80, 81 },
+                new[] { new ClusterUser(email, 80) },
                 DateTimeOffset.UtcNow);
 
             int idWithoutUser = 6;
@@ -1018,7 +1063,7 @@ namespace ClusterService.UnitTests
                 0,
                 0,
                 "",
-                new[] {80, 81},
+                new[] { 80, 81 },
                 new ClusterUser[0],
                 DateTimeOffset.UtcNow);
 
@@ -1047,9 +1092,9 @@ namespace ClusterService.UnitTests
         [TestMethod]
         public async Task JoinClusterExpired()
         {
-            ClusterConfig config = new ClusterConfig() {MaximumUsersPerCluster = 2};
+            ClusterConfig config = new ClusterConfig() { MaximumUsersPerCluster = 2 };
             MockReliableStateManager stateManager = new MockReliableStateManager();
-            ClusterService target = new ClusterService(null, null, new MockApplicationDeployService(), stateManager, this.CreateServiceParameters(), config);
+            ClusterService target = new ClusterService(null, null, new MockApplicationDeployService(), stateManager, this.CreateServiceContext(), config);
 
             int id = 5;
             Cluster cluster = new Cluster(
@@ -1058,7 +1103,7 @@ namespace ClusterService.UnitTests
                 0,
                 0,
                 "",
-                new[] {80, 81},
+                new[] { 80, 81 },
                 new ClusterUser[0],
                 DateTimeOffset.UtcNow - (config.MaximumClusterUptime + TimeSpan.FromSeconds(1)));
 
@@ -1084,9 +1129,9 @@ namespace ClusterService.UnitTests
         [TestMethod]
         public async Task JoinClusterNoPortsAvailable()
         {
-            ClusterConfig config = new ClusterConfig() {MaximumUsersPerCluster = 2};
+            ClusterConfig config = new ClusterConfig() { MaximumUsersPerCluster = 2 };
             MockReliableStateManager stateManager = new MockReliableStateManager();
-            ClusterService target = new ClusterService(null, null, new MockApplicationDeployService(), stateManager, this.CreateServiceParameters(), config);
+            ClusterService target = new ClusterService(null, null, new MockApplicationDeployService(), stateManager, this.CreateServiceContext(), config);
 
             int id = 5;
             string email = "test@test.com";
@@ -1096,8 +1141,8 @@ namespace ClusterService.UnitTests
                 0,
                 0,
                 "",
-                new[] {80},
-                new[] {new ClusterUser(email, 80)},
+                new[] { 80 },
+                new[] { new ClusterUser(email, 80) },
                 DateTimeOffset.UtcNow);
 
             IReliableDictionary<int, Cluster> dictionary =
@@ -1120,10 +1165,18 @@ namespace ClusterService.UnitTests
             }
         }
 
-        private StatefulServiceParameters CreateServiceParameters()
+        private StatefulServiceContext CreateServiceContext()
         {
-            return new StatefulServiceParameters(null, null, Guid.NewGuid(), null, null, 0);
+            return new StatefulServiceContext(
+                new NodeContext(String.Empty, new NodeId(0, 0), 0, String.Empty, String.Empty),
+                new MockCodePackageActivationContext(),
+                String.Empty,
+                new Uri("fabric:/Mock"),
+                null,
+                Guid.NewGuid(),
+                0);
         }
+    
 
         private int GetRandom()
         {

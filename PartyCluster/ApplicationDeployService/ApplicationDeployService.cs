@@ -25,14 +25,13 @@ namespace ApplicationDeployService
     using Newtonsoft.Json;
 
     /// <summary>
-    /// The FabricRuntime creates an instance of this class for each service type instance.
+    /// The Service Fabric runtime creates an instance of this class for each service type instance.
     /// </summary>
     internal class ApplicationDeployService : StatefulService, IApplicationDeployService
     {
         private const string QueueName = "WorkQueue";
         private const string DictionaryName = "WorkTable";
         private readonly TimeSpan transactionTimeout = TimeSpan.FromSeconds(4);
-        private readonly StatefulServiceParameters serviceParameters;
         private readonly IApplicationOperator applicationOperator;
         private CancellationToken replicaRunCancellationToken;
         private DirectoryInfo applicationPackageDataPath;
@@ -42,15 +41,25 @@ namespace ApplicationDeployService
         /// Creates a new service class instance with the given state manager and service parameters.
         /// </summary>
         /// <param name="stateManager"></param>
-        /// <param name="serviceParameters"></param>
+        /// <param name="serviceContext"></param>
         public ApplicationDeployService(
-            IReliableStateManager stateManager, IApplicationOperator applicationOperator, StatefulServiceParameters serviceParameters)
+            IReliableStateManager stateManager, IApplicationOperator applicationOperator, StatefulServiceContext serviceContext)
+            : base(serviceContext, stateManager as IReliableStateManagerReplica)
         {
-            this.StateManager = stateManager;
-            this.serviceParameters = serviceParameters;
             this.applicationOperator = applicationOperator;
+        }
 
+        /// <summary>
+        /// Executes when a replica of this service opens.
+        /// Performing configuration operations here.
+        /// </summary>
+        /// <param name="openMode"></param>
+        /// <param name="cancellationToken"></param>
+        /// <returns></returns>
+        protected override Task OnOpenAsync(ReplicaOpenMode openMode, CancellationToken cancellationToken)
+        {
             this.ConfigureService();
+            return base.OnOpenAsync(openMode, cancellationToken);
         }
 
         /// <summary>
@@ -172,7 +181,7 @@ namespace ApplicationDeployService
 
             using (ITransaction tx = this.StateManager.CreateTransaction())
             {
-                ConditionalResult<ApplicationDeployment> resultStatus = await dictionary.TryGetValueAsync(tx, deployId);
+                ConditionalValue<ApplicationDeployment> resultStatus = await dictionary.TryGetValueAsync(tx, deployId);
                 if (resultStatus.HasValue)
                 {
                     return resultStatus.Value.Status;
@@ -194,7 +203,7 @@ namespace ApplicationDeployService
 
         protected override IEnumerable<ServiceReplicaListener> CreateServiceReplicaListeners()
         {
-            return new[] { new ServiceReplicaListener(parameters => new ServiceRemotingListener<IApplicationDeployService>(parameters, this)) };
+            return new[] { new ServiceReplicaListener(context => this.CreateServiceRemotingListener<ApplicationDeployService>(context)) };
         }
 
         protected override async Task RunAsync(CancellationToken cancellationToken)
@@ -244,7 +253,7 @@ namespace ApplicationDeployService
 
             using (ITransaction tx = this.StateManager.CreateTransaction())
             {
-                ConditionalResult<Guid> workItem = await queue.TryDequeueAsync(tx, this.transactionTimeout, cancellationToken);
+                ConditionalValue<Guid> workItem = await queue.TryDequeueAsync(tx, this.transactionTimeout, cancellationToken);
                 if (!workItem.HasValue)
                 {
                     ServiceEventSource.Current.ServiceMessage(this, "No new application deployment requests.");
@@ -253,7 +262,7 @@ namespace ApplicationDeployService
 
                 Guid workItemId = workItem.Value;
 
-                ConditionalResult<ApplicationDeployment> appDeployment = await dictionary.TryGetValueAsync(tx, workItemId, LockMode.Update, this.transactionTimeout, cancellationToken);
+                ConditionalValue<ApplicationDeployment> appDeployment = await dictionary.TryGetValueAsync(tx, workItemId, LockMode.Update, this.transactionTimeout, cancellationToken);
                 if (!appDeployment.HasValue)
                 {
                     ServiceEventSource.Current.ServiceMessage(
@@ -448,19 +457,19 @@ namespace ApplicationDeployService
 
         private void ConfigureService()
         {
-            if (this.serviceParameters.CodePackageActivationContext != null)
+            if (this.Context.CodePackageActivationContext != null)
             {
-                ConfigurationPackage configPackage = this.serviceParameters.CodePackageActivationContext.GetConfigurationPackageObject("Config");
-                DataPackage dataPackage = this.serviceParameters.CodePackageActivationContext.GetDataPackageObject("ApplicationPackages");
+                ConfigurationPackage configPackage = this.Context.CodePackageActivationContext.GetConfigurationPackageObject("Config");
+                DataPackage dataPackage = this.Context.CodePackageActivationContext.GetDataPackageObject("ApplicationPackages");
 
                 this.UpdateSettings(configPackage.Settings);
                 this.UpdateApplicationPackageConfig(configPackage.Path);
                 this.UpdateApplicationPackageData(dataPackage.Path);
 
-                this.serviceParameters.CodePackageActivationContext.DataPackageModifiedEvent +=
+                this.Context.CodePackageActivationContext.DataPackageModifiedEvent +=
                     this.CodePackageActivationContext_DataPackageModifiedEvent;
 
-                this.serviceParameters.CodePackageActivationContext.ConfigurationPackageModifiedEvent +=
+                this.Context.CodePackageActivationContext.ConfigurationPackageModifiedEvent +=
                     this.CodePackageActivationContext_ConfigurationPackageModifiedEvent;
             }
         }
