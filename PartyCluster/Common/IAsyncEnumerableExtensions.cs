@@ -37,31 +37,13 @@ namespace Common
         /// <param name="token"></param>
         /// <param name="doSomething"></param>
         /// <returns></returns>
-        public static async Task ForeachAsync<T>(this IAsyncEnumerable<T> instance, CancellationToken token, Action<T> doSomething)
+        public static async Task ForeachAsync<T>(this IAsyncEnumerable<T> instance, CancellationToken cancellationToken, Action<T> doSomething)
         {
-            IAsyncEnumerator<T> e = instance.GetAsyncEnumerator();
-
-            try
+            using (IAsyncEnumerator<T> e = instance.GetAsyncEnumerator())
             {
-                goto Check;
-
-                Resume:
-                T i = e.Current;
+                while (await e.MoveNextAsync(cancellationToken).ConfigureAwait(false))
                 {
-                    doSomething(i);
-                }
-
-                Check:
-                if (await e.MoveNextAsync(token))
-                {
-                    goto Resume;
-                }
-            }
-            finally
-            {
-                if (e != null)
-                {
-                    e.Dispose();
+                    doSomething(e.Current);
                 }
             }
         }
