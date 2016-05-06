@@ -15,53 +15,10 @@ namespace ApplicationDeployService.UnitTests
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Mocks;
     using System.Fabric;
+
     [TestClass]
     public class ApplicationDeployServiceTests
     {
-        [TestMethod]
-        public async Task QueueApplicationDeploymentSuccessful()
-        {
-            MockReliableStateManager stateManager = new MockReliableStateManager();
-            MockApplicationOperator applicationOperator = new MockApplicationOperator();
-            ApplicationDeployService target = new ApplicationDeployService(stateManager, applicationOperator, this.CreateServiceContext());
-
-            target.ApplicationPackages = new List<ApplicationPackageInfo>()
-            {
-                new ApplicationPackageInfo("type1", "1.0", "path/to/type1", "", "", "", ""),
-                new ApplicationPackageInfo("type2", "2.0", "path/to/type2", "", "", "", "")
-            };
-
-            IEnumerable<Guid> result = await target.QueueApplicationDeploymentAsync("localhost", 19000);
-
-            Assert.AreEqual(2, result.Count());
-
-            foreach (Guid actual in result)
-            {
-                Assert.AreEqual<ApplicationDeployStatus>(ApplicationDeployStatus.Copy, await target.GetStatusAsync(actual));
-            }
-        }
-
-        [TestMethod]
-        public async Task ProcessApplicationDeploymentCopy()
-        {
-            string type = "type1";
-            string version = "1.0";
-            string expected = "type1_1.0";
-
-            MockReliableStateManager stateManager = new MockReliableStateManager();
-            MockApplicationOperator applicationOperator = new MockApplicationOperator
-            {
-                CopyPackageToImageStoreAsyncFunc = (cluster, appPackage, appType, appVersion) => Task.FromResult(appType + "_" + appVersion)
-            };
-
-            ApplicationDeployService target = new ApplicationDeployService(stateManager, applicationOperator, this.CreateServiceContext());
-            ApplicationDeployment appDeployment = new ApplicationDeployment("", ApplicationDeployStatus.Copy, "", type, version, "", "", DateTimeOffset.UtcNow);
-            ApplicationDeployment actual = await target.ProcessApplicationDeployment(appDeployment, CancellationToken.None);
-
-            Assert.AreEqual(expected, actual.ImageStorePath);
-            Assert.AreEqual(ApplicationDeployStatus.Register, actual.Status);
-        }
-
         [TestMethod]
         public async Task ProcessApplicationDeploymentRegister()
         {

@@ -18,6 +18,7 @@ namespace Mocks
             this.CreateApplicationAsyncFunc = (cluster, appName, appType, appVersion) => Task.FromResult(true);
             this.RegisterApplicationAsyncFunc = (cluster, path) => Task.FromResult(true);
             this.GetServiceEndpointFunc = (cluster, service) => Task.FromResult("http://45.23.456.212/app/api");
+            this.ApplicationExistsAsyncFunc = (cluster, app) => Task.FromResult(true);
         }
 
         public Func<string, string, string, string, Task<String>> CopyPackageToImageStoreAsyncFunc { get; set; }
@@ -27,6 +28,8 @@ namespace Mocks
         public Func<string, string, Task> RegisterApplicationAsyncFunc { get; set; }
 
         public Func<string, Uri, Task<string>> GetServiceEndpointFunc { get; set; }
+
+        public Func<string, string, Task<bool>> ApplicationExistsAsyncFunc { get; set; }
 
         public Task<string> CopyPackageToImageStoreAsync(
             string cluster, string applicationPackagePath, string applicationTypeName, string applicationTypeVersion, CancellationToken token)
@@ -69,7 +72,7 @@ namespace Mocks
 
         public Task<bool> ApplicationExistsAsync(string cluster, string applicationInstanceName, CancellationToken token)
         {
-            throw new NotImplementedException();
+            return this.ApplicationExistsAsyncFunc(cluster, applicationInstanceName);
         }
     }
 }

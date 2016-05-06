@@ -27,11 +27,16 @@ namespace ClusterService
     internal class ClusterService : StatefulService, IClusterService
     {
         internal const string ClusterDictionaryName = "clusterDictionary";
-        internal const string SickClusterDictionaryName = "sickClusterDictionary";
         internal const int ClusterConnectionPort = 19000;
         internal const int ClusterHttpGatewayPort = 19080;
 
         private readonly Random random = new Random();
+
+        /// <summary>
+        /// A timeout value for Reliable Collection operations.
+        /// The default value is 4 seconds.
+        /// </summary>
+        private static readonly TimeSpan transactionTimeout = TimeSpan.FromSeconds(4);
 
         /// <summary>
         /// Does cluster-related functions. 
@@ -82,7 +87,7 @@ namespace ClusterService
 
         protected override Task OnOpenAsync(ReplicaOpenMode openMode, CancellationToken cancellationToken)
         {
-            this.ConfigureService();
+            this.LoadConfigPackageAndSubscribe();
 
             return base.OnOpenAsync(openMode, cancellationToken);
         }
@@ -275,24 +280,56 @@ namespace ClusterService
             return new[] { new ServiceReplicaListener(context => this.CreateServiceRemotingListener(context)) };
         }
 
+        /// <summary>
+        /// Main entry point for the service.
+        /// This runs a continuous loop that manages the party clusters.
+        /// </summary>
+        /// <param name="cancellationToken"></param>
+        /// <returns></returns>
         protected override async Task RunAsync(CancellationToken cancellationToken)
         {
-            while (!cancellationToken.IsCancellationRequested)
+            try
             {
-                try
+                ServiceEventSource.Current.ServiceMessage(this, "Cluster Service RunAsync started.");
+
+                while (true)
                 {
-                    await this.ProcessClustersAsync();
+                    cancellationToken.ThrowIfCancellationRequested();
 
-                    int target = await this.GetTargetClusterCapacityAsync();
+                    try
+                    {
+                        await this.ProcessClustersAsync(cancellationToken);
 
-                    await this.BalanceClustersAsync(target);
+                        int target = await this.GetTargetClusterCapacityAsync(cancellationToken);
+
+                        await this.BalanceClustersAsync(target, cancellationToken);
+                    }
+                    catch (FabricNotPrimaryException)
+                    {
+                        // This replica is no longer primary, so we can exit gracefully here.
+                        ServiceEventSource.Current.ServiceMessage(this, "RunAsync is exiting because the replica is no longer primary.");
+                        return;
+                    }
+                    catch (TimeoutException te)
+                    {
+                        // An operation timed out which is generally transient.
+                        // Move on to the next iteration after a delay (set below).
+                        ServiceEventSource.Current.ServiceMessage(this, "TimeoutException in RunAsync: {0}.", te.Message);
+                    }
+                    catch (FabricTransientException fte)
+                    {
+                        // Transient exceptions can be retried without faulting the replica.
+                        // Instead of retrying here, simply move on to the next iteration after a delay (set below).
+                        ServiceEventSource.Current.ServiceMessage(this, "FabricTransientException in RunAsync: {0}.", fte.Message);
+                    }
+
+                    await Task.Delay(this.config.RefreshInterval, cancellationToken);
                 }
-                catch (TimeoutException te)
-                {
-                    ServiceEventSource.Current.ServiceMessage(this, "TimeoutException in RunAsync: {0}.", te.Message);
-                }
 
-                await Task.Delay(this.config.RefreshInterval, cancellationToken);
+            }
+            finally
+            {
+                ServiceEventSource.Current.ServiceMessage(this, "Cluster Service RunAsync ended.");
             }
         }
 
@@ -301,14 +338,14 @@ namespace ClusterService
         /// </summary>
         /// <param name="target"></param>
         /// <returns></returns>
-        internal async Task BalanceClustersAsync(int target)
+        internal async Task BalanceClustersAsync(int target, CancellationToken cancellationToken)
         {
             IReliableDictionary<int, Cluster> clusterDictionary =
                 await this.StateManager.GetOrAddAsync<IReliableDictionary<int, Cluster>>(ClusterDictionaryName);
 
             using (ITransaction tx = this.StateManager.CreateTransaction())
             {
-                IEnumerable<KeyValuePair<int, Cluster>> activeClusters = await this.GetActiveClusters(clusterDictionary);
+                IEnumerable<KeyValuePair<int, Cluster>> activeClusters = await this.GetActiveClusters(clusterDictionary, cancellationToken);
                 int activeClusterCount = activeClusters.Count();
 
                 if (target < this.config.MinimumClusterCount)
@@ -336,7 +373,7 @@ namespace ClusterService
 
                     for (int i = 0; i < limit; ++i)
                     {
-                        await clusterDictionary.AddAsync(tx, this.CreateClusterId(), new Cluster(this.CreateClusterInternalName()));
+                        await clusterDictionary.AddAsync(tx, this.CreateClusterId(), new Cluster(this.CreateClusterInternalName()), transactionTimeout, cancellationToken);
                     }
 
                     await tx.CommitAsync();
@@ -352,7 +389,7 @@ namespace ClusterService
                     int ix = 0;
                     foreach (KeyValuePair<int, Cluster> item in removeList)
                     {
-                        await clusterDictionary.SetAsync(tx, item.Key, new Cluster(ClusterStatus.Remove, item.Value));
+                        await clusterDictionary.SetAsync(tx, item.Key, new Cluster(ClusterStatus.Remove, item.Value), transactionTimeout, cancellationToken);
                         ++ix;
                     }
 
@@ -364,10 +401,10 @@ namespace ClusterService
         }
 
         /// <summary>
-        /// Removes clusters that have been deleted from the list.
+        /// Processes each cluster that is currently in the list of clusters managed by this service.
         /// </summary>
         /// <returns></returns>
-        internal async Task ProcessClustersAsync()
+        internal async Task ProcessClustersAsync(CancellationToken cancellationToken)
         {
             IReliableDictionary<int, Cluster> clusterDictionary =
                 await this.StateManager.GetOrAddAsync<IReliableDictionary<int, Cluster>>(ClusterDictionaryName);
@@ -376,7 +413,7 @@ namespace ClusterService
             {
                 IAsyncEnumerable<KeyValuePair<int, Cluster>> clusterAsyncEnumerable = await clusterDictionary.CreateEnumerableAsync(enumTx);
 
-                await clusterAsyncEnumerable.ForeachAsync(CancellationToken.None, async (item) =>
+                await clusterAsyncEnumerable.ForeachAsync(cancellationToken, async (item) =>
                 {
                     // use a separate transaction to process each cluster,
                     // otherwise operations will begin to timeout.
@@ -384,6 +421,8 @@ namespace ClusterService
                     {
                         try
                         {
+                            // The Cluster struct is immutable so that we don't end up with a partially-updated Cluster
+                            // in local memory in case the transaction doesn't complete.
                             Cluster updatedCluster = await this.ProcessClusterStatusAsync(item.Value);
 
                             if (updatedCluster.Status == ClusterStatus.Deleted)
@@ -397,6 +436,27 @@ namespace ClusterService
 
                             await tx.CommitAsync();
                         }
+                        catch (TimeoutException te)
+                        {
+                            // Log this and continue processing the next cluster.
+                            ServiceEventSource.Current.ServiceMessage(this, 
+                                "TimeoutException while processing cluster {0}. {1}", 
+                                item.Value.Address, 
+                                te.ToString());
+                        }
+                        catch (FabricTransientException fte)
+                        {
+                            // Log this and continue processing the next cluster.
+                            ServiceEventSource.Current.ServiceMessage(this,
+                                "FabricTransientException while processing cluster {0}. {1}",
+                                item.Value.Address,
+                                fte.ToString());
+                        }
+                        catch (OperationCanceledException)
+                        {
+                            // this means the service needs to shut down. Make sure it gets re-thrown.
+                            throw;
+                        }
                         catch (Exception e)
                         {
                             ServiceEventSource.Current.ServiceMessage(
@@ -404,6 +464,10 @@ namespace ClusterService
                                 "Failed to process cluster: {0}. {1}",
                                 item.Value.Address,
                                 e.GetActualMessage());
+
+                            // this could be fatal and we don't know how to handle it here,
+                            // so rethrow and let the service fail over.
+                            throw;
                         }
                     }
                 });
@@ -418,12 +482,12 @@ namespace ClusterService
         /// When the user count goes above the high percent threshold, increase capacity by (1 - high)%
         /// </remarks>
         /// <returns></returns>
-        internal async Task<int> GetTargetClusterCapacityAsync()
+        internal async Task<int> GetTargetClusterCapacityAsync(CancellationToken cancellationToken)
         {
             IReliableDictionary<int, Cluster> clusterDictionary =
                 await this.StateManager.GetOrAddAsync<IReliableDictionary<int, Cluster>>(ClusterDictionaryName);
 
-            IEnumerable<KeyValuePair<int, Cluster>> activeClusters = await this.GetActiveClusters(clusterDictionary);
+            IEnumerable<KeyValuePair<int, Cluster>> activeClusters = await this.GetActiveClusters(clusterDictionary, cancellationToken);
             int activeClusterCount = activeClusters.Count();
 
             double totalCapacity = activeClusterCount*this.config.MaximumUsersPerCluster;
@@ -479,6 +543,11 @@ namespace ClusterService
             }
         }
 
+        /// <summary>
+        /// Processes a new cluster.
+        /// </summary>
+        /// <param name="cluster"></param>
+        /// <returns></returns>
         private async Task<Cluster> ProcessNewClusterAsync(Cluster cluster)
         {
             try
@@ -507,19 +576,31 @@ namespace ClusterService
             }
         }
 
+        /// <summary>
+        /// Processes a cluster in the "Creating" stage.
+        /// </summary>
+        /// <param name="cluster"></param>
+        /// <returns></returns>
         private async Task<Cluster> ProcessCreatingClusterAsync(Cluster cluster)
         {
             ClusterOperationStatus creatingStatus = await this.clusterOperator.GetClusterStatusAsync(cluster.InternalName);
+
             switch (creatingStatus)
             {
                 case ClusterOperationStatus.Creating:
+
+                    // Still creating, no updates necessary.
                     return cluster;
 
                 case ClusterOperationStatus.Ready:
+
+                    // Cluster is ready to go.
+                    // Get the cluster's available ports.
                     IEnumerable<int> ports = await this.clusterOperator.GetClusterPortsAsync(cluster.InternalName);
 
                     try
                     {
+                        // Queue up sample application deployment
                         await this.applicationDeployService.QueueApplicationDeploymentAsync(cluster.Address, ClusterConnectionPort);
                     }
                     catch (Exception e)
@@ -536,7 +617,7 @@ namespace ClusterService
                         this,
                         "Cluster is ready: {0} with ports: {1}",
                         cluster.Address,
-                        String.Join(",", cluster.Ports));
+                        String.Join(",", ports));
 
                     return new Cluster(
                         cluster.InternalName,
@@ -549,19 +630,36 @@ namespace ClusterService
                         DateTimeOffset.UtcNow);
 
                 case ClusterOperationStatus.CreateFailed:
+
+                    // Failed to create the cluster, so remove it.
+                    // Processing will add a new one in the next iteration if we need more.
                     ServiceEventSource.Current.ServiceMessage(this, "Cluster failed to create: {0}", cluster.Address);
                     return new Cluster(ClusterStatus.Remove, cluster);
 
                 case ClusterOperationStatus.Deleting:
+
+                    // Cluster is being deleted.
                     return new Cluster(ClusterStatus.Deleting, cluster);
+
+
+                case ClusterOperationStatus.ClusterNotFound:
+
+                    // Cluster was deleted before it finished being created.
+                    return new Cluster(ClusterStatus.Deleted, cluster);
 
                 default:
                     return cluster;
             }
         }
 
+        /// <summary>
+        /// Processes clusters in the "Ready" stage.
+        /// </summary>
+        /// <param name="cluster"></param>
+        /// <returns></returns>
         private async Task<Cluster> ProcessReadyClusterAsync(Cluster cluster)
         {
+            // Check for expiration. If the cluster has expired, mark it for removal.
             if (DateTimeOffset.UtcNow - cluster.CreatedOn.ToUniversalTime() >= this.config.MaximumClusterUptime)
             {
                 ServiceEventSource.Current.ServiceMessage(this, "Cluster expired: {0}", cluster.Address);
@@ -569,14 +667,23 @@ namespace ClusterService
             }
 
             ClusterOperationStatus readyStatus = await this.clusterOperator.GetClusterStatusAsync(cluster.InternalName);
+
             switch (readyStatus)
             {
                 case ClusterOperationStatus.Deleting:
+
+                    // If the cluster was deleted, mark the state accordingly
                     return new Cluster(ClusterStatus.Deleting, cluster);
+
+                case ClusterOperationStatus.ClusterNotFound:
+
+                    // Cluster was already deleted.
+                    return new Cluster(ClusterStatus.Deleted, cluster);
             }
 
             try
             {
+                // Update the application and service count for the cluster.
                 int deployedApplications = await this.applicationDeployService.GetApplicationCountAsync(cluster.Address, ClusterConnectionPort);
                 int deployedServices = await this.applicationDeployService.GetServiceCountAsync(cluster.Address, ClusterConnectionPort);
 
@@ -600,29 +707,46 @@ namespace ClusterService
             return cluster;
         }
 
+        /// <summary>
+        /// Processes a cluster in the "Remove" stage.
+        /// </summary>
+        /// <param name="cluster"></param>
+        /// <returns></returns>
         private async Task<Cluster> ProcessRemoveClusterAsync(Cluster cluster)
         {
             ClusterOperationStatus removeStatus = await this.clusterOperator.GetClusterStatusAsync(cluster.InternalName);
+
             switch (removeStatus)
             {
                 case ClusterOperationStatus.Creating:
                 case ClusterOperationStatus.Ready:
                 case ClusterOperationStatus.CreateFailed:
                 case ClusterOperationStatus.DeleteFailed:
+
+                    // In any of these cases, instruct the operator to delete the cluster.
                     ServiceEventSource.Current.ServiceMessage(this, "Deleting cluster {0}.", cluster.Address);
                     await this.clusterOperator.DeleteClusterAsync(cluster.InternalName);
                     return new Cluster(ClusterStatus.Deleting, cluster);
 
                 case ClusterOperationStatus.Deleting:
+
+                    // If the cluster is now being deleted, update the status accordingly.
                     return new Cluster(ClusterStatus.Deleting, cluster);
 
                 case ClusterOperationStatus.ClusterNotFound:
+
+                    // Cluster was already deleted.
                     return new Cluster(ClusterStatus.Deleted, cluster);
             }
 
             return cluster;
         }
 
+        /// <summary>
+        /// Processes a cluster that is in the "Deleting" stage. 
+        /// </summary>
+        /// <param name="cluster"></param>
+        /// <returns></returns>
         private async Task<Cluster> ProcessDeletingClusterAsync(Cluster cluster)
         {
             ClusterOperationStatus deleteStatus = await this.clusterOperator.GetClusterStatusAsync(cluster.InternalName);
@@ -631,17 +755,25 @@ namespace ClusterService
             {
                 case ClusterOperationStatus.Creating:
                 case ClusterOperationStatus.Ready:
-                    return new Cluster(ClusterStatus.Remove, cluster); // hopefully shouldn't ever get here
+
+                    // hopefully shouldn't ever get here
+                    return new Cluster(ClusterStatus.Remove, cluster); 
 
                 case ClusterOperationStatus.Deleting:
+
+                    // still deleting, no updates necessary
                     return cluster;
 
                 case ClusterOperationStatus.ClusterNotFound:
+
+                    // If the cluster can't be found, it's been deleted.
                     ServiceEventSource.Current.ServiceMessage(this, "Cluster successfully deleted: {0}.", cluster.Address);
                     return new Cluster(ClusterStatus.Deleted, cluster);
 
                 case ClusterOperationStatus.CreateFailed:
                 case ClusterOperationStatus.DeleteFailed:
+
+                    // Failed to delete, set its status to "remove" to try again.
                     ServiceEventSource.Current.ServiceMessage(this, "Cluster failed to delete: {0}.", cluster.Address);
                     return new Cluster(ClusterStatus.Remove, cluster);
             }
@@ -649,7 +781,12 @@ namespace ClusterService
             return cluster;
         }
 
-        private async Task<IEnumerable<KeyValuePair<int, Cluster>>> GetActiveClusters(IReliableDictionary<int, Cluster> clusterDictionary)
+        /// <summary>
+        /// Gets a list of active clusters. Clusters that are new, being created, or ready and not expired are considered active.
+        /// </summary>
+        /// <param name="clusterDictionary"></param>
+        /// <returns></returns>
+        private async Task<IEnumerable<KeyValuePair<int, Cluster>>> GetActiveClusters(IReliableDictionary<int, Cluster> clusterDictionary, CancellationToken cancellationToken)
         {
             List<KeyValuePair<int, Cluster>> activeClusterList = new List<KeyValuePair<int, Cluster>>();
 
@@ -657,7 +794,7 @@ namespace ClusterService
             {
                 IAsyncEnumerable<KeyValuePair<int, Cluster>> clusterAsyncEnumerable = await clusterDictionary.CreateEnumerableAsync(tx);
 
-                await clusterAsyncEnumerable.ForeachAsync(CancellationToken.None, x =>
+                await clusterAsyncEnumerable.ForeachAsync(cancellationToken, x =>
                 {
                     if (x.Value.Status == ClusterStatus.New ||
                         x.Value.Status == ClusterStatus.Creating ||
@@ -671,21 +808,32 @@ namespace ClusterService
             return activeClusterList;
         }
 
-        private void ConfigureService()
+        /// <summary>
+        /// Loads configuration settings from a config package named "Config" and subscribes to update events.
+        /// </summary>
+        private void LoadConfigPackageAndSubscribe()
         {
-            if (this.Context.CodePackageActivationContext != null)
-            {
-                this.Context.CodePackageActivationContext.ConfigurationPackageModifiedEvent
-                    += this.CodePackageActivationContext_ConfigurationPackageModifiedEvent;
+            this.Context.CodePackageActivationContext.ConfigurationPackageModifiedEvent
+                += this.CodePackageActivationContext_ConfigurationPackageModifiedEvent;
 
-                ConfigurationPackage configPackage = this.Context.CodePackageActivationContext.GetConfigurationPackageObject("Config");
+            // This service expects a config package, so fail fast if it's missing.
+            // This way, if the config package is ever missing in a service upgrade, the upgrade will fail and roll back automatically.
+            ConfigurationPackage configPackage = this.Context.CodePackageActivationContext.GetConfigurationPackageObject("Config");
 
-                this.UpdateClusterConfigSettings(configPackage.Settings);
-            }
+            this.UpdateClusterConfigSettings(configPackage.Settings);
         }
 
+        /// <summary>
+        /// Updates the service's ClusterConfig instance with new settings from the given ConfigurationSettings.
+        /// </summary>
+        /// <param name="settings">
+        /// The ConfigurationSettings object comes from the Settings.xml file in the service's Config package.
+        /// </param>
         private void UpdateClusterConfigSettings(ConfigurationSettings settings)
         {
+            // All of these settings are required. 
+            // If anything is missing, fail fast.
+            // If a setting is missing after a service upgrade, allow this to throw so the upgrade will fail and roll back.
             KeyedCollection<string, ConfigurationProperty> clusterConfigParameters = settings.Sections["ClusterConfigSettings"].Parameters;
 
             this.config = new ClusterConfig();
@@ -698,19 +846,32 @@ namespace ClusterService
             this.config.UserCapacityLowPercentThreshold = Double.Parse(clusterConfigParameters["UserCapacityLowPercentThreshold"].Value);
         }
 
+        /// <summary>
+        /// Handler for config package updates.
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
         private void CodePackageActivationContext_ConfigurationPackageModifiedEvent(object sender, PackageModifiedEventArgs<ConfigurationPackage> e)
         {
             this.UpdateClusterConfigSettings(e.NewPackage.Settings);
         }
 
+        /// <summary>
+        /// Creates a new cluster ID.
+        /// </summary>
+        /// <returns></returns>
         private int CreateClusterId()
         {
-            return this.random.Next();
+            return random.Next();
         }
         
+        /// <summary>
+        /// Creates a name for a cluster resource.
+        /// </summary>
+        /// <returns></returns>
         private string CreateClusterInternalName()
         {
-            return "party" + (ushort) this.random.Next();
+            return "party" + (ushort) random.Next();
         }
     }
 }

@@ -29,11 +29,37 @@ namespace ApplicationDeployService
     /// </summary>
     internal class ApplicationDeployService : StatefulService, IApplicationDeployService
     {
+        /// <summary>
+        /// The work queue is used to schedule deployment jobs.
+        /// Application deployments have multiple steps: copy, register, create.
+        /// Each step is a job that is scheduled for execution on the queue.
+        /// </summary>
         private const string QueueName = "WorkQueue";
+
+        /// <summary>
+        /// The work table keeps track of an application deployment and the step its currently on.
+        /// Each step of deployment is processed when it is its turn in the job queue.
+        /// </summary>
         private const string DictionaryName = "WorkTable";
+        
+        /// <summary>
+        /// A timeout value for Reliable Collection operations.
+        /// The default value is 4 seconds.
+        /// </summary>
         private readonly TimeSpan transactionTimeout = TimeSpan.FromSeconds(4);
+
+        /// <summary>
+        /// An application deployment service
+        /// </summary>
         private readonly IApplicationOperator applicationOperator;
+
+        /// <summary>
+        /// This is the cancellation token given to the service replica when RunAsync is invoked.
+        /// This service does work in RunAsync but it also handles user requests.
+        /// We keep track of the cancellation token here so that we can cancel any work the service is doing when the system needs us to shut down.
+        /// </summary>
         private CancellationToken replicaRunCancellationToken;
+
         private DirectoryInfo applicationPackageDataPath;
         private DirectoryInfo applicationPackageTempDirectory;
 
@@ -85,6 +111,9 @@ namespace ApplicationDeployService
 
             using (ITransaction tx = this.StateManager.CreateTransaction())
             {
+                // Grab each application package that's included with the service
+                // and create an ApplicationDeployment record of it.
+                // Then queue a job to begin processing each one.
                 foreach (ApplicationPackageInfo package in this.ApplicationPackages)
                 {
                     Guid id = Guid.NewGuid();
@@ -191,24 +220,48 @@ namespace ApplicationDeployService
             }
         }
 
+        /// <summary>
+        /// Gets the total number of application instances currently deployed to the given cluster.
+        /// </summary>
+        /// <param name="clusterAddress"></param>
+        /// <param name="clusterPort"></param>
+        /// <returns></returns>
         public Task<int> GetApplicationCountAsync(string clusterAddress, int clusterPort)
         {
             return this.applicationOperator.GetApplicationCountAsync(GetClusterAddress(clusterAddress, clusterPort), this.replicaRunCancellationToken);
         }
 
+        /// <summary>
+        /// Gets the total number of service instances currently deployed to the given cluster.
+        /// </summary>
+        /// <param name="clusterAddress"></param>
+        /// <param name="clusterPort"></param>
+        /// <returns></returns>
         public Task<int> GetServiceCountAsync(string clusterAddress, int clusterPort)
         {
             return this.applicationOperator.GetServiceCountAsync(GetClusterAddress(clusterAddress, clusterPort), this.replicaRunCancellationToken);
         }
 
+        /// <summary>
+        /// Creates listeners for clients.
+        /// </summary>
+        /// <returns></returns>
         protected override IEnumerable<ServiceReplicaListener> CreateServiceReplicaListeners()
         {
             return new[] { new ServiceReplicaListener(context => this.CreateServiceRemotingListener<ApplicationDeployService>(context)) };
         }
 
+        /// <summary>
+        /// Main entry point for the service.
+        /// Runs on a continuous loop, pulling an item from a queue for processing on each iteration.
+        /// </summary>
+        /// <param name="cancellationToken"></param>
+        /// <returns></returns>
         protected override async Task RunAsync(CancellationToken cancellationToken)
         {
             TimeSpan delayTime = TimeSpan.FromSeconds(5);
+            
+            // Save the cancellation token so that it can be used to cancel client-invoked methods on the service when the service needs to shut down.
             this.replicaRunCancellationToken = cancellationToken;
 
             try
@@ -222,11 +275,24 @@ namespace ApplicationDeployService
                     try
                     {
                         bool performedWork = await this.TryDequeueAndProcessAsync(cancellationToken);
-                        delayTime = performedWork ? TimeSpan.FromSeconds(1) : TimeSpan.FromSeconds(30);
+
+                        delayTime = performedWork 
+                            ? TimeSpan.FromSeconds(1) 
+                            : TimeSpan.FromSeconds(30);
                     }
-                    catch (TimeoutException)
+                    catch (TimeoutException te)
                     {
-                        // retry-able, go again.
+                        // Log this and continue processing the next cluster.
+                        ServiceEventSource.Current.ServiceMessage(this,
+                            "TimeoutException while processing application deployment queue. {0}",
+                            te.ToString());
+                    }
+                    catch (FabricTransientException fte)
+                    {
+                        // Log this and continue processing the next cluster.
+                        ServiceEventSource.Current.ServiceMessage(this,
+                            "FabricTransientException while processing application deployment queue. {0}",
+                            fte.ToString());
                     }
 
                     // The queue was empty, delay for a little while before looping again
@@ -273,14 +339,19 @@ namespace ApplicationDeployService
                 }
 
                 ApplicationDeployment processedDeployment = await this.ProcessApplicationDeployment(appDeployment.Value, cancellationToken);
-                
-                if (processedDeployment.Status != ApplicationDeployStatus.Failed)
-                {
-                    if (processedDeployment.Status != ApplicationDeployStatus.Complete)
-                    {
-                        await queue.EnqueueAsync(tx, workItemId, this.transactionTimeout, cancellationToken);
-                    }
 
+                if (processedDeployment.Status == ApplicationDeployStatus.Complete || 
+                    processedDeployment.Status == ApplicationDeployStatus.Failed)
+                {
+                    // Remove deployments that completed or failed
+                    await dictionary.TryRemoveAsync(tx, workItemId, this.transactionTimeout, cancellationToken);
+                }
+                else
+                {
+                    // The deployment hasn't completed or failed, so queue up the next stage of deployment
+                    await queue.EnqueueAsync(tx, workItemId, this.transactionTimeout, cancellationToken);
+                
+                    // And update the deployment record with the new status
                     await dictionary.SetAsync(tx, workItemId, processedDeployment, this.transactionTimeout, cancellationToken);
 
                     ServiceEventSource.Current.ServiceMessage(
@@ -289,15 +360,11 @@ namespace ApplicationDeployService
                         processedDeployment.Cluster,
                         processedDeployment.Status);
                 }
-                else
-                {
-                    await dictionary.TryRemoveAsync(tx, workItemId, this.transactionTimeout, cancellationToken);
-                }
                 
                 await tx.CommitAsync();
-
-                return true;
             }
+
+            return true;
         }
 
         internal async Task<ApplicationDeployment> ProcessApplicationDeployment(ApplicationDeployment applicationDeployment, CancellationToken cancellationToken)

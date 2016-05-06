@@ -16,6 +16,7 @@ namespace ClusterService.UnitTests
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Mocks;
     using System.Fabric;
+    using System.Threading;
     [TestClass]
     public class ClusterServiceTests
     {
@@ -66,7 +67,7 @@ namespace ClusterService.UnitTests
             MockReliableStateManager stateManager = new MockReliableStateManager();
             ClusterService target = new ClusterService(null, null, new MockApplicationDeployService(), stateManager, this.CreateServiceContext(), config);
 
-            await target.BalanceClustersAsync(config.MinimumClusterCount);
+            await target.BalanceClustersAsync(config.MinimumClusterCount, CancellationToken.None);
 
             ConditionalValue<IReliableDictionary<int, Cluster>> result =
                 await stateManager.TryGetAsync<IReliableDictionary<int, Cluster>>(ClusterService.ClusterDictionaryName);
@@ -104,7 +105,7 @@ namespace ClusterService.UnitTests
                 await tx.CommitAsync();
             }
 
-            await target.BalanceClustersAsync(readyCount * 4);
+            await target.BalanceClustersAsync(readyCount * 4, CancellationToken.None);
             using (ITransaction tx = stateManager.CreateTransaction())
             {
                 Assert.AreEqual<int>(
@@ -139,7 +140,7 @@ namespace ClusterService.UnitTests
                 await tx.CommitAsync();
             }
 
-            await target.BalanceClustersAsync(config.MinimumClusterCount - 2);
+            await target.BalanceClustersAsync(config.MinimumClusterCount - 2, CancellationToken.None);
 
             using (ITransaction tx = stateManager.CreateTransaction())
             {
@@ -172,7 +173,7 @@ namespace ClusterService.UnitTests
                 await tx.CommitAsync();
             }
 
-            await target.BalanceClustersAsync(config.MinimumClusterCount - 1);
+            await target.BalanceClustersAsync(config.MinimumClusterCount - 1, CancellationToken.None);
 
             using (ITransaction tx = stateManager.CreateTransaction())
             {
@@ -205,7 +206,7 @@ namespace ClusterService.UnitTests
                 await tx.CommitAsync();
             }
 
-            await target.BalanceClustersAsync(config.MaximumClusterCount + 1);
+            await target.BalanceClustersAsync(config.MaximumClusterCount + 1, CancellationToken.None);
 
             using (ITransaction tx = stateManager.CreateTransaction())
             {
@@ -244,7 +245,7 @@ namespace ClusterService.UnitTests
                 await tx.CommitAsync();
             }
 
-            await target.BalanceClustersAsync(readyClusters + 10);
+            await target.BalanceClustersAsync(readyClusters + 10, CancellationToken.None);
 
             using (ITransaction tx = stateManager.CreateTransaction())
             {
@@ -284,7 +285,7 @@ namespace ClusterService.UnitTests
                 await tx.CommitAsync();
             }
 
-            await target.BalanceClustersAsync(readyClusters - (aboveMax / 2));
+            await target.BalanceClustersAsync(readyClusters - (aboveMax / 2), CancellationToken.None);
 
             using (ITransaction tx = stateManager.CreateTransaction())
             {
@@ -323,7 +324,7 @@ namespace ClusterService.UnitTests
                 await tx.CommitAsync();
             }
 
-            await target.BalanceClustersAsync(targetCount);
+            await target.BalanceClustersAsync(targetCount, CancellationToken.None);
 
             using (ITransaction tx = stateManager.CreateTransaction())
             {
@@ -372,7 +373,7 @@ namespace ClusterService.UnitTests
                 await tx.CommitAsync();
             }
 
-            await target.BalanceClustersAsync(targetCount);
+            await target.BalanceClustersAsync(targetCount, CancellationToken.None);
             using (ITransaction tx = stateManager.CreateTransaction())
             {
                 Assert.AreEqual(withUsers, 
@@ -426,7 +427,7 @@ namespace ClusterService.UnitTests
             }
 
             int expected = clusterCount + (int)Math.Ceiling(clusterCount * (1 - config.UserCapacityHighPercentThreshold));
-            int actual = await target.GetTargetClusterCapacityAsync();
+            int actual = await target.GetTargetClusterCapacityAsync(CancellationToken.None);
 
             Assert.AreEqual(expected, actual);
         }
@@ -471,7 +472,7 @@ namespace ClusterService.UnitTests
                 await tx.CommitAsync();
             }
 
-            int actual = await target.GetTargetClusterCapacityAsync();
+            int actual = await target.GetTargetClusterCapacityAsync(CancellationToken.None);
 
             Assert.AreEqual(config.MaximumClusterCount, actual);
         }
@@ -517,7 +518,7 @@ namespace ClusterService.UnitTests
             }
 
             int expected = clusterCount - (int)Math.Floor(clusterCount * (config.UserCapacityHighPercentThreshold - config.UserCapacityLowPercentThreshold));
-            int actual = await target.GetTargetClusterCapacityAsync();
+            int actual = await target.GetTargetClusterCapacityAsync(CancellationToken.None);
 
             Assert.AreEqual(expected, actual);
         }
@@ -555,7 +556,7 @@ namespace ClusterService.UnitTests
             }
 
             int expected = config.MinimumClusterCount;
-            int actual = await target.GetTargetClusterCapacityAsync();
+            int actual = await target.GetTargetClusterCapacityAsync(CancellationToken.None);
 
             Assert.AreEqual(expected, actual);
         }
@@ -593,7 +594,7 @@ namespace ClusterService.UnitTests
                 this.CreateServiceContext(),
                 config);
 
-            await target.ProcessClustersAsync();
+            await target.ProcessClustersAsync(CancellationToken.None);
 
             using (ITransaction tx = stateManager.CreateTransaction())
             {
@@ -635,7 +636,7 @@ namespace ClusterService.UnitTests
                 this.CreateServiceContext(),
                 config);
 
-            await target.ProcessClustersAsync();
+            await target.ProcessClustersAsync(CancellationToken.None);
 
             using (ITransaction tx = stateManager.CreateTransaction())
             {
