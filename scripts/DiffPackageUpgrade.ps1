@@ -9,7 +9,7 @@ $newVersion = "1.0.9"
 
 # Connect to the cluster. This cluster is secured, so we provide a certificate thumbprint for the certificate that is used to authenticate with the cluster. 
 # This certificate's private key must be installed on the machine that is connecting to the secure cluster.
-Connect-ServiceFabricCluster -ConnectionEndpoint "tryazureservicefabric.eastus.cloudapp.azure.com:19000" -X509Credential  -FindType FindByThumbprint -FindValue "B3449B018D0F6839A2C5D62B5B6C6AC822B6F662" -ServerCertThumbprint "b3449b018d0f6839a2c5d62b5b6c6ac822b6f662" -StoreLocation CurrentUser -StoreName My
+Connect-ServiceFabricCluster -ConnectionEndpoint "tryazureservicefabric.eastus.cloudapp.azure.com:19000" -X509Credential  -FindType FindByThumbprint -FindValue "" -ServerCertThumbprint "" -StoreLocation CurrentUser -StoreName My
 
 # Test the application package first.
 Test-ServiceFabricApplicationPackage -ApplicationPackagePath $applicationPackageDir -ImageStoreConnectionString fabric:imageStore -ApplicationParameter @{"PackageTempDirectory"="D:\Party\Packages"}

@@ -1,0 +1,63 @@
+{
+    "$schema": "http://schema.management.azure.com/schemas/2015-01-01/deploymentParameters.json#",
+    "contentVersion": "1.0.0.0",
+    "parameters": {
+        "clusterLocation": {
+            "value": "westus"
+        },
+        "clusterName": {
+            "value": "tryazureservicefabric"
+        },
+        "fabricTcpGatewayPort": {
+            "value": 19000
+        },
+        "fabricHttpGatewayPort": {
+            "value": 19080
+        },
+        "adminUserName": {
+            "value": ""
+        },
+        "adminPassword": {
+            "value": ""
+        },
+        "loadBalancedAppPort1": {
+            "value": 80
+        },
+        "clusterCertificateStorevalue": {
+            "value": ""
+        },
+        "clusterCertificateThumbprint": {
+            "value": ""
+        },
+        "clusterCertificateUrlValue": {
+            "value": ""
+        },
+        "enciphermentCertificateStorevalue": {
+            "value": ""
+        },
+        "enciphermentCertificateUrlValue": {
+            "value": ""
+        },
+        "sourceVaultvalue": {
+            "value": ""
+        },
+        "clusterProtectionLevel": {
+            "value": "EncryptAndSign"
+        },
+        "aadTenantId": {
+            "value": ""
+        },
+        "aadClusterApplicationId": {
+            "value": ""
+        },
+        "aadClientApplicationId": {
+            "value": ""
+        },
+        "storageAccountType": {
+            "value": "Standard_LRS"
+        },
+        "supportLogStorageAccountType": {
+            "value": "Standard_LRS"
+        }
+    }
+}
