@@ -14,9 +14,9 @@
     <None Include="Scripts\Deploy-FabricApplication.ps1" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\ApplicationDeployService\ApplicationDeployService.csproj" />
-    <ProjectReference Include="..\ClusterService\ClusterService.csproj" />
-    <ProjectReference Include="..\WebService\WebService.csproj" />
+    <ProjectReference Include="..\PartyCluster.ApplicationDeployService\PartyCluster.ApplicationDeployService.csproj" />
+    <ProjectReference Include="..\PartyCluster.ClusterService\PartyCluster.ClusterService.csproj" />
+    <ProjectReference Include="..\PartyCluster.WebService\PartyCluster.WebService.csproj" />
   </ItemGroup>
   <ItemGroup>
     <Content Include="ApplicationPackageRoot\ApplicationManifest.xml" />

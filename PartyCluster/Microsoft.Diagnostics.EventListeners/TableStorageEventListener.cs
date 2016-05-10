@@ -9,24 +9,23 @@ namespace Microsoft.Diagnostics.EventListeners
     using System.Collections.Generic;
     using System.Configuration;
     using System.Diagnostics;
-    using System.Linq;
     using System.Threading;
     using System.Threading.Tasks;
-    using WindowsAzure.Storage;
-    using WindowsAzure.Storage.Auth;
-    using WindowsAzure.Storage.Table;
+    using Microsoft.WindowsAzure.Storage;
+    using Microsoft.WindowsAzure.Storage.Auth;
+    using Microsoft.WindowsAzure.Storage.Table;
 
     public class TableStorageEventListener : BufferingEventListener
     {
         private const int MaxConcurrentPartitions = 4;
         private const string KeySegmentSeparator = "_";
-
-        private CloudTable cloudTable;
         private readonly string instanceId;
+        private CloudTable cloudTable;
         private volatile int nextEntityId;
         private object identityIdResetLock;
 
-        public TableStorageEventListener(IConfigurationProvider configurationProvider, IHealthReporter healthReporter) : base(configurationProvider, healthReporter)
+        public TableStorageEventListener(IConfigurationProvider configurationProvider, IHealthReporter healthReporter)
+            : base(configurationProvider, healthReporter)
         {
             if (this.Disabled)
             {
@@ -36,7 +35,7 @@ namespace Microsoft.Diagnostics.EventListeners
             Debug.Assert(configurationProvider != null);
             this.CreateTableClient(configurationProvider);
 
-            var randomNumberGenerator = new Random();
+            Random randomNumberGenerator = new Random();
             this.instanceId = randomNumberGenerator.Next(100000000).ToString("D8");
 
             this.nextEntityId = 0;
@@ -68,15 +67,16 @@ namespace Microsoft.Diagnostics.EventListeners
                 throw new ConfigurationErrorsException("Configuration must specify the target storage name ('storageTableName' parameter)");
             }
 
-            var storageAccount = string.IsNullOrWhiteSpace(sasToken) ? 
-                CloudStorageAccount.Parse(accountConnectionString) :
-                new CloudStorageAccount(new StorageCredentials(sasToken), useHttps: true);
+            CloudStorageAccount storageAccount = string.IsNullOrWhiteSpace(sasToken)
+                ? CloudStorageAccount.Parse(accountConnectionString)
+                : new CloudStorageAccount(new StorageCredentials(sasToken), useHttps: true);
             this.cloudTable = storageAccount.CreateCloudTableClient().GetTableReference(storageTableName);
 
-            try {
+            try
+            {
                 this.cloudTable.CreateIfNotExists();
             }
-            catch(Exception e)
+            catch (Exception e)
             {
                 this.ReportListenerProblem("Could not ensure that destination Azure storage table exists" + Environment.NewLine + e.ToString());
                 throw;
@@ -91,7 +91,7 @@ namespace Microsoft.Diagnostics.EventListeners
             }
 
             DateTime now = DateTime.UtcNow;
-            string partitionKey = now.ToString("yyyyMMddhhmm") + KeySegmentSeparator + (transmissionSequenceNumber % MaxConcurrentPartitions).ToString("D2");
+            string partitionKey = now.ToString("yyyyMMddhhmm") + KeySegmentSeparator + (transmissionSequenceNumber%MaxConcurrentPartitions).ToString("D2");
             string rowKeyPrefix = now.ToString("ssfff");
 
             try
@@ -100,7 +100,7 @@ namespace Microsoft.Diagnostics.EventListeners
 
                 foreach (EventData eventData in events)
                 {
-                    DynamicTableEntity entity = ToTableEntity(eventData, partitionKey, rowKeyPrefix);
+                    DynamicTableEntity entity = this.ToTableEntity(eventData, partitionKey, rowKeyPrefix);
                     TableOperation insertOperation = TableOperation.Insert(entity);
                     batchOperation.Add(insertOperation);
                 }
@@ -129,19 +129,19 @@ namespace Microsoft.Diagnostics.EventListeners
 
             result.Properties.Add(nameof(eventData.Timestamp), new EntityProperty(eventData.Timestamp));
             result.Properties.Add(nameof(eventData.ProviderName), new EntityProperty(eventData.ProviderName));
-            result.Properties.Add(nameof(eventData.EventId), new EntityProperty(eventData.EventId)); 
-            result.Properties.Add(nameof(eventData.Message), new EntityProperty(eventData.Message)); 
-            result.Properties.Add(nameof(eventData.Level), new EntityProperty(eventData.Level)); 
-            result.Properties.Add(nameof(eventData.Keywords), new EntityProperty(eventData.Keywords)); 
+            result.Properties.Add(nameof(eventData.EventId), new EntityProperty(eventData.EventId));
+            result.Properties.Add(nameof(eventData.Message), new EntityProperty(eventData.Message));
+            result.Properties.Add(nameof(eventData.Level), new EntityProperty(eventData.Level));
+            result.Properties.Add(nameof(eventData.Keywords), new EntityProperty(eventData.Keywords));
             result.Properties.Add(nameof(eventData.EventName), new EntityProperty(eventData.EventName));
 
-            foreach(var item in eventData.Payload)
+            foreach (KeyValuePair<string, object> item in eventData.Payload)
             {
                 result.Properties.Add(item.Key, EntityProperty.CreateEntityPropertyFromObject(item.Value));
             }
 
             return result;
-    }
+        }
 
         private int GetEntitySequenceId()
         {
@@ -159,7 +159,7 @@ namespace Microsoft.Diagnostics.EventListeners
                     {
                         this.nextEntityId = 0;
                     }
-                } 
+                }
             }
 
             return result;
