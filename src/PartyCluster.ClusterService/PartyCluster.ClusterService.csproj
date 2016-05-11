@@ -175,8 +175,8 @@
     <None Include="PackageRoot\Config\Settings.xml">
       <SubType>Designer</SubType>
     </None>
-    <None Include="PackageRoot\Data\ArmTemplate-Full-5xVM-NonSecure_new.json" />
-    <None Include="PackageRoot\Data\parameters.json" />
+    <None Include="PackageRoot\Data\PartyClusterTemplate.json" />
+    <None Include="PackageRoot\Data\PartyClusterTemplate.Parameters.json" />
     <None Include="PackageRoot\ServiceManifest.xml" />
     <None Include="App.config">
       <SubType>Designer</SubType>

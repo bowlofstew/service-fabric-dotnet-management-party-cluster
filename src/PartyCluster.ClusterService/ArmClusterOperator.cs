@@ -242,7 +242,7 @@ namespace PartyCluster.ClusterService
 
         private void UpdateArmTemplateContent(string templateDataPath)
         {
-            using (StreamReader reader = new StreamReader(Path.Combine(templateDataPath, "ArmTemplate-Full-5xVM-NonSecure_new.json")))
+            using (StreamReader reader = new StreamReader(Path.Combine(templateDataPath, "PartyClusterTemplate.json")))
             {
                 this.armTemplate = reader.ReadToEnd();
             }
@@ -250,7 +250,7 @@ namespace PartyCluster.ClusterService
 
         private void UpdateArmParameterContent(string templateDataPath)
         {
-            using (StreamReader reader = new StreamReader(Path.Combine(templateDataPath, "parameters.json")))
+            using (StreamReader reader = new StreamReader(Path.Combine(templateDataPath, "PartyClusterTemplate.Parameters.json")))
             {
                 this.armParameters = reader.ReadToEnd();
             }

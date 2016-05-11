@@ -1,5 +1,5 @@
 {
-    "$schema": "http://schema.management.azure.com/schemas/2014-04-01-preview/deploymentTemplate.json",
+    "$schema": "http://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json",
     "contentVersion": "1.0.0.0",
     "parameters": {
         "clusterLocation": {
@@ -40,77 +40,42 @@
                 "description": "Remote desktop user password. Must be a strong password"
             }
         },
-        "loadBalancedAppPort1": {
+        "loadBalancedAppPort0": {
             "type": "int",
             "defaultValue": 80,
             "metadata": {
                 "description": "Input endpoint1 for the application to use. Replace it with what your application uses"
             }
         },
-        "clusterCertificateStorevalue": {
-            "type": "string",
-            "allowedValues": [
-                "My"
-            ],
-            "defaultValue": "My",
+        "loadBalancedAppPort1": {
+            "type": "int",
             "metadata": {
-                "description": "The store name where the cert will be deployed in the virtual machine"
+                "description": "Input endpoint1 for the application to use. Replace it with what your application uses"
             }
         },
-        "clusterCertificateThumbprint": {
-            "type": "string",
+        "loadBalancedAppPort2": {
+            "type": "int",
             "metadata": {
-                "description": "Certificate Thumbprint"
+                "description": "Input endpoint2 for the application to use. Replace it with what your application uses"
             }
         },
-        "clusterCertificateUrlValue": {
-            "type": "string",
+        "loadBalancedAppPort3": {
+            "type": "int",
             "metadata": {
-                "description": "Refers to the location URL in your key vault where the certificate was uploaded, it is should be in the format of https://<name of the vault>.vault.azure.net:443/secrets/<exact location>"
+                "description": "Input endpoint2 for the application to use. Replace it with what your application uses"
             }
         },
-        "enciphermentCertificateStorevalue": {
-            "type": "string",
-            "allowedValues": [
-                "My"
-            ],
-            "defaultValue": "My",
+        "loadBalancedAppPort4": {
+            "type": "int",
             "metadata": {
-                "description": "The store name where the cert will be deployed in the virtual machine"
+                "description": "Input endpoint2 for the application to use. Replace it with what your application uses"
             }
         },
-        "enciphermentCertificateUrlValue": {
-            "type": "string",
+        "loadBalancedAppPort5": {
+            "type": "int",
             "metadata": {
-                "description": "Refers to the location URL in your key vault where the certificate was uploaded, it is should be in the format of https://<name of the vault>.vault.azure.net:443/secrets/<exact location>"
+                "description": "Input endpoint2 for the application to use. Replace it with what your application uses"
             }
-        },
-        "sourceVaultValue": {
-            "type": "string",
-            "metadata": {
-                "description": "Resource Id of the key vault, is should be in the format of /subscriptions/<Sub ID>/resourceGroups/<Resource group name>/providers/Microsoft.KeyVault/vaults/<vault name>"
-            }
-        },
-        "clusterProtectionLevel": {
-            "type": "string",
-            "allowedValues": [
-                "None",
-                "Sign",
-                "EncryptAndSign"
-            ],
-            "defaultValue": "EncryptAndSign",
-            "metadata": {
-                "description": "Protection level.Three values are allowed - EncryptAndSign, Sign, None. It is best to keep the default of EncryptAndSign, unless you have a need not to"
-            }
-        },
-        "aadTenantId": {
-            "type": "string"
-        },
-        "aadClusterApplicationId": {
-            "type": "string"
-        },
-        "aadClientApplicationId": {
-            "type": "string"
         },
         "storageAccountType": {
             "type": "string",
@@ -139,6 +104,7 @@
         "computeLocation": "[parameters('clusterLocation')]",
         "dnsName": "[parameters('clusterName')]",
         "vmStorageAccountName": "[toLower(concat(uniqueString(resourceGroup().id), '1' ))]",
+        "vmName": "Party",
         "publicIPAddressName": "PublicIP-VM",
         "publicIPAddressType": "Dynamic",
         "vmStorageAccountContainerName": "vhds",
@@ -171,8 +137,8 @@
         "lbProbeID0": "[concat(variables('lbID0'),'/probes/FabricGatewayProbe')]",
         "lbHttpProbeID0": "[concat(variables('lbID0'),'/probes/FabricHttpGatewayProbe')]",
         "lbNatPoolID0": "[concat(variables('lbID0'),'/inboundNatPools/LoadBalancerBEAddressNatPool')]",
-        "vmNodeType0Name": "Party",
-        "vmNodeType0Size": "Standard_D1"
+        "vmNodeType0Name": "[toLower(concat('NT1', variables('vmName')))]",
+        "vmNodeType0Size": "Standard_D2"
     },
     "resources": [
         {
@@ -307,6 +273,25 @@
                         }
                     },
                     {
+                        "name": "AppPortLBRule0",
+                        "properties": {
+                            "backendAddressPool": {
+                                "id": "[variables('lbPoolID0')]"
+                            },
+                            "backendPort": "[parameters('loadBalancedAppPort0')]",
+                            "enableFloatingIP": "false",
+                            "frontendIPConfiguration": {
+                                "id": "[variables('lbIPConfig0')]"
+                            },
+                            "frontendPort": "[parameters('loadBalancedAppPort0')]",
+                            "idleTimeoutInMinutes": "5",
+                            "probe": {
+                                "id": "[concat(variables('lbID0'),'/probes/AppPortProbe0')]"
+                            },
+                            "protocol": "tcp"
+                        }
+                    },
+                    {
                         "name": "AppPortLBRule1",
                         "properties": {
                             "backendAddressPool": {
@@ -321,6 +306,82 @@
                             "idleTimeoutInMinutes": "5",
                             "probe": {
                                 "id": "[concat(variables('lbID0'),'/probes/AppPortProbe1')]"
+                            },
+                            "protocol": "tcp"
+                        }
+                    },
+                    {
+                        "name": "AppPortLBRule2",
+                        "properties": {
+                            "backendAddressPool": {
+                                "id": "[variables('lbPoolID0')]"
+                            },
+                            "backendPort": "[parameters('loadBalancedAppPort2')]",
+                            "enableFloatingIP": "false",
+                            "frontendIPConfiguration": {
+                                "id": "[variables('lbIPConfig0')]"
+                            },
+                            "frontendPort": "[parameters('loadBalancedAppPort2')]",
+                            "idleTimeoutInMinutes": "5",
+                            "probe": {
+                                "id": "[concat(variables('lbID0'),'/probes/AppPortProbe2')]"
+                            },
+                            "protocol": "tcp"
+                        }
+                    },
+                    {
+                        "name": "AppPortLBRule3",
+                        "properties": {
+                            "backendAddressPool": {
+                                "id": "[variables('lbPoolID0')]"
+                            },
+                            "backendPort": "[parameters('loadBalancedAppPort3')]",
+                            "enableFloatingIP": "false",
+                            "frontendIPConfiguration": {
+                                "id": "[variables('lbIPConfig0')]"
+                            },
+                            "frontendPort": "[parameters('loadBalancedAppPort3')]",
+                            "idleTimeoutInMinutes": "5",
+                            "probe": {
+                                "id": "[concat(variables('lbID0'),'/probes/AppPortProbe3')]"
+                            },
+                            "protocol": "tcp"
+                        }
+                    },
+                    {
+                        "name": "AppPortLBRule4",
+                        "properties": {
+                            "backendAddressPool": {
+                                "id": "[variables('lbPoolID0')]"
+                            },
+                            "backendPort": "[parameters('loadBalancedAppPort4')]",
+                            "enableFloatingIP": "false",
+                            "frontendIPConfiguration": {
+                                "id": "[variables('lbIPConfig0')]"
+                            },
+                            "frontendPort": "[parameters('loadBalancedAppPort4')]",
+                            "idleTimeoutInMinutes": "5",
+                            "probe": {
+                                "id": "[concat(variables('lbID0'),'/probes/AppPortProbe4')]"
+                            },
+                            "protocol": "tcp"
+                        }
+                    },
+                    {
+                        "name": "AppPortLBRule5",
+                        "properties": {
+                            "backendAddressPool": {
+                                "id": "[variables('lbPoolID0')]"
+                            },
+                            "backendPort": "[parameters('loadBalancedAppPort5')]",
+                            "enableFloatingIP": "false",
+                            "frontendIPConfiguration": {
+                                "id": "[variables('lbIPConfig0')]"
+                            },
+                            "frontendPort": "[parameters('loadBalancedAppPort5')]",
+                            "idleTimeoutInMinutes": "5",
+                            "probe": {
+                                "id": "[concat(variables('lbID0'),'/probes/AppPortProbe5')]"
                             },
                             "protocol": "tcp"
                         }
@@ -346,6 +407,15 @@
                         }
                     },
                     {
+                        "name": "AppPortProbe0",
+                        "properties": {
+                            "intervalInSeconds": 5,
+                            "numberOfProbes": 2,
+                            "port": "[parameters('loadBalancedAppPort0')]",
+                            "protocol": "tcp"
+                        }
+                    },
+                    {
                         "name": "AppPortProbe1",
                         "properties": {
                             "intervalInSeconds": 5,
@@ -353,8 +423,43 @@
                             "port": "[parameters('loadBalancedAppPort1')]",
                             "protocol": "tcp"
                         }
+                    },
+                    {
+                        "name": "AppPortProbe2",
+                        "properties": {
+                            "intervalInSeconds": 5,
+                            "numberOfProbes": 2,
+                            "port": "[parameters('loadBalancedAppPort2')]",
+                            "protocol": "tcp"
+                        }
+                    },
+                    {
+                        "name": "AppPortProbe3",
+                        "properties": {
+                            "intervalInSeconds": 5,
+                            "numberOfProbes": 2,
+                            "port": "[parameters('loadBalancedAppPort3')]",
+                            "protocol": "tcp"
+                        }
+                    },
+                    {
+                        "name": "AppPortProbe4",
+                        "properties": {
+                            "intervalInSeconds": 5,
+                            "numberOfProbes": 2,
+                            "port": "[parameters('loadBalancedAppPort4')]",
+                            "protocol": "tcp"
+                        }
+                    },
+                    {
+                        "name": "AppPortProbe5",
+                        "properties": {
+                            "intervalInSeconds": 5,
+                            "numberOfProbes": 2,
+                            "port": "[parameters('loadBalancedAppPort5')]",
+                            "protocol": "tcp"
+                        }
                     }
-
                 ],
                 "inboundNatPools": [
                     {
@@ -408,11 +513,7 @@
                                         "clusterEndpoint": "[reference(parameters('clusterName')).clusterEndpoint]",
                                         "nodeTypeRef": "[variables('vmNodeType0Name')]",
                                         "dataPath": "D:\\\\SvcFab",
-                                        "durabilityLevel": "Bronze",
-                                        "certificate": {
-                                            "thumbprint": "[parameters('clusterCertificateThumbprint')]",
-                                            "x509StoreName": "[parameters('clusterCertificateStorevalue')]"
-                                        }
+                                        "durabilityLevel": "Bronze"
                                     },
                                     "typeHandlerVersion": "1.0"
                                 }
@@ -452,24 +553,7 @@
                     "osProfile": {
                         "adminPassword": "[parameters('adminPassword')]",
                         "adminUsername": "[parameters('adminUsername')]",
-                        "computernamePrefix": "[variables('vmNodeType0Name')]",
-                        "secrets": [
-                            {
-                                "sourceVault": {
-                                    "id": "[parameters('sourceVaultValue')]"
-                                },
-                                "vaultCertificates": [
-                                    {
-                                        "certificateStore": "[parameters('clusterCertificateStorevalue')]",
-                                        "certificateUrl": "[parameters('clusterCertificateUrlValue')]"
-                                    },
-                                    {
-                                        "certificateStore": "[parameters('enciphermentCertificateStorevalue')]",
-                                        "certificateUrl": "[parameters('enciphermentCertificateUrlValue')]"
-                                    }
-                                ]
-                            }
-                        ]
+                        "computernamePrefix": "[variables('vmNodeType0Name')]"
                     },
                     "storageProfile": {
                         "imageReference": {
@@ -508,10 +592,6 @@
                 "[concat('Microsoft.Storage/storageAccounts/', variables('supportLogStorageAccountName'))]"
             ],
             "properties": {
-                "certificate": {
-                    "thumbprint": "[parameters('clusterCertificateThumbprint')]",
-                    "x509StoreName": "[parameters('clusterCertificateStorevalue')]"
-                },
                 "clientCertificateCommonNames": [ ],
                 "clientCertificateThumbprints": [ ],
                 "clusterState": "Default",
@@ -523,22 +603,8 @@
                     "tableEndpoint": "[concat('https://',variables('supportLogStorageAccountName'),'.table.core.windows.net/')]"
                 },
                 "fabricSettings": [
-                    {
-                        "parameters": [
-                            {
-                                "name": "ClusterProtectionLevel",
-                                "value": "[parameters('clusterProtectionLevel')]"
-                            }
-                        ],
-                        "name": "Security"
-                    }
                 ],
-                "azureActiveDirectory": {
-                    "tenantId": "[parameters('aadTenantId')]",
-                    "clusterApplication": "[parameters('aadClusterApplicationId')]",
-                    "clientApplication": "[parameters('aadClientApplicationId')]"
-                },
-                "managementEndpoint": "[concat('https://',reference(concat(variables('lbIPName'),'-','0')).dnsSettings.fqdn,':',variables('nt0fabricHttpGatewayPort'))]",
+                "managementEndpoint": "[concat('http://',reference(concat(variables('lbIPName'),'-','0')).dnsSettings.fqdn,':',variables('nt0fabricHttpGatewayPort'))]",
                 "nodeTypes": [
                     {
                         "name": "[variables('vmNodeType0Name')]",
@@ -552,13 +618,19 @@
                             "endPort": "[variables('nt0ephemeralEndPort')]",
                             "startPort": "[variables('nt0ephemeralStartPort')]"
                         },
+                        "capacities": {
+                            "MemoryKB": "6291456",
+                            "DiskKB": "83886080",
+                            "Capacity1": "1000",
+                            "Capacity2": "10"
+                        },
                         "httpGatewayEndpointPort": "[variables('nt0fabricHttpGatewayPort')]",
                         "isPrimary": true,
                         "vmInstanceCount": 5
                     }
                 ],
                 "provisioningState": "Default",
-                "reliabilityLevel": "Silver",
+                "reliabilityLevel": "Bronze",
                 "vmImage": "Windows"
             },
             "tags": {
