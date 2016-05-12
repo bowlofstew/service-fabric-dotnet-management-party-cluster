@@ -14,33 +14,25 @@ namespace PartyCluster.Mocks
     {
         public MockClusterOperator()
         {
-            this.CreateClusterAsyncFunc = name => Task.FromResult(name);
+            this.CreateClusterAsyncFunc = (name, ports) => Task.FromResult(name);
             this.DeleteClusterAsyncFunc = domain => Task.FromResult(true);
-            this.GetClusterPortsAsyncFunc = domain => Task.FromResult(new[] {80, 8081, 405, 520} as IEnumerable<int>);
             this.GetClusterStatusAsyncFunc = domain => Task.FromResult(ClusterOperationStatus.Ready);
         }
 
-        public Func<string, Task<string>> CreateClusterAsyncFunc { get; set; }
+        public Func<string, IEnumerable<int>, Task<string>> CreateClusterAsyncFunc { get; set; }
 
         public Func<string, Task> DeleteClusterAsyncFunc { get; set; }
-
-        public Func<string, Task<IEnumerable<int>>> GetClusterPortsAsyncFunc { get; set; }
-
+        
         public Func<string, Task<ClusterOperationStatus>> GetClusterStatusAsyncFunc { get; set; }
 
-        public Task<string> CreateClusterAsync(string name)
+        public Task<string> CreateClusterAsync(string name, IEnumerable<int> ports)
         {
-            return this.CreateClusterAsyncFunc(name);
+            return this.CreateClusterAsyncFunc(name, ports);
         }
 
         public Task DeleteClusterAsync(string name)
         {
             return this.DeleteClusterAsyncFunc(name);
-        }
-
-        public Task<IEnumerable<int>> GetClusterPortsAsync(string name)
-        {
-            return this.GetClusterPortsAsyncFunc(name);
         }
 
         public Task<ClusterOperationStatus> GetClusterStatusAsync(string name)

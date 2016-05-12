@@ -568,9 +568,18 @@ namespace PartyCluster.ClusterService
         {
             try
             {
-                string address = await this.clusterOperator.CreateClusterAsync(cluster.InternalName);
+                List<int> ports = new List<int>();
+                Random random = new Random();
+                for (int i = 0; i < 5; ++i)
+                {
+                    ports.Add(random.Next(8000, 9000));
+                }
 
-                ServiceEventSource.Current.ServiceMessage(this, "Creating cluster: {0}", address);
+                string address = await this.clusterOperator.CreateClusterAsync(cluster.InternalName, ports);
+
+                ServiceEventSource.Current.ServiceMessage(this, "Creating cluster: {0} with ports {1}", 
+                    address,
+                    String.Join(",", ports));
 
                 return new Cluster(
                     cluster.InternalName,
@@ -578,7 +587,7 @@ namespace PartyCluster.ClusterService
                     cluster.AppCount,
                     cluster.ServiceCount,
                     address,
-                    new List<int>(cluster.Ports),
+                    ports,
                     new List<ClusterUser>(cluster.Users),
                     cluster.CreatedOn);
             }
@@ -611,9 +620,6 @@ namespace PartyCluster.ClusterService
                 case ClusterOperationStatus.Ready:
 
                     // Cluster is ready to go.
-                    // Get the cluster's available ports.
-                    IEnumerable<int> ports = await this.clusterOperator.GetClusterPortsAsync(cluster.InternalName);
-
                     try
                     {
                         // Queue up sample application deployment
@@ -631,9 +637,8 @@ namespace PartyCluster.ClusterService
 
                     ServiceEventSource.Current.ServiceMessage(
                         this,
-                        "Cluster is ready: {0} with ports: {1}",
-                        cluster.Address,
-                        String.Join(",", ports));
+                        "Cluster is ready: {0}",
+                        cluster.Address);
 
                     return new Cluster(
                         cluster.InternalName,
@@ -641,7 +646,7 @@ namespace PartyCluster.ClusterService
                         cluster.AppCount,
                         cluster.ServiceCount,
                         cluster.Address,
-                        new List<int>(ports),
+                        cluster.Ports,
                         new List<ClusterUser>(cluster.Users),
                         DateTimeOffset.UtcNow);
 

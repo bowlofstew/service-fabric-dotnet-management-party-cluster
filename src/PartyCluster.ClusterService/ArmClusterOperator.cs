@@ -41,12 +41,6 @@ namespace PartyCluster.ClusterService
                 += this.CodePackageActivationContext_DataPackageModifiedEvent;
         }
 
-        public Task<IEnumerable<int>> GetClusterPortsAsync(string domain)
-        {
-            //Hardcoding this with template values for now.
-            return Task.FromResult<IEnumerable<int>>(new[] {8505, 8506, 8507, 8081, 8086});
-        }
-
         /// <summary>
         /// Initiates creation of a new cluster.
         /// </summary>
@@ -55,7 +49,7 @@ namespace PartyCluster.ClusterService
         /// </remarks>
         /// <param name="name">A unique name for the cluster.</param>
         /// <returns>The FQDN of the new cluster.</returns>
-        public async Task<string> CreateClusterAsync(string name)
+        public async Task<string> CreateClusterAsync(string name, IEnumerable<int> ports)
         {
             string token = await this.GetAuthorizationTokenAsync();
             TokenCloudCredentials credential = new TokenCloudCredentials(this.settings.SubscriptionID.ToUnsecureString(), token);
@@ -71,8 +65,16 @@ namespace PartyCluster.ClusterService
             string templateContent = this.armTemplate;
             string parameterContent = this.armParameters
                 .Replace("_CLUSTER_NAME_", name)
+                .Replace("_CLUSTER_LOCATION_", this.settings.Region)
                 .Replace("_USER_", this.settings.Username.ToUnsecureString())
                 .Replace("_PWD_", this.settings.Password.ToUnsecureString());
+
+            int ix = 1;
+            foreach(int port in ports)
+            {
+                parameterContent = parameterContent.Replace($"_PORT{ix}_", port.ToString());
+                ++ix;
+            }
 
             await this.CreateTemplateDeploymentAsync(credential, name, templateContent, parameterContent);
 

@@ -18,7 +18,7 @@ namespace PartyCluster.Domain
         /// </remarks>
         /// <param name="name">A unique name for the cluster.</param>
         /// <returns>The FQDN of the new cluster.</returns>
-        Task<string> CreateClusterAsync(string name);
+        Task<string> CreateClusterAsync(string name, IEnumerable<int> ports);
 
         /// <summary>
         /// Initiates deletion of a cluster.
@@ -36,12 +36,5 @@ namespace PartyCluster.Domain
         /// <param name="domain"></param>
         /// <returns></returns>
         Task<ClusterOperationStatus> GetClusterStatusAsync(string name);
-
-        /// <summary>
-        /// Gets a list of input ports available on the cluster.
-        /// </summary>
-        /// <param name="domain"></param>
-        /// <returns></returns>
-        Task<IEnumerable<int>> GetClusterPortsAsync(string name);
     }
 }

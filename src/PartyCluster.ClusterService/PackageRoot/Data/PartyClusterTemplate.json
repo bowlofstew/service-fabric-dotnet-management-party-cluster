@@ -603,6 +603,27 @@
                     "tableEndpoint": "[concat('https://',variables('supportLogStorageAccountName'),'.table.core.windows.net/')]"
                 },
                 "fabricSettings": [
+                    {
+                        "name": "NodeBufferPercentage",
+                        "parameters": [
+                            {
+                                "name": "MemoryKB",
+                                "value": "0.25"
+                            },
+                            {
+                                "name": "DiskKB",
+                                "value": "0.25"
+                            },
+                            {
+                                "name": "Capacity1",
+                                "value": "0.10"
+                            },
+                            {
+                                "name": "Capacity2",
+                                "value":  "0.0"
+                            }
+                        ]
+                    }
                 ],
                 "managementEndpoint": "[concat('http://',reference(concat(variables('lbIPName'),'-','0')).dnsSettings.fqdn,':',variables('nt0fabricHttpGatewayPort'))]",
                 "nodeTypes": [

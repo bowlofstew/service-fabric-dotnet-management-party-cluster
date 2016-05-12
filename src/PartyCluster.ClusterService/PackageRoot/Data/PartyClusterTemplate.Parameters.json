@@ -3,9 +3,9 @@
     "clusterLocation": { "value": "_CLUSTER_LOCATION_" },
     "adminUserName": { "value": "_USER_" },
     "adminPassword": { "value": "_PWD_" },
-    "loadBalancedAppPort1": { "value": "_PORT1_" },
-    "loadBalancedAppPort2": { "value": "_PORT2_" },
-    "loadBalancedAppPort3": { "value": "_PORT3_" },
-    "loadBalancedAppPort4": { "value": "_PORT4_" },
-    "loadBalancedAppPort5": { "value": "_PORT5_" }
+    "loadBalancedAppPort1": { "value": _PORT1_ },
+    "loadBalancedAppPort2": { "value": _PORT2_ },
+    "loadBalancedAppPort3": { "value": _PORT3_ },
+    "loadBalancedAppPort4": { "value": _PORT4_ },
+    "loadBalancedAppPort5": { "value": _PORT5_ }
 }

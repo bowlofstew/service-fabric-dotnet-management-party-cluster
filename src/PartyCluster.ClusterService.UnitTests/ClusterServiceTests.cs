@@ -590,7 +590,7 @@ namespace PartyCluster.ClusterService.UnitTests
             ClusterConfig config = new ClusterConfig();
             MockClusterOperator clusterOperator = new MockClusterOperator()
             {
-                CreateClusterAsyncFunc = name => { return Task.FromResult(String.Format(nameTemplate, name)); }
+                CreateClusterAsyncFunc = (name, ports) => { return Task.FromResult(String.Format(nameTemplate, name)); }
             };
 
             IReliableDictionary<int, Cluster> dictionary =
@@ -672,13 +672,15 @@ namespace PartyCluster.ClusterService.UnitTests
             bool calledActual = false;
             string nameTemplate = "Test:{0}";
             string nameActual = null;
+            IEnumerable<int> portsExpected = Enumerable.Empty<int>();
 
             MockReliableStateManager stateManager = new MockReliableStateManager();
             MockClusterOperator clusterOperator = new MockClusterOperator()
             {
-                CreateClusterAsyncFunc = name =>
+                CreateClusterAsyncFunc = (name, ports) =>
                 {
                     nameActual = name;
+                    portsExpected = ports;
                     calledActual = true;
                     return Task.FromResult(String.Format(nameTemplate, name));
                 }
@@ -700,6 +702,8 @@ namespace PartyCluster.ClusterService.UnitTests
             Assert.IsTrue(calledActual);
             Assert.AreEqual(ClusterStatus.Creating, actual.Status);
             Assert.AreEqual(String.Format(nameTemplate, nameActual), actual.Address);
+            Assert.AreEqual(5, actual.Ports.Count());
+            Enumerable.SequenceEqual(portsExpected, actual.Ports);
         }
 
         /// <summary>
@@ -729,7 +733,6 @@ namespace PartyCluster.ClusterService.UnitTests
 
             Assert.AreEqual(ClusterStatus.Ready, actual.Status);
             Assert.IsTrue(actual.CreatedOn.ToUniversalTime() <= DateTimeOffset.UtcNow);
-            actual.Ports.SequenceEqual(await clusterOperator.GetClusterPortsAsync(""));
         }
 
         /// <summary>

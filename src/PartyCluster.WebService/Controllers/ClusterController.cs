@@ -22,8 +22,8 @@ namespace PartyCluster.WebService.Controllers
     [RoutePrefix("api")]
     public class ClusterController : ApiController
     {
-        private static Resx messageResources = new Resx("WebService.Resources.Messages");
-        private static Resx clusterNameResources = new Resx("WebService.Resources.ClusterNames");
+        private static Resx messageResources = new Resx("PartyCluster.WebService.Resources.Messages");
+        private static Resx clusterNameResources = new Resx("PartyCluster.WebService.Resources.ClusterNames");
         private readonly ICaptcha captcha;
 
         public ClusterController(ICaptcha captcha)

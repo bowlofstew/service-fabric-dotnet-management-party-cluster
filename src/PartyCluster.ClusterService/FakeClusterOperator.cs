@@ -23,7 +23,7 @@ namespace PartyCluster.ClusterService
             this.stateManager = stateManager;
         }
 
-        public async Task<string> CreateClusterAsync(string name)
+        public async Task<string> CreateClusterAsync(string name, IEnumerable<int> ports)
         {
             IReliableDictionary<string, ClusterOperationStatus> clusters =
                 await this.stateManager.GetOrAddAsync<IReliableDictionary<string, ClusterOperationStatus>>(new Uri("fakeclusterops:/clusters"));
@@ -55,18 +55,6 @@ namespace PartyCluster.ClusterService
                 await clusters.SetAsync(tx, name, ClusterOperationStatus.Deleting);
                 await tx.CommitAsync();
             }
-        }
-
-        public Task<IEnumerable<int>> GetClusterPortsAsync(string name)
-        {
-            Random random = new Random();
-            List<int> ports = new List<int>(5);
-            for (int i = 0; i < 5; ++i)
-            {
-                ports.Add(80 + i);
-            }
-
-            return Task.FromResult((IEnumerable<int>) ports);
         }
 
         public async Task<ClusterOperationStatus> GetClusterStatusAsync(string name)
