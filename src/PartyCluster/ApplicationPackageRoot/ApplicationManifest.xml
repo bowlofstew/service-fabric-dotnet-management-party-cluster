@@ -47,4 +47,17 @@
          </StatefulService>
       </Service>
    </DefaultServices>
+   <Principals>
+      <Users>
+         <User Name="PartyService" AccountType="NetworkService" />
+      </Users>
+   </Principals>
+   <Policies>
+      <SecurityAccessPolicies>
+         <SecurityAccessPolicy ResourceRef="tryazureservicefabric-dataencipherment" PrincipalRef="PartyService" ResourceType="Certificate" />
+      </SecurityAccessPolicies>
+   </Policies>
+   <Certificates>
+      <SecretsCertificate X509FindValue="" Name="tryazureservicefabric-dataencipherment" />
+   </Certificates>
 </ApplicationManifest>
