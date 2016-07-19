@@ -10,6 +10,7 @@ namespace PartyCluster.Mocks
     using System.Collections.ObjectModel;
     using System.Fabric;
     using System.Fabric.Description;
+    using System.Fabric.Health;
 
     public class MockCodePackageActivationContext : ICodePackageActivationContext
     {
@@ -137,6 +138,21 @@ namespace PartyCluster.Mocks
         }
 
         public KeyedCollection<string, ServiceTypeDescription> GetServiceTypes()
+        {
+            throw new NotImplementedException();
+        }
+
+        public void ReportApplicationHealth(HealthInformation healthInfo)
+        {
+            throw new NotImplementedException();
+        }
+
+        public void ReportDeployedApplicationHealth(HealthInformation healthInfo)
+        {
+            throw new NotImplementedException();
+        }
+
+        public void ReportDeployedServicePackageHealth(HealthInformation healthInfo)
         {
             throw new NotImplementedException();
         }

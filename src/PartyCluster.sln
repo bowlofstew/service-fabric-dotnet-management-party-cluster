@@ -25,16 +25,16 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PartyCluster.ApplicationDep
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PartyCluster.ApplicationDeployService.UnitTests", "PartyCluster.ApplicationDeployService.UnitTests\PartyCluster.ApplicationDeployService.UnitTests.csproj", "{84C6BC59-B5F1-4DFB-8FDB-418A3CA6CCC2}"
 EndProject
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "WADConfig", "WADConfig", "{B04A1B27-EE2C-438E-9F2C-A9786954EF8C}"
-	ProjectSection(SolutionItems) = preProject
-		WADConfig\WadConfigUpdate.json = WADConfig\WadConfigUpdate.json
-		WADConfig\WadConfigUpdateParams.json = WADConfig\WadConfigUpdateParams.json
-	EndProjectSection
-EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "ARM", "ARM", "{16EEA1A4-7A7C-4BDC-A5D6-7B5DAE108661}"
 	ProjectSection(SolutionItems) = preProject
 		..\ARM\PartyClusterServiceTemplate.json = ..\ARM\PartyClusterServiceTemplate.json
 		..\ARM\PartyClusterServiceTemplate.parameters.json = ..\ARM\PartyClusterServiceTemplate.parameters.json
+	EndProjectSection
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "WADConfig", "WADConfig", "{D0F0D8D4-689D-42DB-A43A-524630D87D19}"
+	ProjectSection(SolutionItems) = preProject
+		..\WADConfig\WadConfigUpdate.json = ..\WADConfig\WadConfigUpdate.json
+		..\WADConfig\WadConfigUpdateParams.json = ..\WADConfig\WadConfigUpdateParams.json
 	EndProjectSection
 EndProject
 Global
