@@ -511,8 +511,10 @@ namespace PartyCluster.ClusterService
             double totalUsers = activeClusters
                 .Aggregate(0, (total, next) => total += next.Value.Users.Count());
 
-            double percentFull = totalUsers/totalCapacity;
-
+            double percentFull = totalCapacity > 0
+                ? totalUsers / totalCapacity
+                : 0;
+            
             if (percentFull >= this.config.UserCapacityHighPercentThreshold)
             {
                 return Math.Min(
