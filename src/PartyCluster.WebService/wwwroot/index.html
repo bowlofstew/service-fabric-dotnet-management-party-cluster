@@ -53,8 +53,17 @@
             <h3>Oops!</h3>
             <p></p>
         </div>
-        <div class="cluster-list clearfix">
-            <table class="clearfix"></table>
+        <div class="cluster-list clearfix" style="padding-right: 30px">
+            <h2>We'll be back soon</h2>
+            <p>
+                We're taking a break from the party, but we'll be back soon.
+            </p>
+            <p>
+                In the meantime, check out the <a href="https://github.com/Azure-Samples/service-fabric-dotnet-management-party-cluster" target="_blank">Party Cluster sample application on GitHub</a> to learn more about Service Fabric.
+            </p>
+            <p>
+                - The Service Fabric Team
+            </p>
         </div>
         <div class="faq">
             <ul>
@@ -108,8 +117,8 @@
     <script type="text/javascript">
 		$(function()
 		{
-			var partyClusters = new PartyClusters(new Api());
-			partyClusters.Initialize();
+			//var partyClusters = new PartyClusters(new Api());
+			//partyClusters.Initialize();
 		});
 
 		var onCaptchaLoad = function()

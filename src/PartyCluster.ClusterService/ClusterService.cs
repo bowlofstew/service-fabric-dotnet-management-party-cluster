@@ -500,6 +500,8 @@ namespace PartyCluster.ClusterService
         /// <returns></returns>
         internal async Task<int> GetTargetClusterCapacityAsync(CancellationToken cancellationToken)
         {
+            return 0;
+
             IReliableDictionary<int, Cluster> clusterDictionary =
                 await this.StateManager.GetOrAddAsync<IReliableDictionary<int, Cluster>>(ClusterDictionaryName);
 
