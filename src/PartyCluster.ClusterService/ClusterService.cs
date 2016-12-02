@@ -866,14 +866,16 @@ namespace PartyCluster.ClusterService
             // If a setting is missing after a service upgrade, allow this to throw so the upgrade will fail and roll back.
             KeyedCollection<string, ConfigurationProperty> clusterConfigParameters = settings.Sections["ClusterConfigSettings"].Parameters;
 
-            this.config = new ClusterConfig();
-            this.config.RefreshInterval = TimeSpan.Parse(clusterConfigParameters["RefreshInterval"].Value);
-            this.config.MinimumClusterCount = Int32.Parse(clusterConfigParameters["MinimumClusterCount"].Value);
-            this.config.MaximumClusterCount = Int32.Parse(clusterConfigParameters["MaximumClusterCount"].Value);
-            this.config.MaximumUsersPerCluster = Int32.Parse(clusterConfigParameters["MaximumUsersPerCluster"].Value);
-            this.config.MaximumClusterUptime = TimeSpan.Parse(clusterConfigParameters["MaximumClusterUptime"].Value);
-            this.config.UserCapacityHighPercentThreshold = Double.Parse(clusterConfigParameters["UserCapacityHighPercentThreshold"].Value);
-            this.config.UserCapacityLowPercentThreshold = Double.Parse(clusterConfigParameters["UserCapacityLowPercentThreshold"].Value);
+            ClusterConfig newConfig = new ClusterConfig();
+            newConfig.RefreshInterval = TimeSpan.Parse(clusterConfigParameters["RefreshInterval"].Value);
+            newConfig.MinimumClusterCount = Int32.Parse(clusterConfigParameters["MinimumClusterCount"].Value);
+            newConfig.MaximumClusterCount = Int32.Parse(clusterConfigParameters["MaximumClusterCount"].Value);
+            newConfig.MaximumUsersPerCluster = Int32.Parse(clusterConfigParameters["MaximumUsersPerCluster"].Value);
+            newConfig.MaximumClusterUptime = TimeSpan.Parse(clusterConfigParameters["MaximumClusterUptime"].Value);
+            newConfig.UserCapacityHighPercentThreshold = Double.Parse(clusterConfigParameters["UserCapacityHighPercentThreshold"].Value);
+            newConfig.UserCapacityLowPercentThreshold = Double.Parse(clusterConfigParameters["UserCapacityLowPercentThreshold"].Value);
+
+            this.config = newConfig;
         }
 
         /// <summary>
