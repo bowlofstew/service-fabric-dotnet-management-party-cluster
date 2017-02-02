@@ -1,0 +1,27 @@
+{
+  "inputs": [
+    {
+      "type": "EventSource",
+      "sources": [
+        { "providerName": "Microsoft-ServiceFabric-Services" },
+        { "providerName": "Microsoft-ServiceFabric-Actors" },
+        { "providerName": "MyCompany-PartyCluster-ClusterService" }
+      ]
+    }
+  ],
+  "filters": [
+    {
+      "type": "drop",
+      "include": "Level == Verbose"
+    }
+  ],
+  "outputs": [
+    { "type":  "StdOutput" },
+    {
+      "type": "ApplicationInsights",
+      "instrumentationKey": "a1a44b1f-2433-4a18-914f-d4172bb4445d" // "== instrumentation key here =="
+    }
+  ],
+  "schemaVersion": "2016-08-11",
+  "extensions": []
+}

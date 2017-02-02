@@ -37,6 +37,7 @@ namespace PartyCluster.ApplicationDeployService
         {
             public const EventKeywords Requests = (EventKeywords) 0x1L;
             public const EventKeywords ServiceInitialization = (EventKeywords) 0x2L;
+            public const EventKeywords Deployment = (EventKeywords) 0x4L;
         }
 
         #endregion
@@ -183,6 +184,55 @@ namespace PartyCluster.ApplicationDeployService
         public void ServiceRequestFailed(string requestTypeName, string exception)
         {
             this.WriteEvent(ServiceRequestFailedEventId, exception);
+        }
+
+        private const int ApplicationDeploymentCompletedId = 10;
+        [Event(ApplicationDeploymentCompletedId, Level = EventLevel.Informational, Message = "Application deployment completed in {0}ms. Success: {1} . Cluster: {2} AppType: {3} AppVersion: {4} AppName: {5} ", Keywords = Keywords.Deployment)]
+        public void ApplicationDeploymentCompleted(long Duration, bool Success, string Cluster, string appType, string appVersion, string appName)
+        {
+            this.WriteEvent(ApplicationDeploymentCompletedId, Duration, Success, Cluster, appType, appVersion, appName);
+        }
+
+        private const int ApplicationDeploymentSuccessStatusId = 11;
+        [Event(ApplicationDeploymentSuccessStatusId, Level = EventLevel.Informational, Message = "Application deployment succeeded. Cluster: {0} AppType: {1} AppVersion: {2} AppName: {3} Status: {4}.", Keywords = Keywords.Deployment)]
+        public void ApplicationDeploymentSuccessStatus(string cluster, string appType, string appVersion, string appName, string status)
+        {
+            this.WriteEvent(ApplicationDeploymentSuccessStatusId, cluster, appType, appVersion, appName, status);
+        }
+
+        private const int ApplicationDeploymentFailureCopyFailureId = 20;
+        [Event(ApplicationDeploymentFailureCopyFailureId, Level = EventLevel.Informational, Message = "Application deployment failed to copy application package. Cluster: {0} AppType: {1} AppVersion: {2} AppName: {3} Package: {4} Error: {4}", Keywords = Keywords.Deployment)]
+        public void ApplicationDeploymentFailureCopyFailure(string cluster, string appType, string appVersion, string appName, string package, string error)
+        {
+            this.WriteEvent(ApplicationDeploymentFailureCopyFailureId, cluster, appType, appVersion, appName, package, error);
+        }
+
+        private const int ApplicationDeploymentFailureCorruptPackageId = 21;
+        [Event(ApplicationDeploymentFailureCorruptPackageId, Level = EventLevel.Informational, Message = "Application deployment failed because application package was corrupt. Cluster: {0} AppType: {1} AppVersion: {2} AppName: {3} Package: {4} Error: {5}", Keywords = Keywords.Deployment)]
+        public void ApplicationDeploymentFailureCorruptPackage(string cluster, string appType, string appVersion, string appName, string package, string error)
+        {
+            this.WriteEvent(ApplicationDeploymentFailureCorruptPackageId, cluster, appType, appVersion, appName, package, error);
+        }
+
+        private const int ApplicationDeploymentFailureAlreadyRegisteredId = 22;
+        [Event(ApplicationDeploymentFailureAlreadyRegisteredId, Level = EventLevel.Informational, Message = "Application deployment failed because application package is already registered. Cluster: {0} AppType: {1} AppVersion: {2} AppName: {3} Package: {4}", Keywords = Keywords.Deployment)]
+        public void ApplicationDeploymentFailureAlreadyRegistered(string cluster, string appType, string appVersion, string appName, string package)
+        {
+            this.WriteEvent(ApplicationDeploymentFailureAlreadyRegisteredId, cluster, appType, appVersion, appName, package);
+        }
+
+        private const int ApplicationDeploymentFailureTransientErrorId = 23;
+        [Event(ApplicationDeploymentFailureTransientErrorId, Level = EventLevel.Informational, Message = "Application deployment failed because of a transient error. Cluster: {0} AppType: {1} AppVersion: {2} AppName: {3} Package: {4} Stage: {5} Error: {6}", Keywords = Keywords.Deployment)]
+        public void ApplicationDeploymentFailureTransientError(string cluster, string appType, string appVersion, string appName, string package, string stage, string error)
+        {
+            this.WriteEvent(ApplicationDeploymentFailureTransientErrorId, cluster, appType, appVersion, appName, package, stage, error);
+        }
+
+        private const int ApplicationDeploymentFailureUnknownErrorId = 24;
+        [Event(ApplicationDeploymentFailureUnknownErrorId, Level = EventLevel.Informational, Message = "Application deployment failed. Cluster: {0} AppType: {1} AppVersion: {2} AppName: {3} Package: {4} Error: {5}", Keywords = Keywords.Deployment)]
+        public void ApplicationDeploymentFailureUnknownError(string cluster, string appType, string appVersion, string appName, string package, string error)
+        {
+            this.WriteEvent(ApplicationDeploymentFailureUnknownErrorId, cluster, appType, appVersion, appName, package, error);
         }
 
         #endregion

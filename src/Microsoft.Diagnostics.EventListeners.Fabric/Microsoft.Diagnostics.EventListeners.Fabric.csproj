@@ -63,12 +63,6 @@
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\Microsoft.Diagnostics.EventListeners\Microsoft.Diagnostics.EventListeners.csproj">
-      <Project>{5f87e027-ba54-469c-ad4d-ea52f9d8ceab}</Project>
-      <Name>Microsoft.Diagnostics.EventListeners</Name>
-    </ProjectReference>
-  </ItemGroup>
-  <ItemGroup>
     <None Include="app.config" />
     <None Include="packages.config">
       <SubType>Designer</SubType>

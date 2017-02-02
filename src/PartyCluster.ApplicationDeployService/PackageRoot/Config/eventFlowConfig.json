@@ -1,0 +1,38 @@
+{
+  "inputs": [
+    {
+      "type": "EventSource",
+      "sources": [
+        { "providerName": "Microsoft-ServiceFabric-Services" },
+        { "providerName": "Microsoft-ServiceFabric-Actors" },
+        { "providerName": "MyCompany-PartyCluster-ApplicationDeployService" }
+      ]
+    }
+  ],
+  "filters": [
+    {
+      "type": "drop",
+      "include": "Level == Verbose"
+    },
+    {
+      "type": "metadata",
+      "metadata": "request",
+      "requestNameProperty": "EventName",
+      "include": "EventName==ApplicationDeploymentCompleted",
+      "durationProperty": "Duration",
+      "durationUnit": "milliseconds",
+      "isSuccessProperty": "Success"
+    }
+  ],
+  "outputs": [
+    {
+      "type": "StdOutput"
+    },
+    {
+      "type": "ApplicationInsights",
+      "instrumentationKey": "== instrumentation key here =="
+    }
+  ],
+  "schemaVersion": "2016-08-11",
+  "extensions": []
+}
