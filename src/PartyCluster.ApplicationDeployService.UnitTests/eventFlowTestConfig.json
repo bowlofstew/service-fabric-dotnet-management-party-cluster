@@ -1,0 +1,32 @@
+{
+  "inputs": [
+    {
+      "type": "EventSource",
+      "sources": [
+        { "providerName": "MyCompany-PartyCluster-ApplicationDeployService" }
+      ]
+    }
+  ],
+  "filters": [
+    {
+      "type": "drop",
+      "include": "Level == Verbose"
+    },
+    {
+      "type": "metadata",
+      "metadata": "request",
+      "requestNameProperty": "EventName",
+      "include": "EventName==ApplicationDeploymentCompleted",
+      "durationProperty": "Duration",
+      "durationUnit": "milliseconds",
+      "isSuccessProperty" : "Success"
+    }
+  ],
+  "outputs": [
+    {
+      "type": "StdOutput"
+    }
+  ],
+  "schemaVersion": "2016-08-11",
+  "extensions": []
+}

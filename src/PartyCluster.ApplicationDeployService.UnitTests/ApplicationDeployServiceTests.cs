@@ -14,6 +14,7 @@ namespace PartyCluster.ApplicationDeployService.UnitTests
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using PartyCluster.Domain;
     using PartyCluster.Mocks;
+    using Microsoft.Diagnostics.EventFlow;
 
     [TestClass]
     public class ApplicationDeployServiceTests
@@ -100,6 +101,29 @@ namespace PartyCluster.ApplicationDeployService.UnitTests
                 null,
                 Guid.NewGuid(),
                 0);
+        }
+
+        [TestMethod]
+        public async Task SendEventSourceMessages()
+        {
+            string cluster = "ClusterName";
+            string appType = "ApplicationTypeName";
+            string appVer = "ApplicationVersion";
+            string appInst = "ApplicationInstanceName";
+            string pkgPath = @"c:\";
+            string error = "Error";
+            string status = "Status";
+
+            using (var pipeline = DiagnosticPipelineFactory.CreatePipeline("eventFlowTestConfig.json"))
+            {
+                ServiceEventSource.Current.ApplicationDeploymentCompleted(15000, true, cluster, appType, appVer, appInst);
+                ServiceEventSource.Current.ApplicationDeploymentSuccessStatus(cluster, appType, appVer, appInst, status);
+                ServiceEventSource.Current.ApplicationDeploymentFailureCopyFailure(cluster, appType, appVer, appInst, pkgPath, error);
+                ServiceEventSource.Current.ApplicationDeploymentFailureCorruptPackage(cluster, appType, appVer, appInst, pkgPath, error);
+                ServiceEventSource.Current.ApplicationDeploymentFailureAlreadyRegistered(cluster, appType, appVer, appInst, pkgPath);
+                ServiceEventSource.Current.ApplicationDeploymentFailureTransientError(cluster, appType, appVer, appInst, pkgPath, status, error);
+                ServiceEventSource.Current.ApplicationDeploymentFailureUnknownError(cluster, appType, appVer, appInst, pkgPath, error);
+            }
         }
     }
 }

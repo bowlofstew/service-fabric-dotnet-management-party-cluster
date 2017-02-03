@@ -71,21 +71,23 @@ namespace PartyCluster.ClusterService
 
         private Task SendMessageAsync(MailAddress from, string to, string subject, string htmlBody)
         {
+            return Task.FromResult(0);
+
             // Create an Web transport for sending email.
-            Web transportWeb = new Web(this.credentials);
+            //Web transportWeb = new Web(this.credentials);
 
-            SendGridMessage myMessage = new SendGridMessage();
+            //SendGridMessage myMessage = new SendGridMessage();
 
-            // Add the message properties.
-            myMessage.From = from; // new MailAddress("partycluster@azure.com", "Service Fabric Party Cluster Team");
-            myMessage.AddTo(to);
+            //// Add the message properties.
+            //myMessage.From = from; // new MailAddress("partycluster@azure.com", "Service Fabric Party Cluster Team");
+            //myMessage.AddTo(to);
 
-            myMessage.Subject = subject;
+            //myMessage.Subject = subject;
 
-            //Add the HTML and Text bodies
-            myMessage.Html = htmlBody;
+            ////Add the HTML and Text bodies
+            //myMessage.Html = htmlBody;
 
-            return transportWeb.DeliverAsync(myMessage);
+            //return transportWeb.DeliverAsync(myMessage);
         }
 
         private void UpdateSendMailSettings(ConfigurationSettings settings)

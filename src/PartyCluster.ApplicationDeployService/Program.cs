@@ -10,6 +10,7 @@ namespace PartyCluster.ApplicationDeployService
     using System.Threading;
     using Microsoft.ServiceFabric.Data;
     using Microsoft.ServiceFabric.Services.Runtime;
+    using Microsoft.Diagnostics.EventFlow.ServiceFabric;
 
     internal static class Program
     {
@@ -20,16 +21,20 @@ namespace PartyCluster.ApplicationDeployService
         {
             try
             {
-                ServiceRuntime.RegisterServiceAsync(
+                using (var pipeline = ServiceFabricDiagnosticPipelineFactory.CreatePipeline("PartyCluster.ApplicationDeployService"))
+                {
+
+                    ServiceRuntime.RegisterServiceAsync(
                     "ApplicationDeployServiceType",
                     context =>
                         new ApplicationDeployService(new ReliableStateManager(context), new FabricClientApplicationOperator(context), context)
                     )
                     .GetAwaiter().GetResult();
 
-                ServiceEventSource.Current.ServiceTypeRegistered(Process.GetCurrentProcess().Id, typeof(ApplicationDeployService).Name);
+                    ServiceEventSource.Current.ServiceTypeRegistered(Process.GetCurrentProcess().Id, typeof(ApplicationDeployService).Name);
 
-                Thread.Sleep(Timeout.Infinite); // Prevents this host process from terminating to keep the service host process running.
+                    Thread.Sleep(Timeout.Infinite); // Prevents this host process from terminating to keep the service host process running.
+                }
             }
             catch (Exception e)
             {

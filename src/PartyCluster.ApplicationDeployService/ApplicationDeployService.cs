@@ -23,6 +23,7 @@ namespace PartyCluster.ApplicationDeployService
     using Newtonsoft.Json;
     using PartyCluster.Common;
     using PartyCluster.Domain;
+    using System.Diagnostics;
 
     /// <summary>
     /// The Service Fabric runtime creates an instance of this class for each service type instance.
@@ -332,6 +333,8 @@ namespace PartyCluster.ApplicationDeployService
             IReliableDictionary<Guid, ApplicationDeployment> dictionary =
                 await this.StateManager.GetOrAddAsync<IReliableDictionary<Guid, ApplicationDeployment>>(DictionaryName);
 
+            Stopwatch sw = Stopwatch.StartNew();
+
             using (ITransaction tx = this.StateManager.CreateTransaction())
             {
                 ConditionalValue<Guid> workItem = await queue.TryDequeueAsync(tx, this.transactionTimeout, cancellationToken);
@@ -361,6 +364,15 @@ namespace PartyCluster.ApplicationDeployService
                 {
                     // Remove deployments that completed or failed
                     await dictionary.TryRemoveAsync(tx, workItemId, this.transactionTimeout, cancellationToken);
+
+                    // Log completion.
+                    ServiceEventSource.Current.ApplicationDeploymentCompleted(
+                                sw.ElapsedMilliseconds,
+                                ApplicationDeployStatus.Complete == processedDeployment.Status,
+                                processedDeployment.Cluster,
+                                processedDeployment.ApplicationTypeName,
+                                processedDeployment.ApplicationTypeVersion,
+                                processedDeployment.ApplicationInstanceName);
                 }
                 else
                 {
@@ -370,11 +382,12 @@ namespace PartyCluster.ApplicationDeployService
                     // And update the deployment record with the new status
                     await dictionary.SetAsync(tx, workItemId, processedDeployment, this.transactionTimeout, cancellationToken);
 
-                    ServiceEventSource.Current.ServiceMessage(
-                        this,
-                        "Application deployment request successfully processed. Cluster: {0}. Status: {1}",
-                        processedDeployment.Cluster,
-                        processedDeployment.Status);
+                    ServiceEventSource.Current.ApplicationDeploymentSuccessStatus(
+                                processedDeployment.Cluster,
+                                processedDeployment.ApplicationTypeName,
+                                processedDeployment.ApplicationTypeVersion,
+                                processedDeployment.ApplicationInstanceName,
+                                Enum.GetName(typeof(ApplicationDeployStatus),processedDeployment.Status));
                 }
 
                 await tx.CommitAsync();
@@ -452,9 +465,11 @@ namespace PartyCluster.ApplicationDeployService
                             // This is retry-able, just need to wait a bit for it to come up.
                             // This can happen when an application deployment is attempted immediately after a cluster comes up.
 
-                            ServiceEventSource.Current.ServiceMessage(
-                                this,
-                                "Copy to image store failed with FabricServiceNotFoundException. Package: {0}. Error: {1}",
+                            ServiceEventSource.Current.ApplicationDeploymentFailureCopyFailure(
+                                applicationDeployment.Cluster,
+                                applicationDeployment.ApplicationTypeName,
+                                applicationDeployment.ApplicationTypeVersion,
+                                applicationDeployment.ApplicationInstanceName,
                                 applicationDeployment.PackageZipFilePath,
                                 fsnfe.Message);
 
@@ -462,9 +477,11 @@ namespace PartyCluster.ApplicationDeployService
                         }
                         catch (FileNotFoundException fnfe)
                         {
-                            ServiceEventSource.Current.ServiceMessage(
-                                this,
-                                "Found corrupt application package. Package: {0}. Error: {1}",
+                            ServiceEventSource.Current.ApplicationDeploymentFailureCorruptPackage(
+                                applicationDeployment.Cluster,
+                                applicationDeployment.ApplicationTypeName,
+                                applicationDeployment.ApplicationTypeVersion,
+                                applicationDeployment.ApplicationInstanceName,
                                 applicationDeployment.PackageZipFilePath,
                                 fnfe.Message);
 
@@ -490,9 +507,11 @@ namespace PartyCluster.ApplicationDeployService
                         }
                         catch (FabricElementAlreadyExistsException)
                         {
-                            ServiceEventSource.Current.ServiceMessage(
-                                this,
-                                "Application package is already registered. Package: {0}.",
+                            ServiceEventSource.Current.ApplicationDeploymentFailureAlreadyRegistered(
+                                applicationDeployment.Cluster,
+                                applicationDeployment.ApplicationTypeName,
+                                applicationDeployment.ApplicationTypeVersion,
+                                applicationDeployment.ApplicationInstanceName,
                                 applicationDeployment.PackageZipFilePath);
 
                             // application already exists, set status to Create it so we don't keep failing on this.
@@ -521,23 +540,27 @@ namespace PartyCluster.ApplicationDeployService
             }
             catch (FabricTransientException fte)
             {
-                ServiceEventSource.Current.ServiceMessage(
-                    this,
-                    "A transient error occured during package processing. Package: {0}. Stage: {1}. Error: {2}",
-                    applicationDeployment.ApplicationInstanceName,
-                    applicationDeployment.Status,
-                    fte.Message);
+                ServiceEventSource.Current.ApplicationDeploymentFailureTransientError(
+                                applicationDeployment.Cluster,
+                                applicationDeployment.ApplicationTypeName,
+                                applicationDeployment.ApplicationTypeVersion,
+                                applicationDeployment.ApplicationInstanceName,
+                                applicationDeployment.PackageZipFilePath,
+                                Enum.GetName(typeof(ApplicationDeployStatus), applicationDeployment.Status),
+                                fte.Message);
 
                 // return the deployment unchanged. It will be returned to the queue and tried again.
                 return applicationDeployment;
             }
             catch (Exception e)
             {
-                ServiceEventSource.Current.ServiceMessage(
-                    this,
-                    "Application package processing failed. Package: {0}. Error: {1}",
-                    applicationDeployment.PackageZipFilePath,
-                    e.ToString());
+                ServiceEventSource.Current.ApplicationDeploymentFailureUnknownError(
+                                applicationDeployment.Cluster,
+                                applicationDeployment.ApplicationTypeName,
+                                applicationDeployment.ApplicationTypeVersion,
+                                applicationDeployment.ApplicationInstanceName,
+                                applicationDeployment.PackageZipFilePath,
+                                e.ToString());
 
                 return new ApplicationDeployment(ApplicationDeployStatus.Failed, applicationDeployment);
             }

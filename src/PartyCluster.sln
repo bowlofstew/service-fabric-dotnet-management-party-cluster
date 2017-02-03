@@ -15,10 +15,6 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PartyCluster.ClusterService
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PartyCluster.Mocks", "PartyCluster.Mocks\PartyCluster.Mocks.csproj", "{4F1E9BD9-172B-47D7-819C-26B43A1F0BFB}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Microsoft.Diagnostics.EventListeners", "Microsoft.Diagnostics.EventListeners\Microsoft.Diagnostics.EventListeners.csproj", "{5F87E027-BA54-469C-AD4D-EA52F9D8CEAB}"
-EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Microsoft.Diagnostics.EventListeners.Fabric", "Microsoft.Diagnostics.EventListeners.Fabric\Microsoft.Diagnostics.EventListeners.Fabric.csproj", "{2D19BF76-04E1-4969-AD66-984160D38E2C}"
-EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PartyCluster.Common", "PartyCluster.Common\PartyCluster.Common.csproj", "{F3DC529E-CF06-4D48-A0AC-110E2611EB71}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PartyCluster.ApplicationDeployService", "PartyCluster.ApplicationDeployService\PartyCluster.ApplicationDeployService.csproj", "{B25F8241-F189-48F0-A5E9-BAE8A58EC4BD}"
@@ -69,14 +65,6 @@ Global
 		{4F1E9BD9-172B-47D7-819C-26B43A1F0BFB}.CloudRelease|x64.Build.0 = CloudRelease|x64
 		{4F1E9BD9-172B-47D7-819C-26B43A1F0BFB}.LocalDebug|x64.ActiveCfg = LocalDebug|x64
 		{4F1E9BD9-172B-47D7-819C-26B43A1F0BFB}.LocalDebug|x64.Build.0 = LocalDebug|x64
-		{5F87E027-BA54-469C-AD4D-EA52F9D8CEAB}.CloudRelease|x64.ActiveCfg = CloudRelease|x64
-		{5F87E027-BA54-469C-AD4D-EA52F9D8CEAB}.CloudRelease|x64.Build.0 = CloudRelease|x64
-		{5F87E027-BA54-469C-AD4D-EA52F9D8CEAB}.LocalDebug|x64.ActiveCfg = LocalDebug|x64
-		{5F87E027-BA54-469C-AD4D-EA52F9D8CEAB}.LocalDebug|x64.Build.0 = LocalDebug|x64
-		{2D19BF76-04E1-4969-AD66-984160D38E2C}.CloudRelease|x64.ActiveCfg = CloudRelease|x64
-		{2D19BF76-04E1-4969-AD66-984160D38E2C}.CloudRelease|x64.Build.0 = CloudRelease|x64
-		{2D19BF76-04E1-4969-AD66-984160D38E2C}.LocalDebug|x64.ActiveCfg = LocalDebug|x64
-		{2D19BF76-04E1-4969-AD66-984160D38E2C}.LocalDebug|x64.Build.0 = LocalDebug|x64
 		{F3DC529E-CF06-4D48-A0AC-110E2611EB71}.CloudRelease|x64.ActiveCfg = CloudRelease|x64
 		{F3DC529E-CF06-4D48-A0AC-110E2611EB71}.CloudRelease|x64.Build.0 = CloudRelease|x64
 		{F3DC529E-CF06-4D48-A0AC-110E2611EB71}.LocalDebug|x64.ActiveCfg = LocalDebug|x64

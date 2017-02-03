@@ -8,9 +8,7 @@ namespace PartyCluster.WebService
     using System;
     using System.Diagnostics;
     using System.Threading;
-    using Microsoft.Diagnostics.EventListeners;
     using Microsoft.ServiceFabric.Services.Runtime;
-    using FabricEventListeners = Microsoft.Diagnostics.EventListeners.Fabric;
 
     public class Program
     {
@@ -18,22 +16,11 @@ namespace PartyCluster.WebService
         {
             try
             {
-                const string ElasticSearchEventListenerId = "ElasticSearchEventListener";
-                FabricEventListeners.FabricConfigurationProvider configProvider =
-                    new FabricEventListeners.FabricConfigurationProvider(ElasticSearchEventListenerId);
-                ElasticSearchListener esListener = null;
-
-                if (configProvider.HasConfiguration)
-                {
-                    esListener = new ElasticSearchListener(configProvider, new FabricEventListeners.FabricHealthReporter(ElasticSearchEventListenerId));
-                }
-
                 ServiceRuntime.RegisterServiceAsync("WebServiceType", context => new WebService(context)).GetAwaiter().GetResult();
 
                 ServiceEventSource.Current.ServiceTypeRegistered(Process.GetCurrentProcess().Id, typeof(WebService).Name);
 
                 Thread.Sleep(Timeout.Infinite);
-                GC.KeepAlive(esListener);
             }
             catch (Exception e)
             {
