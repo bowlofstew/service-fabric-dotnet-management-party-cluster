@@ -30,6 +30,7 @@ namespace PartyCluster.ClusterService
                 String.Empty,
                 new int[0],
                 new ClusterUser[0],
+                DateTimeOffset.MaxValue,
                 DateTimeOffset.MaxValue)
         {
         }
@@ -47,7 +48,8 @@ namespace PartyCluster.ClusterService
                 copyFrom.Address,
                 new List<int>(copyFrom.Ports),
                 new List<ClusterUser>(copyFrom.Users),
-                copyFrom.CreatedOn)
+                copyFrom.CreatedOn,
+                copyFrom.LifetimeStartedOn)
         {
         }
 
@@ -62,6 +64,7 @@ namespace PartyCluster.ClusterService
         /// <param name="ports"></param>
         /// <param name="users"></param>
         /// <param name="createdOn"></param>
+        /// <param name="lifetimeStartedOn"></param>
         public Cluster(
             string internalName,
             ClusterStatus status,
@@ -70,7 +73,8 @@ namespace PartyCluster.ClusterService
             string address,
             IEnumerable<int> ports,
             IEnumerable<ClusterUser> users,
-            DateTimeOffset createdOn)
+            DateTimeOffset createdOn,
+            DateTimeOffset lifetimeStartedOn)
         {
             this.InternalName = internalName;
             this.Status = status;
@@ -80,6 +84,7 @@ namespace PartyCluster.ClusterService
             this.Ports = ports;
             this.Users = users;
             this.CreatedOn = createdOn;
+            this.LifetimeStartedOn = lifetimeStartedOn;
         }
 
         /// <summary>
@@ -130,5 +135,14 @@ namespace PartyCluster.ClusterService
         /// </summary>
         [DataMember]
         public DateTimeOffset CreatedOn { get; private set; }
+
+        /// <summary>
+        /// Timestamp of when the cluster lifetime starts. 
+        /// The cluster lives for a fixed duration. 
+        /// The lifetime may start at a point other than creation time, 
+        /// for ex. it may start when a user joins the cluster.
+        /// </summary>
+        [DataMember]
+        public DateTimeOffset LifetimeStartedOn { get; private set; }
     }
 }

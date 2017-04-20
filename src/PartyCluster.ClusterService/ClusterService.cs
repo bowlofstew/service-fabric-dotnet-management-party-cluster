@@ -98,14 +98,14 @@ namespace PartyCluster.ClusterService
             {
                 IEnumerable<ClusterView> x = from item in (await clusterDictionary.CreateEnumerableAsync(tx)).ToEnumerable()
                     where item.Value.Status == ClusterStatus.Ready
-                    orderby item.Value.CreatedOn descending
+                    orderby item.Value.LifetimeStartedOn descending
                     select new ClusterView(
                         item.Key,
                         item.Value.AppCount,
                         item.Value.ServiceCount,
                         item.Value.Users.Count(),
                         this.config.MaximumUsersPerCluster,
-                        this.config.MaximumClusterUptime - (DateTimeOffset.UtcNow - item.Value.CreatedOn.ToUniversalTime()));
+                        this.config.MaximumClusterUptime - (DateTimeOffset.UtcNow - item.Value.LifetimeStartedOn.ToUniversalTime()));
 
                 // the enumerable that's created must be enumerated within the transaction.
                 return x.ToList();
@@ -164,13 +164,13 @@ namespace PartyCluster.ClusterService
                 Cluster cluster = result.Value;
 
                 // make sure the cluster isn't about to be deleted.
-                if ((DateTimeOffset.UtcNow - cluster.CreatedOn.ToUniversalTime()) > (this.config.MaximumClusterUptime))
+                if ((DateTimeOffset.UtcNow - cluster.LifetimeStartedOn.ToUniversalTime()) > (this.config.MaximumClusterUptime))
                 {
                     ServiceEventSource.Current.ServiceMessage(
                         this,
                         "Join cluster request failed. Cluster has expired. Cluster: {0}. Cluster creation time: {1}",
                         clusterId,
-                        cluster.CreatedOn.ToUniversalTime());
+                        cluster.LifetimeStartedOn.ToUniversalTime());
 
                     throw new JoinClusterFailedException(JoinClusterFailedReason.ClusterExpired);
                 }
@@ -200,8 +200,9 @@ namespace PartyCluster.ClusterService
 
                 int userPort;
                 string clusterAddress = cluster.Address;
-                TimeSpan clusterTimeRemaining = this.config.MaximumClusterUptime - (DateTimeOffset.UtcNow - cluster.CreatedOn);
-                DateTimeOffset clusterExpiration = cluster.CreatedOn + this.config.MaximumClusterUptime;
+                DateTimeOffset lifetimeStartedOn = DateTimeOffset.UtcNow;
+                TimeSpan clusterTimeRemaining = this.config.MaximumClusterUptime - (DateTimeOffset.UtcNow - lifetimeStartedOn);
+                DateTimeOffset clusterExpiration = lifetimeStartedOn + this.config.MaximumClusterUptime;
 
                 try
                 {
@@ -266,7 +267,8 @@ namespace PartyCluster.ClusterService
                     cluster.Address,
                     cluster.Ports,
                     newUserList,
-                    cluster.CreatedOn);
+                    cluster.CreatedOn,
+                    lifetimeStartedOn);
 
                 await clusterDictionary.SetAsync(tx, clusterId, updatedCluster);
                 await tx.CommitAsync();
@@ -506,13 +508,13 @@ namespace PartyCluster.ClusterService
             IEnumerable<KeyValuePair<int, Cluster>> activeClusters = await this.GetActiveClusters(clusterDictionary, cancellationToken);
             int activeClusterCount = activeClusters.Count();
 
-            double totalCapacity = activeClusterCount*this.config.MaximumUsersPerCluster;
+            double totalUserCapacity = activeClusterCount*this.config.MaximumUsersPerCluster;
 
-            double totalUsers = activeClusters
+            double activeUserCount = activeClusters
                 .Aggregate(0, (total, next) => total += next.Value.Users.Count());
 
-            double percentFull = totalCapacity > 0
-                ? totalUsers / totalCapacity
+            double percentFull = totalUserCapacity > 0
+                ? activeUserCount / totalUserCapacity
                 : 0;
             
             if (percentFull >= this.config.UserCapacityHighPercentThreshold)
@@ -591,7 +593,8 @@ namespace PartyCluster.ClusterService
                     address,
                     ports,
                     new List<ClusterUser>(cluster.Users),
-                    cluster.CreatedOn);
+                    cluster.CreatedOn,
+                    cluster.LifetimeStartedOn);
             }
             catch (InvalidOperationException e)
             {
@@ -650,7 +653,8 @@ namespace PartyCluster.ClusterService
                         cluster.Address,
                         cluster.Ports,
                         new List<ClusterUser>(cluster.Users),
-                        DateTimeOffset.UtcNow);
+                        DateTimeOffset.UtcNow,
+                        DateTimeOffset.MaxValue);
 
                 case ClusterOperationStatus.CreateFailed:
 
@@ -683,7 +687,7 @@ namespace PartyCluster.ClusterService
         private async Task<Cluster> ProcessReadyClusterAsync(Cluster cluster)
         {
             // Check for expiration. If the cluster has expired, mark it for removal.
-            if (DateTimeOffset.UtcNow - cluster.CreatedOn.ToUniversalTime() >= this.config.MaximumClusterUptime)
+            if (DateTimeOffset.UtcNow - cluster.LifetimeStartedOn.ToUniversalTime() >= this.config.MaximumClusterUptime)
             {
                 ServiceEventSource.Current.ServiceMessage(this, "Cluster expired: {0}", cluster.Address);
                 return new Cluster(ClusterStatus.Remove, cluster);
@@ -718,7 +722,8 @@ namespace PartyCluster.ClusterService
                     cluster.Address,
                     cluster.Ports,
                     cluster.Users,
-                    cluster.CreatedOn);
+                    cluster.CreatedOn,
+                    cluster.LifetimeStartedOn);
             }
             catch (Exception e)
             {
