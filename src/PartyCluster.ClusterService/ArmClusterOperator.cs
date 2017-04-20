@@ -31,8 +31,8 @@ namespace PartyCluster.ClusterService
             DataPackage dataPackage = serviceContext.CodePackageActivationContext.GetDataPackageObject("Data");
 
             this.UpdateClusterOperatorSettings(configPackage.Settings);
-            this.UpdateArmTemplateContent(dataPackage.Path);
-            this.UpdateArmParameterContent(dataPackage.Path);
+            this.armTemplate = this.GetArmTemplateContent(dataPackage.Path);
+            this.armParameters = this.GetArmParameterContent(dataPackage.Path);
 
             serviceContext.CodePackageActivationContext.ConfigurationPackageModifiedEvent
                 += this.CodePackageActivationContext_ConfigurationPackageModifiedEvent;
@@ -111,7 +111,6 @@ namespace PartyCluster.ClusterService
                     return ClusterOperationStatus.ClusterNotFound;
                 }
 
-
                 dpResult = templateDeploymentClient.Deployments.Get(name, name + "dp");
                 rgResult = templateDeploymentClient.ResourceGroups.Get(name);
             }
@@ -144,7 +143,6 @@ namespace PartyCluster.ClusterService
             {
                 return ClusterOperationStatus.Ready;
             }
-
 
             return ClusterOperationStatus.Unknown;
         }
@@ -222,8 +220,8 @@ namespace PartyCluster.ClusterService
 
         private void CodePackageActivationContext_DataPackageModifiedEvent(object sender, PackageModifiedEventArgs<DataPackage> e)
         {
-            this.UpdateArmTemplateContent(e.NewPackage.Path);
-            this.UpdateArmParameterContent(e.NewPackage.Path);
+            this.armTemplate = this.GetArmTemplateContent(e.NewPackage.Path);
+            this.armParameters = this.GetArmParameterContent(e.NewPackage.Path);
         }
 
         private void UpdateClusterOperatorSettings(ConfigurationSettings settings)
@@ -242,20 +240,26 @@ namespace PartyCluster.ClusterService
                 clusterConfigParameters["Password"].DecryptValue());
         }
 
-        private void UpdateArmTemplateContent(string templateDataPath)
+        private string GetArmTemplateContent(string templateDataPath)
         {
+            var armTemplateContent = string.Empty;
             using (StreamReader reader = new StreamReader(Path.Combine(templateDataPath, "PartyClusterTemplate.json")))
             {
-                this.armTemplate = reader.ReadToEnd();
+                armTemplateContent = reader.ReadToEnd();
             }
+
+            return armTemplateContent;
         }
 
-        private void UpdateArmParameterContent(string templateDataPath)
+        private string GetArmParameterContent(string templateDataPath)
         {
+            var armParameterContent = string.Empty;
             using (StreamReader reader = new StreamReader(Path.Combine(templateDataPath, "PartyClusterTemplate.Parameters.json")))
             {
-                this.armParameters = reader.ReadToEnd();
+                armParameterContent = reader.ReadToEnd();
             }
+
+            return armParameterContent;
         }
     }
 }

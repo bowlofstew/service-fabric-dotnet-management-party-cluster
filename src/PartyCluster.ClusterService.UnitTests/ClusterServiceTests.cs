@@ -855,6 +855,7 @@ namespace PartyCluster.ClusterService.UnitTests
                 String.Empty,
                 new int[0],
                 new ClusterUser[0],
+                DateTimeOffset.MinValue,
                 DateTimeOffset.UtcNow - config.MaximumClusterUptime);
 
             Cluster actual = await target.ProcessClusterStatusAsync(cluster);
@@ -877,7 +878,7 @@ namespace PartyCluster.ClusterService.UnitTests
 
             int id = 5;
             string email = "test@test.com";
-            Cluster cluster = new Cluster("test", ClusterStatus.Ready, 0, 0, "", new[] {80}, new ClusterUser[0], DateTimeOffset.UtcNow);
+            Cluster cluster = new Cluster("test", ClusterStatus.Ready, 0, 0, "", new[] {80}, new ClusterUser[0], DateTimeOffset.UtcNow, DateTimeOffset.MaxValue);
 
             IReliableDictionary<int, Cluster> dictionary =
                 await stateManager.GetOrAddAsync<IReliableDictionary<int, Cluster>>(ClusterService.ClusterDictionaryName);
@@ -956,7 +957,8 @@ namespace PartyCluster.ClusterService.UnitTests
                 expectedClusterAddress,
                 new[] {expectedUserPort},
                 new ClusterUser[0],
-                DateTimeOffset.UtcNow);
+                DateTimeOffset.UtcNow,
+                DateTimeOffset.MaxValue);
 
             IReliableDictionary<int, Cluster> dictionary =
                 await stateManager.GetOrAddAsync<IReliableDictionary<int, Cluster>>(ClusterService.ClusterDictionaryName);
@@ -994,7 +996,8 @@ namespace PartyCluster.ClusterService.UnitTests
                 "",
                 new[] {80},
                 new[] {new ClusterUser()},
-                DateTimeOffset.UtcNow);
+                DateTimeOffset.UtcNow,
+                DateTimeOffset.MaxValue);
 
             IReliableDictionary<int, Cluster> dictionary =
                 await stateManager.GetOrAddAsync<IReliableDictionary<int, Cluster>>(ClusterService.ClusterDictionaryName);
@@ -1032,7 +1035,8 @@ namespace PartyCluster.ClusterService.UnitTests
                 "",
                 new[] {80},
                 new ClusterUser[0],
-                DateTimeOffset.UtcNow);
+                DateTimeOffset.UtcNow,
+                DateTimeOffset.MaxValue);
 
             IReliableDictionary<int, Cluster> dictionary =
                 await stateManager.GetOrAddAsync<IReliableDictionary<int, Cluster>>(ClusterService.ClusterDictionaryName);
@@ -1082,7 +1086,8 @@ namespace PartyCluster.ClusterService.UnitTests
                 "",
                 new[] {80, 81},
                 new[] {new ClusterUser(email, 80)},
-                DateTimeOffset.UtcNow);
+                DateTimeOffset.UtcNow,
+                DateTimeOffset.MaxValue);
 
             int idWithoutUser = 6;
             Cluster clusterWithoutUser = new Cluster(
@@ -1093,7 +1098,8 @@ namespace PartyCluster.ClusterService.UnitTests
                 "",
                 new[] {80, 81},
                 new ClusterUser[0],
-                DateTimeOffset.UtcNow);
+                DateTimeOffset.UtcNow,
+                DateTimeOffset.MaxValue);
 
 
             IReliableDictionary<int, Cluster> dictionary =
@@ -1133,6 +1139,7 @@ namespace PartyCluster.ClusterService.UnitTests
                 "",
                 new[] {80, 81},
                 new ClusterUser[0],
+                DateTimeOffset.UtcNow,
                 DateTimeOffset.UtcNow - (config.MaximumClusterUptime + TimeSpan.FromSeconds(1)));
 
             IReliableDictionary<int, Cluster> dictionary =
@@ -1171,7 +1178,8 @@ namespace PartyCluster.ClusterService.UnitTests
                 "",
                 new[] {80},
                 new[] {new ClusterUser(email, 80)},
-                DateTimeOffset.UtcNow);
+                DateTimeOffset.UtcNow,
+                DateTimeOffset.MaxValue);
 
             IReliableDictionary<int, Cluster> dictionary =
                 await stateManager.GetOrAddAsync<IReliableDictionary<int, Cluster>>(ClusterService.ClusterDictionaryName);
@@ -1243,6 +1251,7 @@ namespace PartyCluster.ClusterService.UnitTests
                 String.Empty,
                 new int[0],
                 users,
+                DateTimeOffset.MaxValue,
                 DateTimeOffset.MaxValue);
         }
     }

@@ -14,8 +14,8 @@ namespace PartyCluster.ClusterService
             this.RefreshInterval = TimeSpan.FromSeconds(1);
             this.MinimumClusterCount = 10;
             this.MaximumClusterCount = 100;
-            this.MaximumUsersPerCluster = 10;
-            this.MaximumClusterUptime = TimeSpan.FromHours(2);
+            this.MaximumUsersPerCluster = 1;
+            this.MaximumClusterUptime = TimeSpan.FromHours(1);
             this.UserCapacityHighPercentThreshold = 0.75;
             this.UserCapacityLowPercentThreshold = 0.25;
         }
