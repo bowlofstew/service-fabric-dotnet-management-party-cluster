@@ -31,6 +31,11 @@ namespace PartyCluster.ClusterService
         internal const int ClusterHttpGatewayPort = 19080;
 
         /// <summary>
+        /// List of ports that are opened up on each cluster
+        /// </summary>
+        private static readonly IEnumerable<int> ports = new ReadOnlyCollection<int>(new int[] { 443, 8080, 8081, 8082, 8083 });
+
+        /// <summary>
         /// A timeout value for Reliable Collection operations.
         /// The default value is 4 seconds.
         /// </summary>
@@ -569,14 +574,7 @@ namespace PartyCluster.ClusterService
         private async Task<Cluster> ProcessNewClusterAsync(Cluster cluster)
         {
             try
-            {
-                List<int> ports = new List<int>();
-                Random random = new Random();
-                for (int i = 0; i < 5; ++i)
-                {
-                    ports.Add(random.Next(8000, 9000));
-                }
-
+            { 
                 string address = await this.clusterOperator.CreateClusterAsync(cluster.InternalName, ports);
 
                 ServiceEventSource.Current.ServiceMessage(this, "Creating cluster: {0} with ports {1}", 
