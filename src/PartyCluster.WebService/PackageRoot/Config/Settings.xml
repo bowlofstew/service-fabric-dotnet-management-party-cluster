@@ -2,9 +2,4 @@
 <Settings xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns="http://schemas.microsoft.com/2011/01/fabric">
   <!-- Add your custom configuration sections and parameters here -->
   
-  <Section Name="RecaptchaSettings">
-    <Parameter Name="Key" IsEncrypted="true" Value="" />
-    <Parameter Name="VerifyUrl" Value="https://www.google.com/recaptcha/api/siteverify"/>
-  </Section>
-  
 </Settings>

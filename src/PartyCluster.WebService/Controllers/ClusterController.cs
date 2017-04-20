@@ -24,13 +24,7 @@ namespace PartyCluster.WebService.Controllers
     {
         private static Resx messageResources = new Resx("PartyCluster.WebService.Resources.Messages");
         private static Resx clusterNameResources = new Resx("PartyCluster.WebService.Resources.ClusterNames");
-        private readonly ICaptcha captcha;
-
-        public ClusterController(ICaptcha captcha)
-        {
-            this.captcha = captcha;
-        }
-
+        
         [HttpGet]
         [Route("clusters")]
         public async Task<IHttpActionResult> Get()
@@ -63,21 +57,13 @@ namespace PartyCluster.WebService.Controllers
         {
             try
             {
-                if (user == null || String.IsNullOrWhiteSpace(user.UserEmail) || String.IsNullOrWhiteSpace(user.CaptchaResponse))
+                if (user == null || String.IsNullOrWhiteSpace(user.UserEmail))
                 {
                     return this.Request.CreateResponse(
                         HttpStatusCode.BadRequest,
                         new BadRequestViewModel("MissingInput", messageResources.Manager.GetString("MissingInput"), "Missing input."));
                 }
-
-                // validate captcha.
-                bool captchaValid = await this.captcha.VerifyAsync(user.CaptchaResponse);
-                if (!captchaValid)
-                {
-                    return this.Request.CreateResponse(
-                        HttpStatusCode.Forbidden,
-                        new BadRequestViewModel("InvalidCaptcha", messageResources.Manager.GetString("InvalidCaptcha"), "Invalid parameter: captcha"));
-                }
+                
 
                 ServiceUriBuilder builder = new ServiceUriBuilder("ClusterService");
                 IClusterService clusterService = ServiceProxy.Create<IClusterService>(builder.ToUri(), new ServicePartitionKey(1));

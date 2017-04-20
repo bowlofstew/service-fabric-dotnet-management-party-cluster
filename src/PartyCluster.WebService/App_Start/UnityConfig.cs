@@ -16,15 +16,7 @@ namespace PartyCluster.WebService
         public static void RegisterComponents(HttpConfiguration config, StatelessServiceContext serviceContext)
         {
             UnityContainer container = new UnityContainer();
-
-            container.RegisterType<ClusterController>(
-                new TransientLifetimeManager(),
-                new InjectionConstructor(
-#if LOCAL
-                    new FakeCaptcha()));
-#else
-                    new Recaptcha(serviceContext)));
-#endif
+            
 
             config.DependencyResolver = new UnityDependencyResolver(container);
         }

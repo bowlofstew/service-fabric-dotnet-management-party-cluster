@@ -107,7 +107,7 @@ function PartyClusters(api) {
         var joinClusterWindow = $('.join-cluster-dialog');
         var joinClusterProgressWindow = $('.join-cluster-progress');
         var email = $('#join-useremail').val();
-        var captchaResponse = $("#g-recaptcha-response").val();
+        var captchaResponse = '';
 
         self.joinClusterDialog.Change(joinClusterWindow, joinClusterProgressWindow);
 

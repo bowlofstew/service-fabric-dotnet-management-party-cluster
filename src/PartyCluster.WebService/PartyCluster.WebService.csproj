@@ -344,12 +344,10 @@
     <Compile Include="App_Start\FormatterConfig.cs" />
     <Compile Include="App_Start\UnityConfig.cs" />
     <Compile Include="Controllers\ClusterController.cs" />
-    <Compile Include="FakeCaptcha.cs" />
     <Compile Include="IOwinAppBuilder.cs" />
     <Compile Include="Models\JoinClusterRequest.cs" />
     <Compile Include="OwinCommunicationListener.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="Recaptcha.cs" />
     <Compile Include="Resources\ClusterNames.Designer.cs">
       <DependentUpon>ClusterNames.resx</DependentUpon>
       <AutoGen>True</AutoGen>

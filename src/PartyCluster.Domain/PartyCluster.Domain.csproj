@@ -96,7 +96,6 @@
     <Compile Include="ApplicationDeployStatus.cs" />
     <Compile Include="HyperlinkView.cs" />
     <Compile Include="IApplicationOperator.cs" />
-    <Compile Include="ICaptcha.cs" />
     <Compile Include="IClusterOperator.cs" />
     <Compile Include="IClusterService.cs" />
     <Compile Include="IApplicationDeployService.cs" />
