@@ -104,7 +104,7 @@ namespace PartyCluster.ApplicationDeployService.UnitTests
         }
 
         [TestMethod]
-        public async Task SendEventSourceMessages()
+        public void SendEventSourceMessages()
         {
             string cluster = "ClusterName";
             string appType = "ApplicationTypeName";
