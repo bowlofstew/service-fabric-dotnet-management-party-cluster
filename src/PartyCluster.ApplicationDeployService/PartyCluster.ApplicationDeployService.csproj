@@ -274,9 +274,6 @@
     <Compile Include="FabricClientApplicationOperator.cs" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="eventFlowConfig.json">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
     <None Include="PackageRoot\ApplicationPackages\Chatter.zip" />
     <None Include="PackageRoot\Config\eventFlowConfig.json" />
     <None Include="PackageRoot\Config\Settings.xml" />

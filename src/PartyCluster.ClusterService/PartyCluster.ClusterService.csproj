@@ -372,9 +372,6 @@
     <Compile Include="ServiceEventSource.cs" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="eventFlowConfig.json">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
     <None Include="PackageRoot\Config\eventFlowConfig.json" />
     <None Include="PackageRoot\Config\Settings.xml">
       <SubType>Designer</SubType>

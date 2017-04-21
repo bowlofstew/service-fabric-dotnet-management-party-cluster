@@ -17,12 +17,11 @@
   "outputs": [
     {
       "type": "StdOutput"
+    },
+    {
+      "type": "ApplicationInsights",
+      "instrumentationKey": "== instrumentation key here =="
     }
-    // Please update the instrumentationKey.
-    //{
-    //  "type": "ApplicationInsights",
-    //  "instrumentationKey": "00000000-0000-0000-0000-000000000000"
-    //}
   ],
   "schemaVersion": "2016-08-11",
   // "healthReporter": {
