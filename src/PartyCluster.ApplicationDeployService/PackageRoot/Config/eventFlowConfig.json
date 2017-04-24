@@ -4,7 +4,6 @@
       "type": "EventSource",
       "sources": [
         { "providerName": "Microsoft-ServiceFabric-Services" },
-        { "providerName": "Microsoft-ServiceFabric-Actors" },
         { "providerName": "MyCompany-PartyCluster-ApplicationDeployService" }
       ]
     }
@@ -30,7 +29,7 @@
     },
     {
       "type": "ApplicationInsights",
-      "instrumentationKey": "== instrumentation key here =="
+      "instrumentationKey": ""
     }
   ],
   "schemaVersion": "2016-08-11",

@@ -27,12 +27,6 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "ARM", "ARM", "{16EEA1A4-7A7
 		..\ARM\PartyClusterServiceTemplate.parameters.json = ..\ARM\PartyClusterServiceTemplate.parameters.json
 	EndProjectSection
 EndProject
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "WADConfig", "WADConfig", "{D0F0D8D4-689D-42DB-A43A-524630D87D19}"
-	ProjectSection(SolutionItems) = preProject
-		..\WADConfig\WadConfigUpdate.json = ..\WADConfig\WadConfigUpdate.json
-		..\WADConfig\WadConfigUpdateParams.json = ..\WADConfig\WadConfigUpdateParams.json
-	EndProjectSection
-EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		CloudRelease|x64 = CloudRelease|x64

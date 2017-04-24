@@ -4,7 +4,7 @@
       "type": "EventSource",
       "sources": [
         { "providerName": "Microsoft-ServiceFabric-Services" },
-        { "providerName": "Microsoft-ServiceFabric-Actors" }
+        { "providerName": "MyCompany-PartyCluster-WebService" }
       ]
     }
   ],
@@ -17,12 +17,11 @@
   "outputs": [
     {
       "type": "StdOutput"
+    },
+    {
+      "type": "ApplicationInsights",
+      "instrumentationKey": ""
     }
-    // Please update the instrumentationKey.
-    //{
-    //  "type": "ApplicationInsights",
-    //  "instrumentationKey": "00000000-0000-0000-0000-000000000000"
-    //}
   ],
   "schemaVersion": "2016-08-11",
   // "healthReporter": {
