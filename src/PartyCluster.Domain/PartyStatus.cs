@@ -5,20 +5,10 @@
 
 namespace PartyCluster.Domain
 {
-    public enum JoinClusterFailedReason : byte
+    public enum PartyStatus
     {
-        ClusterFull,
-
-        ClusterExpired,
-
-        ClusterNotReady,
-
-        ClusterDoesNotExist,
-
-        UserAlreadyJoined,
-
-        NoPortsAvailable,
-
-        SendMailFailed
+        Closed = 0,
+        Open,
+        Joined
     }
 }

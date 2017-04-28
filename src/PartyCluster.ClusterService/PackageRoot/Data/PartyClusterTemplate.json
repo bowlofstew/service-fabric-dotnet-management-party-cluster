@@ -89,15 +89,27 @@
             }
         },
         "supportLogStorageAccountType": {
-            "type": "string",
-            "allowedValues": [
-                "Standard_LRS",
-                "Standard_GRS"
-            ],
-            "defaultValue": "Standard_LRS",
-            "metadata": {
-                "description": "Replication option for the support log storage account"
-            }
+          "type": "string",
+          "allowedValues": [
+            "Standard_LRS",
+            "Standard_GRS"
+          ],
+          "defaultValue": "Standard_LRS",
+          "metadata": {
+            "description": "Replication option for the support log storage account"
+          }
+        },
+        "privateBuildVersion": {
+          "type": "string",
+          "defaultValue": ""
+        },
+        "privateBuildBuildUrl": {
+          "type": "string",
+          "defaultValue": ""
+        },
+        "privateBuildFabricSettingsUrl": {
+          "type": "string",
+          "defaultValue": ""
         }
     },
     "variables": {
@@ -142,12 +154,14 @@
     },
     "resources": [
         {
-            "apiVersion": "2015-05-01-preview",
+            "apiVersion": "2016-01-01",
             "type": "Microsoft.Storage/storageAccounts",
             "name": "[variables('vmStorageAccountName')]",
             "location": "[variables('computeLocation')]",
-            "properties": {
-                "accountType": "[parameters('storageAccountType')]"
+            "properties": {},
+            "kind": "Storage",
+            "sku": {
+              "name": "[parameters('storageAccountType')]"
             },
             "tags": {
                 "resourceType": "Service Fabric",
@@ -155,12 +169,14 @@
             }
         },
         {
-            "apiVersion": "2015-05-01-preview",
+            "apiVersion": "2016-01-01",
             "type": "Microsoft.Storage/storageAccounts",
             "name": "[variables('supportLogStorageAccountName')]",
             "location": "[variables('computeLocation')]",
-            "properties": {
-                "accountType": "[parameters('supportLogStorageAccountType')]"
+            "properties": {},
+            "kind": "Storage",
+            "sku": {
+              "name": "[parameters('supportLogStorageAccountType')]"
             },
             "tags": {
                 "resourceType": "Service Fabric",
@@ -168,7 +184,7 @@
             }
         },
         {
-            "apiVersion": "2015-05-01-preview",
+            "apiVersion": "2015-06-15",
             "type": "Microsoft.Network/virtualNetworks",
             "name": "[variables('virtualNetworkName')]",
             "location": "[variables('computeLocation')]",
@@ -193,7 +209,7 @@
             }
         },
         {
-            "apiVersion": "2015-05-01-preview",
+            "apiVersion": "2015-06-15",
             "type": "Microsoft.Network/publicIPAddresses",
             "name": "[concat(variables('lbIPName'),'-','0')]",
             "location": "[variables('computeLocation')]",
@@ -209,7 +225,7 @@
             }
         },
         {
-            "apiVersion": "2015-05-01-preview",
+            "apiVersion": "2015-06-15",
             "type": "Microsoft.Network/loadBalancers",
             "name": "[concat('LB','-', parameters('clusterName'),'-',variables('vmNodeType0Name'))]",
             "location": "[variables('computeLocation')]",
@@ -513,7 +529,8 @@
                                         "clusterEndpoint": "[reference(parameters('clusterName')).clusterEndpoint]",
                                         "nodeTypeRef": "[variables('vmNodeType0Name')]",
                                         "dataPath": "D:\\\\SvcFab",
-                                        "durabilityLevel": "Bronze"
+                                        "durabilityLevel": "Bronze",
+                                        "nicPrefixOverride": "[variables('subnet0Prefix')]"
                                     },
                                     "typeHandlerVersion": "1.0"
                                 }
@@ -584,7 +601,7 @@
             }
         },
         {
-            "apiVersion": "2016-03-01",
+            "apiVersion": "2016-09-01-privatepreview",
             "type": "Microsoft.ServiceFabric/clusters",
             "name": "[parameters('clusterName')]",
             "location": "[parameters('clusterLocation')]",
@@ -594,6 +611,7 @@
             "properties": {
                 "clientCertificateCommonNames": [ ],
                 "clientCertificateThumbprints": [ ],
+                "clusterCodeVersion": "[parameters('privateBuildVersion')]",
                 "clusterState": "Default",
                 "diagnosticsStorageAccountConfig": {
                     "blobEndpoint": "[concat('https://',variables('supportLogStorageAccountName'),'.blob.core.windows.net/')]",
@@ -651,8 +669,16 @@
                     }
                 ],
                 "provisioningState": "Default",
-                "reliabilityLevel": "Bronze",
-                "vmImage": "Windows"
+                "reliabilityLevel": "Silver",
+                "upgradeMode": "Manual",
+                "vmImage": "Windows",
+                "privateBuilds": [
+                  {
+                    "Version": "[parameters('privateBuildVersion')]",
+                    "BuildUrl": "[parameters('privateBuildBuildUrl')]",
+                    "FabricSettingsUrl": "[parameters('privateBuildFabricSettingsUrl')]"
+                  }
+                ]
             },
             "tags": {
                 "resourceType": "Service Fabric",

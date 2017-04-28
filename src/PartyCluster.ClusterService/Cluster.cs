@@ -7,6 +7,7 @@ namespace PartyCluster.ClusterService
 {
     using System;
     using System.Collections.Generic;
+    using System.Linq;
     using System.Runtime.Serialization;
 
     /// <summary>
@@ -18,6 +19,9 @@ namespace PartyCluster.ClusterService
     [DataContract]
     internal struct Cluster
     {
+        private static readonly string emptyClusterName = "_empty_";
+        public static readonly Cluster Empty = new Cluster(emptyClusterName);
+
         /// <summary>
         /// Creates a cluster in the "New" state with the given name.
         /// </summary>
@@ -144,5 +148,23 @@ namespace PartyCluster.ClusterService
         /// </summary>
         [DataMember]
         public DateTimeOffset LifetimeStartedOn { get; private set; }
+
+        public bool IsEmpty { get { return this.InternalName == emptyClusterName; } }
+
+        public bool IsJoinedBy(string userId)
+        {
+            return this.Users.Count() > 0
+                && this.Users.Any(x => String.Equals(x.Email, userId, StringComparison.OrdinalIgnoreCase));
+        }
+
+        public TimeSpan RemainingLifetime()
+        {
+            if (this.LifetimeStartedOn == DateTimeOffset.MaxValue)
+            {
+                return TimeSpan.MaxValue;
+            }
+
+            return DateTimeOffset.UtcNow - this.LifetimeStartedOn.ToUniversalTime();
+        }
     }
 }

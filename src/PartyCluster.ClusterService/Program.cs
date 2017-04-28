@@ -24,7 +24,6 @@ namespace PartyCluster.ClusterService
             {
                 using (var pipeline = ServiceFabricDiagnosticPipelineFactory.CreatePipeline("PartyCluster.ClusterService"))
                 {
-
                     ServiceRuntime.RegisterServiceAsync(
                         "ClusterServiceType",
                         context =>
@@ -36,8 +35,9 @@ namespace PartyCluster.ClusterService
                             new FakeClusterOperator(stateManager),
                             new FakeMailer(),
 #else
-                        new ArmClusterOperator(context),
-                            new SendGridMailer(context),
+                            new ArmClusterOperator(context),
+                            ////new SendGridMailer(context),
+                            new FakeMailer(),
 #endif
                             ServiceProxy.Create<IApplicationDeployService>(
                                     new ServiceUriBuilder("ApplicationDeployService").ToUri(),

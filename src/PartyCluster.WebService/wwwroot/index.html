@@ -7,13 +7,12 @@
     <meta http-equiv="content-type" content="application/force-download">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Microsoft Azure Service Fabric Party Clusters</title>
-
-    <script type="text/javascript" src="Scripts/jquery-2.1.4.js"></script>
-    <script type="text/javascript" src="Scripts/main.js"></script>
+    <script type="text/javascript" src="/Scripts/jquery-2.1.4.js"></script>
+    <script type="text/javascript" src="/Scripts/main.js"></script>
 
     <!-- Bootstrap -->
-    <link href="Content/bootstrap.css" rel="stylesheet">
-    <link href="Content/main.css" rel="stylesheet">
+    <link href="/Content/bootstrap.css" rel="stylesheet">
+    <link href="/Content/main.css" rel="stylesheet">
 </head>
 <body>
     <header>
@@ -21,7 +20,7 @@
             <h2 class="azure-heading">Microsoft Azure Service Fabric</h2>
             <h1 class="party-heading">Party Clusters</h1>
             <h3 class="party-subheading">Try Service Fabric on Azure for free!</h3>
-            <a class="button party-now-button" href="javascript:void(0)">Party Now!</a>
+            
             <a class="button download" href="http://aka.ms/servicefabricSDK">Download SDK</a>
         </div>
     </header>
@@ -43,23 +42,56 @@
         <div class="dialog join-cluster-progress">
             <h3>Reticulating splines..</h3>
         </div>
-        <div class="dialog join-cluster-dialog-success">
+        <!--<div class="dialog join-cluster-dialog-success">
             <h3>Invitation sent!</h3>
             <p>An invitation email with information on how to connect to this cluster has been sent to you. Once this cluster expires, you're free to connect again to another one.</p>
-        </div>
+        </div>-->
         <div class="dialog join-cluster-dialog-failed">
             <h3>Oops!</h3>
             <p></p>
         </div>
-        <div class="cluster-list clearfix">
-            <table class="clearfix"></table>
+        <div class="party-area clearfix">
+            <div id="party-open-section" style="display: none">
+                <h3 class="party-area-header">We have free clusters available for you.</h3>
+                <a class="button party-now-button" href="javascript:void(0)">Party Now!</a>
+            </div>
+            <div id="party-closed-section" style="display: none">
+                <h3 class="party-area-header">We\'re sorry. It looks like all the free clusters are currently in use. Please come back later.</h3>
+            </div>
+            <div id="party-joined-section" class="cluster-details" style="display: none">
+                <h3 class="party-area-header">You have joined an active Service Fabric cluster.</h3>
+                <div class="cluster-details-row">
+                    <div class="cluster-details-item cluster-details-left">Connection Endpoint</div>
+                    <div id="cluster-details-endpoint" class="cluster-details-item cluster-details-right">.</div>
+                </div>
+                <div class="cluster-details-row">
+                    <div class="cluster-details-item cluster-details-left">UserPort</div>
+                    <div id="cluster-details-userPort" class="cluster-details-item cluster-details-right">.</div>
+                </div>
+                <div class="cluster-details-row">
+                    <div class="cluster-details-item cluster-details-left">ExpirationTime</div>
+                    <div id="cluster-details-expTime" class="cluster-details-item cluster-details-right">.</div>
+                </div>
+                <div class="cluster-details-row">
+                    <div class="cluster-details-item cluster-details-left">TimeRemaining</div>
+                    <div id="cluster-details-timeRemaining" class="cluster-details-item cluster-details-right">.</div>
+                </div>
+                <div class="cluster-details-row">
+                    <div class="cluster-details-item cluster-details-left">Service Fabric Explorer</div>
+                    <div id="cluster-details-sfe" class="cluster-details-item cluster-details-right"><a id="sfe-link" href="" target="_blank">.</a></div>
+                </div>
+            </div>
+            <div id="party-status" class="party-status"></div>
         </div>
+        <!--<div class="cluster-list clearfix hidden">
+            <table class="clearfix"></table>
+        </div>-->
         <div class="faq">
             <ul>
                 <li>
                     <h4>what's a party cluster?</h4>
                     <p>
-                        Party clusters are open, public Service Fabric clusters hosted on Azure and run by the Service Fabric team where anyone can deploy applications and learn about the platform. For free.
+                        Party clusters are open, public Service Fabric clusters hosted on Azure and run by the Service Fabric team where anyone can deploy applications and learn about the platform. For free!
                     </p>
                 </li>
                 <li>

@@ -1,20 +1,56 @@
 ﻿function Api() {
     var self = this;
     this.appPath = '';
-    this.refreshRate = 5000;
+    this.refreshRate = 50000;
     this.serviceUrl = location.protocol + '//' + location.hostname + (location.port ? ':' + location.port : '') + self.appPath;
 
-    this.GetClusters = function (result) {
-        this.httpGetJson(self.serviceUrl + '/api/clusters', result);
+    this.GetClusters = function (onResult) {
+        this.httpGetJson(self.serviceUrl + '/api/clusters', onResult)
     };
 
-    this.JoinCluster = function (clusterId, useremail, captchaResponse, result, failure) {
+    this.JoinCluster = function (clusterId, useremail, result, failure) {
         $.ajax({
             url: self.serviceUrl + '/api/clusters/join/' + clusterId,
             type: 'POST',
             contentType: 'application/json',
             datatype: 'json',
-            data: "{ UserEmail: '" + useremail + "', CaptchaResponse: '" + captchaResponse + "' }"
+            data: "{ UserEmail: '" + useremail + "' }"
+        })
+	   .done(function (data) {
+	       result(data);
+	   })
+	   .fail(function (xhr) {
+	       var json = $.parseJSON(xhr.responseText);
+	       failure(json);
+	       return;
+	   });
+    };
+
+    this.JoinRandomCluster = function (userId, result, failure) {
+        $.ajax({
+            url: self.serviceUrl + '/api/clusters/joinRandom/' + userId,
+            type: 'POST',
+            contentType: 'application/json',
+            datatype: 'json',
+            data: "{ userId: '" + userId + "' }"
+        })
+	   .done(function (data) {
+	       result(data);
+	   })
+	   .fail(function (xhr) {
+	       var json = $.parseJSON(xhr.responseText);
+	       failure(json);
+	       return;
+	   });
+    };
+
+    this.GetPartyStatus = function (userId, result, failure) {
+        $.ajax({
+            url: self.serviceUrl + '/api/clusters/partyStatus/' + userId,
+            type: 'POST',
+            contentType: 'application/json',
+            datatype: 'json',
+            data: "{ userId: '" + userId + "' }"
         })
 	   .done(function (data) {
 	       result(data);
@@ -69,75 +105,81 @@ function Dialog() {
     });
 };
 
-function SelectedCluster(id, name, autoRetry) {
-    var self = this;
-    this.Id = id;
-    this.Name = name;
-    this.AutoRetry = autoRetry;
-}
-
 function PartyClusters(api) {
     var self = this;
     this.api = api;
     this.refreshRate = 5000;
     this.joinClusterDialog = new Dialog();
-    this.selectedCluster;
+    this.clusterList;
+    this.userView;
+    this.userId = '';
+    this.clusterConnectionPort = 19000;
+    this.clusterHttpGatewayPort = 19080;
 
     this.Initialize = function () {
-        this.PopulateClusterList();
+        this.UpdateClusterList();
         $('.party-now-button').click(function () {
-            try {
-                var id = self.SelectRandomCluster();
-                self.selectedCluster = new SelectedCluster(id, 'Party now!', true);
-                self.ShowJoinClusterDialog();
-            }
-            catch (exception) {
-                alert('There are currently no clusters available. Please try again later.');
-            }
+            self.JoinRandomCluster();
         });
 
         $('.join-now-button').click(function () {
-            self.JoinCluster();
+            self.JoinPartyCluster(3);
         });
 
-        setInterval(this.PopulateClusterList, self.refreshRate);
+        $('.join-cluster-dialog').keypress(function (e) {
+            // handle enter key press
+            if (e.which == 13) {
+                $('.join-now-button').click();
+            }
+        });
+
+
+        setInterval(this.UpdateClusterList, self.refreshRate);
     };
 
-    this.JoinCluster = function () {
+    this.JoinRandomCluster = function () {
+        this.ShowJoinClusterDialog();
+    }
+
+    this.JoinPartyCluster = function (retryCount) {
         var joinClusterWindow = $('.join-cluster-dialog');
         var joinClusterProgressWindow = $('.join-cluster-progress');
-        var email = $('#join-useremail').val();
-        var captchaResponse = '';
+
+        var userId = $('#join-useremail').val();
+        if (userId == null || userId == '') {
+            return;
+        }
+        self.userId = userId;
 
         self.joinClusterDialog.Change(joinClusterWindow, joinClusterProgressWindow);
 
-        self.api.JoinCluster(
-            self.selectedCluster.Id,
-            email,
-			captchaResponse,
+        self.api.JoinRandomCluster(
+            userId,
             function (data) {
-                var joinClusterSuccessWindow = $('.join-cluster-dialog-success');
-                self.joinClusterDialog.Change(joinClusterProgressWindow, joinClusterSuccessWindow);
+                self.joinClusterDialog.Hide(joinClusterProgressWindow);
+                self.userView = data;
+                self.DisplayPartyJoined();
             },
             function (data) {
-                if (self.selectedCluster.AutoRetry) {
+                if (retryCount > 0) {
                     switch (data.Code) {
                         case "ClusterFull":
                         case "ClusterExpired":
                         case "ClusterNotReady":
                         case "ClusterDoesNotExist":
                         case "NoPortsAvailable":
-                            var id = self.SelectRandomCluster();
-                            self.selectedCluster = new SelectedCluster(id, 'Party now!', true);
-                            setTimeout(self.JoinCluster, self.refreshRate)
+                            self.JoinRandomCluster(retryCount - 1);
                             return;
                     }
                 }
 
-                var failedClusterWindow = $('.join-cluster-dialog-failed');
-                $('p', failedClusterWindow).text(data.Message);
-
-                self.joinClusterDialog.Change(joinClusterProgressWindow, failedClusterWindow);
+                if (self.IsPartyJoined(data)) {
+                    self.joinClusterDialog.Hide(joinClusterProgressWindow);
+                    self.DisplayPartyJoined();
+                }
+                else {
+                    // TODO: handle failure
+                }
             }
         );
     }
@@ -145,77 +187,70 @@ function PartyClusters(api) {
     this.ShowJoinClusterDialog = function () {
         var joinClusterWindow = $('.join-cluster-dialog');
         self.joinClusterDialog.Show(joinClusterWindow);
-
-        grecaptcha.reset();
-        $('h3', joinClusterWindow).text(self.selectedCluster.Name);
-        $('#join-useremail', joinClusterWindow).val('');
     };
 
+    this.UpdateClusterList = function () {
+        self.api.GetPartyStatus(
+            self.userId,
+            function (result) {
+                self.userView = result;
 
-    this.SelectRandomCluster = function () {
-        var tableRows = $('.cluster-list table tr');
-        var clusterId = 0;
-        var clusterName = '';
-        for (var i = 0; i < tableRows.length; ++i) {
-            var $row = $(tableRows[i]);
-            if ($row.attr('data-users') < $row.attr('data-maxusers')) {
-                return $row.attr('data-id');
-            }
-        }
-        throw "No clusters currently available";
-    };
-
-
-    this.PopulateClusterList = function () {
-        self.api.GetClusters(function (data) {
-            var clusterTable = $('.cluster-list table');
-            clusterTable.empty();
-
-            $('<thead/>')
-               .append(
-                   $('<tr/>')
-                       .append(
-                           $('<th/>').text('Name'))
-                       .append(
-                           $('<th/>').text('Capacity'))
-                       .append(
-                           $('<th/>').text('Applications'))
-                       .append(
-                           $('<th/>').text('Services'))
-                       .append(
-                           $('<th/>').text('Time left'))
-                       .append(
-                           $('<th/>').text(''))
-                       )
-               .appendTo(clusterTable);
-
-            $('<tbody>')
-				.appendTo(clusterTable);
-
-            $.each(data, function (id, jObject) {
-                $('<tr data-id="' + jObject.ClusterId + '" data-users="' + jObject.UserCount + '" data-maxusers="' + jObject.MaxUsers + '" />')
-                .append(
-                    $('<td/>').text(jObject.Name))
-                .append(
-                    $('<td/>').text(jObject.Capacity))
-                .append(
-                    $('<td/>').text(jObject.ApplicationCount))
-                .append(
-                    $('<td/>').text(jObject.ServiceCount))
-                .append(
-                    $('<td/>').text(jObject.TimeRemaining))
-                .append(
-                    $('<td/>')
-                        .append(
-                            $('<a href="javascript:void(0);" class="button">')
-                                .text('Join!')
-                                    .click(function () {
-                                        self.selectedCluster = new SelectedCluster(jObject.ClusterId, jObject.Name, false);
-                                        self.ShowJoinClusterDialog();
-                                    })))
-            .appendTo(clusterTable);
-
+                if (self.IsPartyClosed(self.userView)) {
+                    self.DisplayPartyClosed();
+                }
+                else if (self.IsPartyJoined(self.userView)) {
+                    self.DisplayPartyJoined();
+                }
+                else if (self.IsPartyOpen(self.userView)) {
+                    self.DisplayPartyOpen();
+                }
+            },
+            function (error) {
+                // TODO: handle error
             });
-        });
     };
+
+    this.IsPartyOpen = function (userViewInstance) {
+        return userViewInstance.Status == "Open";
+    }
+
+    this.IsPartyClosed = function (userViewInstance) {
+        return userViewInstance.Status == "Closed";
+    }
+
+    this.IsPartyJoined = function (userViewInstance) {
+        return userViewInstance.Status == "Joined";
+    }
+
+    this.DisplayPartyOpen = function () {
+        $('#party-open-section').show();
+        $('#party-closed-section').hide();
+        $('#party-joined-section').hide();
+    }
+
+    this.DisplayPartyClosed = function () {
+        $('#party-open-section').hide();
+        $('#party-closed-section').show();
+        $('#party-joined-section').hide();
+    }
+
+    this.DisplayPartyJoined = function () {
+        $('#party-open-section').hide();
+        $('#party-closed-section').hide();
+        $('#party-joined-section').show();
+
+        this.DisplayActiveClusterInformation();
+    }
+
+    this.DisplayActiveClusterInformation = function () {
+        $('#cluster-details-endpoint').text(self.userView.ConnectionEndpoint);
+        $('#cluster-details-userPort').text(self.userView.UserPort);
+        $('#cluster-details-timeRemaining').text(self.userView.TimeRemaining);
+        $('#cluster-details-expTime').text(self.userView.ExpirationTime);
+
+        var uriPart = self.userView.ConnectionEndpoint.replace(self.clusterConnectionPort, self.clusterHttpGatewayPort);
+        var uri = 'http://' + uriPart + '/Explorer/index.html';
+        $('#sfe-link').text(uri);
+        $('#sfe-link').attr('href', uri);
+    }
 };

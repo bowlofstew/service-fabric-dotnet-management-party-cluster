@@ -1,5 +1,5 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
-<ApplicationManifest xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" ApplicationTypeName="PartyClusterType" ApplicationTypeVersion="1.1.0" xmlns="http://schemas.microsoft.com/2011/01/fabric">
+<ApplicationManifest xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" ApplicationTypeName="PartyClusterType" ApplicationTypeVersion="2.0.9" xmlns="http://schemas.microsoft.com/2011/01/fabric">
   <Parameters>
     <Parameter Name="ApplicationDeployService_MinReplicaSetSize" DefaultValue="2" />
     <Parameter Name="ApplicationDeployService_PartitionCount" DefaultValue="1" />
@@ -11,7 +11,7 @@
     <Parameter Name="PackageTempDirectory" DefaultValue="" />
   </Parameters>
   <ServiceManifestImport>
-    <ServiceManifestRef ServiceManifestName="ApplicationDeployServicePkg" ServiceManifestVersion="1.1.0" />
+    <ServiceManifestRef ServiceManifestName="ApplicationDeployServicePkg" ServiceManifestVersion="2.0.8" />
     <ConfigOverrides>
       <ConfigOverride Name="Config">
         <Settings>
@@ -23,11 +23,11 @@
     </ConfigOverrides>
   </ServiceManifestImport>
   <ServiceManifestImport>
-    <ServiceManifestRef ServiceManifestName="WebServicePkg" ServiceManifestVersion="1.0.5" />
+    <ServiceManifestRef ServiceManifestName="WebServicePkg" ServiceManifestVersion="2.0.8" />
     <ConfigOverrides />
   </ServiceManifestImport>
   <ServiceManifestImport>
-    <ServiceManifestRef ServiceManifestName="ClusterServicePkg" ServiceManifestVersion="1.1.0" />
+    <ServiceManifestRef ServiceManifestName="ClusterServicePkg" ServiceManifestVersion="2.0.9" />
     <ConfigOverrides />
   </ServiceManifestImport>
   <DefaultServices>

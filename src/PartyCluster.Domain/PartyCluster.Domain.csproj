@@ -91,6 +91,8 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="ApplicationView.cs" />
+    <Compile Include="PartyStatus.cs" />
+    <Compile Include="UserView.cs" />
     <Compile Include="ClusterView.cs" />
     <Compile Include="ClusterOperationStatus.cs" />
     <Compile Include="ApplicationDeployStatus.cs" />
@@ -100,8 +102,8 @@
     <Compile Include="IClusterService.cs" />
     <Compile Include="IApplicationDeployService.cs" />
     <Compile Include="ISendMail.cs" />
-    <Compile Include="JoinClusterFailedException.cs" />
-    <Compile Include="JoinClusterFailedReason.cs" />
+    <Compile Include="OperationFailedException.cs" />
+    <Compile Include="OperationFailedReason.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>

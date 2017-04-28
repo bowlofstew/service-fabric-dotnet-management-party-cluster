@@ -9,21 +9,21 @@ namespace PartyCluster.Domain
     using System.Runtime.Serialization;
 
     [Serializable]
-    public class JoinClusterFailedException : Exception
+    public class OperationFailedException : Exception
     {
-        public JoinClusterFailedException(JoinClusterFailedReason reason)
+        public OperationFailedException(OperationFailedReason reason)
             : base(reason.ToString())
         {
             this.Reason = reason;
         }
 
-        public JoinClusterFailedException(SerializationInfo info, StreamingContext context)
+        public OperationFailedException(SerializationInfo info, StreamingContext context)
             : base(info, context)
         {
-            this.Reason = (JoinClusterFailedReason) info.GetByte("Reason");
+            this.Reason = (OperationFailedReason) info.GetByte("Reason");
         }
 
-        public JoinClusterFailedReason Reason { get; }
+        public OperationFailedReason Reason { get; }
 
         public override void GetObjectData(SerializationInfo info, StreamingContext context)
         {

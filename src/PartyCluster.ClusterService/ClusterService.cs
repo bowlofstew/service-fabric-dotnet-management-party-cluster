@@ -123,11 +123,11 @@ namespace PartyCluster.ClusterService
         /// <param name="clusterId"></param>
         /// <param name="user"></param>
         /// <returns></returns>
-        public async Task JoinClusterAsync(int clusterId, string userEmail)
+        public async Task<UserView> JoinClusterAsync(int clusterId, string userId)
         {
-            if (String.IsNullOrWhiteSpace(userEmail))
+            if (String.IsNullOrWhiteSpace(userId))
             {
-                throw new ArgumentNullException("userEmail");
+                throw new ArgumentNullException("userId");
             }
 
             ServiceEventSource.Current.ServiceMessage(this, "Join cluster request. Cluster: {0}.", clusterId);
@@ -135,35 +135,25 @@ namespace PartyCluster.ClusterService
             IReliableDictionary<int, Cluster> clusterDictionary =
                 await this.StateManager.GetOrAddAsync<IReliableDictionary<int, Cluster>>(ClusterDictionaryName);
 
+            Tuple<string, string, int, TimeSpan, DateTimeOffset> clusterData = null;
+
             using (ITransaction tx = this.StateManager.CreateTransaction())
             {
                 IAsyncEnumerable<KeyValuePair<int, Cluster>> clusterAsyncEnumerable = await clusterDictionary.CreateEnumerableAsync(tx);
 
-                await clusterAsyncEnumerable.ForeachAsync(
-                    CancellationToken.None,
-                    item =>
-                    {
-                        if (item.Value.Users.Any(x => String.Equals(x.Email, userEmail, StringComparison.OrdinalIgnoreCase)))
-                        {
-                            ServiceEventSource.Current.ServiceMessage(
-                                this,
-                                "Join cluster request failed. User already exists on cluster: {0}.",
-                                item.Key);
-
-                            throw new JoinClusterFailedException(JoinClusterFailedReason.UserAlreadyJoined);
-                        }
-                    });
+                var joinedCluster = await this.GetClusterByUserAsync(clusterDictionary, userId, tx);
+                if (!joinedCluster.Item2.IsEmpty)
+                {
+                    ServiceEventSource.Current.ServiceMessage(this, "Join cluster request failed. User already exists on cluster: {0}.", joinedCluster.Item1);
+                    throw new OperationFailedException(OperationFailedReason.UserAlreadyJoined);
+                }
 
                 ConditionalValue<Cluster> result = await clusterDictionary.TryGetValueAsync(tx, clusterId, LockMode.Update);
 
                 if (!result.HasValue)
                 {
-                    ServiceEventSource.Current.ServiceMessage(
-                        this,
-                        "Join cluster request failed. Cluster does not exist. Cluster ID: {0}.",
-                        clusterId);
-
-                    throw new JoinClusterFailedException(JoinClusterFailedReason.ClusterDoesNotExist);
+                    ServiceEventSource.Current.ServiceMessage(this, "Join cluster request failed. Cluster does not exist. Cluster ID: {0}.", clusterId);
+                    throw new OperationFailedException(OperationFailedReason.ClusterDoesNotExist);
                 }
 
                 Cluster cluster = result.Value;
@@ -177,7 +167,7 @@ namespace PartyCluster.ClusterService
                         clusterId,
                         cluster.LifetimeStartedOn.ToUniversalTime());
 
-                    throw new JoinClusterFailedException(JoinClusterFailedReason.ClusterExpired);
+                    throw new OperationFailedException(OperationFailedReason.ClusterExpired);
                 }
 
                 // make sure the cluster is ready
@@ -189,7 +179,7 @@ namespace PartyCluster.ClusterService
                         clusterId,
                         cluster.Status);
 
-                    throw new JoinClusterFailedException(JoinClusterFailedReason.ClusterNotReady);
+                    throw new OperationFailedException(OperationFailedReason.ClusterNotReady);
                 }
 
                 if (cluster.Users.Count() >= this.config.MaximumUsersPerCluster)
@@ -200,71 +190,14 @@ namespace PartyCluster.ClusterService
                         clusterId,
                         cluster.Users.Count());
 
-                    throw new JoinClusterFailedException(JoinClusterFailedReason.ClusterFull);
-                }
-
-                int userPort;
-                string clusterAddress = cluster.Address;
-                DateTimeOffset lifetimeStartedOn = DateTimeOffset.UtcNow;
-                TimeSpan clusterTimeRemaining = this.config.MaximumClusterUptime - (DateTimeOffset.UtcNow - lifetimeStartedOn);
-                DateTimeOffset clusterExpiration = lifetimeStartedOn + this.config.MaximumClusterUptime;
-
-                try
-                {
-                    userPort = cluster.Ports.First(port => !cluster.Users.Any(x => x.Port == port));
-                }
-                catch (InvalidOperationException)
-                {
-                    ServiceEventSource.Current.ServiceMessage(
-                        this,
-                        "Join cluster request failed. No available ports. Cluster: {0}. Users: {1}. Ports: {2}",
-                        clusterId,
-                        cluster.Users.Count(),
-                        cluster.Ports.Count());
-
-                    throw new JoinClusterFailedException(JoinClusterFailedReason.NoPortsAvailable);
-                }
-
-                try
-                {
-                    ServiceEventSource.Current.ServiceMessage(this, "Sending join mail. Cluster: {0}.", clusterId);
-                    List<HyperlinkView> links = new List<HyperlinkView>();
-                    links.Add(
-                        new HyperlinkView(
-                            "http://" + clusterAddress + ":" + ClusterHttpGatewayPort + "/Explorer/index.html",
-                            "Service Fabric Explorer",
-                            "explore what's on the cluster with the built-in Service Fabric Explorer."));
-
-                    try
-                    {
-                        IEnumerable<ApplicationView> applications =
-                            await this.applicationDeployService.GetApplicationDeploymentsAsync(cluster.Address, ClusterConnectionPort);
-                        links.AddRange(applications.Select(x => x.EntryServiceInfo));
-                    }
-                    catch (Exception e)
-                    {
-                        ServiceEventSource.Current.ServiceMessage(this, "Failed to get application deployment info. {0}.", e.GetActualMessage());
-                    }
-
-                    await this.mailer.SendJoinMail(
-                        userEmail,
-                        clusterAddress + ":" + ClusterConnectionPort,
-                        userPort,
-                        clusterTimeRemaining,
-                        clusterExpiration,
-                        links);
-                }
-                catch (Exception e)
-                {
-                    ServiceEventSource.Current.ServiceMessage(this, "Failed to send join mail. {0}.", e.GetActualMessage());
-
-                    throw new JoinClusterFailedException(JoinClusterFailedReason.SendMailFailed);
+                    throw new OperationFailedException(OperationFailedReason.ClusterFull);
                 }
 
                 List<ClusterUser> newUserList = new List<ClusterUser>(cluster.Users);
-                newUserList.Add(new ClusterUser(userEmail, userPort));
+                var userPort = this.GetFreeUserPort(userId, clusterId, cluster);
+                newUserList.Add(new ClusterUser(userId, userPort));
 
-                Cluster updatedCluster = new Cluster(
+                var updatedCluster = new Cluster(
                     cluster.InternalName,
                     cluster.Status,
                     cluster.AppCount,
@@ -273,13 +206,203 @@ namespace PartyCluster.ClusterService
                     cluster.Ports,
                     newUserList,
                     cluster.CreatedOn,
-                    lifetimeStartedOn);
+                    DateTimeOffset.UtcNow);
 
                 await clusterDictionary.SetAsync(tx, clusterId, updatedCluster);
                 await tx.CommitAsync();
+
+                ServiceEventSource.Current.ServiceMessage(this, "Join cluster request completed. Cluster: {0}.", clusterId);
+
+                return this.GetUserView(PartyStatus.Joined, userId, clusterId, updatedCluster);
+            }
+        }
+
+        public async Task<UserView> GetPartyStatusAsync(string userId)
+        {
+            ServiceEventSource.Current.ServiceMessage(this, "GetPartyStatus for userId: {0}.", userId);
+
+            IReliableDictionary<int, Cluster> clusterDictionary =
+               await this.StateManager.GetOrAddAsync<IReliableDictionary<int, Cluster>>(ClusterDictionaryName);
+
+            using (ITransaction transaction = this.StateManager.CreateTransaction())
+            {
+                if (!string.IsNullOrEmpty(userId))
+                {
+                    var clusterTuple = await this.GetClusterByUserAsync(clusterDictionary, userId, transaction);
+                    var joinedClusterId = clusterTuple.Item1;
+                    var joinedCluster = clusterTuple.Item2;
+
+                    if (!joinedCluster.IsEmpty)
+                    {
+                        return this.GetUserView(PartyStatus.Joined, userId, joinedClusterId, joinedCluster);
+                    }
+                }
+
+                var openClusterIdList = await this.GetOpenClusterListAsync(clusterDictionary, transaction);
+                var result = openClusterIdList == null || openClusterIdList.Count() == 0
+                    ? new UserView(PartyStatus.Closed, userId)
+                    : new UserView(PartyStatus.Open, userId);
+
+                ServiceEventSource.Current.ServiceMessage(this, "GetPartyStatusAsync request completed. User: {0}.", userId);
+                return result;
+            }
+        }
+
+        public async Task<UserView> JoinRandomClusterAsync(string userId)
+        {
+            if (String.IsNullOrWhiteSpace(userId))
+            {
+                throw new ArgumentNullException("userId");
             }
 
-            ServiceEventSource.Current.ServiceMessage(this, "Join cluster request completed. Cluster: {0}.", clusterId);
+            ServiceEventSource.Current.ServiceMessage(this, "Join random cluster request.");
+
+            IReliableDictionary<int, Cluster> clusterDictionary =
+                await this.StateManager.GetOrAddAsync<IReliableDictionary<int, Cluster>>(ClusterDictionaryName);
+
+            using (ITransaction tx = this.StateManager.CreateTransaction())
+            {
+                var result = await this.GetClusterByUserAsync(clusterDictionary, userId, tx);
+                if (!result.Item2.IsEmpty)
+                {
+                    ServiceEventSource.Current.ServiceMessage(this, "Join cluster request failed. User already exists on cluster: {0}.", result.Item1);
+                    return this.GetUserView(PartyStatus.Joined, userId, result.Item1, result.Item2);
+                }
+
+                var keyList = await this.GetOpenClusterListAsync(clusterDictionary, tx);
+                var openCluster = Cluster.Empty;
+                var openClusterId = -1;
+                if (keyList != null)
+                {
+                    foreach (var key in keyList)
+                    {
+                        var tuple = await this.GetClusterById(clusterDictionary, tx, key);
+                        if (tuple != null && !tuple.Item2.IsEmpty)
+                        {
+                            openClusterId = tuple.Item1;
+                            openCluster = tuple.Item2;
+                            break;
+                        }
+                    }
+                }
+
+                if (openCluster.IsEmpty)
+                {
+                    ServiceEventSource.Current.ServiceMessage(
+                            this,
+                            "Join cluster request failed. Cluster is full. Cluster: {0}. Users: {1}",
+                            openClusterId,
+                            openCluster.Users.Count());
+
+                    return new UserView(PartyStatus.Closed, userId);
+                }
+
+                List<ClusterUser> newUserList = new List<ClusterUser>(openCluster.Users);
+                var userPort = this.GetFreeUserPort(userId, openClusterId, openCluster);
+                newUserList.Add(new ClusterUser(userId, userPort));
+
+                var updatedCluster = new Cluster(
+                    openCluster.InternalName,
+                    openCluster.Status,
+                    openCluster.AppCount,
+                    openCluster.ServiceCount,
+                    openCluster.Address,
+                    openCluster.Ports,
+                    newUserList,
+                    openCluster.CreatedOn,
+                    DateTimeOffset.UtcNow);
+
+                await clusterDictionary.SetAsync(tx, openClusterId, updatedCluster);
+                await tx.CommitAsync();
+
+                ServiceEventSource.Current.ServiceMessage(this, "Join cluster request completed. Cluster: {0}.", openClusterId);
+
+                return this.GetUserView(PartyStatus.Joined, userId, openClusterId, updatedCluster);
+            }
+        }
+
+        private UserView GetUserView(PartyStatus status, string userId, int joinedClusterId, Cluster joinedCluster)
+        {
+            int userPort;
+            string clusterAddress = joinedCluster.Address;
+            TimeSpan clusterTimeRemaining = this.config.MaximumClusterUptime - (DateTimeOffset.UtcNow - joinedCluster.LifetimeStartedOn);
+            DateTimeOffset clusterExpiration = joinedCluster.LifetimeStartedOn + this.config.MaximumClusterUptime;
+            userPort = joinedCluster.Users.FirstOrDefault(x => x.Email == userId).Port;
+
+            return new UserView(status, joinedClusterId, userId, clusterAddress + ":" + ClusterConnectionPort, userPort, clusterTimeRemaining, clusterExpiration);
+        }
+
+        private int GetFreeUserPort(string userId, int joinedClusterId, Cluster joinedCluster)
+        {
+            try
+            {
+                return joinedCluster.Ports.First(port => !joinedCluster.Users.Any(x => x.Port == port));
+            }
+            catch (InvalidOperationException)
+            {
+                ServiceEventSource.Current.ServiceMessage(
+                    this,
+                    "No available ports. Cluster: {0}. User: {1}. Ports: {2}",
+                    joinedClusterId,
+                    userId,
+                    joinedCluster.Ports.Count());
+
+                throw new OperationFailedException(OperationFailedReason.NoPortsAvailable);
+            }
+        }
+
+        private async Task<Tuple<int, Cluster>> GetClusterByUserAsync(IReliableDictionary<int, Cluster> clusterDictionary, string userId, ITransaction transaction)
+        {
+            if (string.IsNullOrEmpty(userId))
+            {
+                return new Tuple<int, Cluster>(-1, Cluster.Empty);
+            }
+
+            IAsyncEnumerable<KeyValuePair<int, Cluster>> clusterAsyncEnumerable = await clusterDictionary.CreateEnumerableAsync(transaction);
+
+            var joinedClusterId = -1;
+            foreach (var item in clusterAsyncEnumerable.ToEnumerable())
+            {
+                if (item.Value.IsJoinedBy(userId))
+                {
+                    joinedClusterId = item.Key;
+                    break;
+                }
+            }
+
+            return await GetClusterById(clusterDictionary, transaction, joinedClusterId);
+        }
+
+        private async Task<Tuple<int, Cluster>> GetClusterById(IReliableDictionary<int, Cluster> clusterDictionary, ITransaction transaction, int clusterId)
+        {
+            if (clusterId == -1)
+            {
+                return new Tuple<int, Cluster>(-1, Cluster.Empty);
+            }
+
+            ConditionalValue<Cluster> result = await clusterDictionary.TryGetValueAsync(transaction, clusterId, LockMode.Update);
+
+            if (!result.HasValue)
+            {
+                ServiceEventSource.Current.ServiceMessage(this, "Cluster does not exist. Cluster ID: {0}.", clusterId);
+                throw new OperationFailedException(OperationFailedReason.ClusterDoesNotExist);
+            }
+
+            return new Tuple<int, Cluster>(clusterId, result.Value);
+        }
+
+        private async Task<IEnumerable<int>> GetOpenClusterListAsync(IReliableDictionary<int, Cluster> clusterDictionary, ITransaction transaction)
+        {
+            var keys = (await clusterDictionary.CreateEnumerableAsync(transaction))
+                .ToEnumerable()
+                .Where(item =>
+                    item.Value.Status == ClusterStatus.Ready
+                    && item.Value.Users.Count() < this.config.MaximumUsersPerCluster
+                    && item.Value.RemainingLifetime() >= this.config.MaximumClusterUptime)
+                .Select(item => item.Key);
+
+            // the enumerable that's created must be enumerated within the transaction.
+            return keys.ToList();
         }
 
         protected override Task OnOpenAsync(ReplicaOpenMode openMode, CancellationToken cancellationToken)

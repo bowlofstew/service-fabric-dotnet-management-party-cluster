@@ -10,16 +10,12 @@ namespace PartyCluster.WebService.Models
     [DataContract]
     public class JoinClusterRequest
     {
-        public JoinClusterRequest(string userEmail, string captchaResponse)
+        public JoinClusterRequest(string userEmail)
         {
-            this.CaptchaResponse = captchaResponse;
             this.UserEmail = userEmail;
         }
 
         [DataMember]
         public string UserEmail { get; private set; }
-
-        [DataMember]
-        public string CaptchaResponse { get; private set; }
     }
 }

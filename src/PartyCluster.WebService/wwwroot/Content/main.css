@@ -147,14 +147,21 @@ font-weight:200;
     margin:20px 0 0;
 }
 
+.button.join-a-cluster-now-button{
+    background:#89c402 center right no-repeat;
+    font-size: 24px;
+    line-height: 33px;
+    padding: 6px 55px 9px 20px;
+    margin:20px 0 0;
+}
+
 .button.download
 {
     background:#999;
     font-size: 24px;
     line-height: 33px;
     padding: 6px 55px 9px 20px;
-    margin:20px 0 0 20px;
-
+    margin:20px 0 0 0;
 }
 .button.download::after{
     background: url("data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAbCAYAAAB1NA+iAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAAJcEhZcwAADsMAAA7DAcdvqGQAAAAYdEVYdFNvZnR3YXJlAHBhaW50Lm5ldCA0LjAuM4zml1AAAABRSURBVDhPY/j//78AEDcAsQEDuQCoOQGI348aggCjhmCCUUMwAVAzKPOBDFGAChEPQDZDNc+HChEPRjWTCEY1kwgo1QyqmdYDcT9UiATAwAAA8wwclpvxEbIAAAAASUVORK5CYII=") no-repeat;
@@ -220,45 +227,73 @@ section#main
     width:595px;
 	min-height:580px;
     float:left;
-    border-right: 1px solid #ccc;
 }
-.cluster-list table
-{
+.hidden {
+    display: none;
+}
+
+.party-area {
+    width:595px;
+    float:left;
+}
+.party-area-header {
+    font-weight: bold;
+}
+.party-status {
+    float:left;
+}
+.cluster-details {
+    margin: 50px 50px 50px 0;
+}
+.cluster-details-row {
+}
+.cluster-details-item{
+    margin-top: 10px;
+    display: inline-block;
+    min-height: 40px;
+    border: 1px solid #ececec;
+    padding: 10px;
+}
+.cluster-details-left {
+    background-color: #dff0d8;
+    min-width: 160px;
+}
+.cluster-details-right {
+    background-color: #d5e6ff;
+    min-width: 350px;
+}
+.cluster-list table {
     width:550px;
     margin:10px 0 0 0;
 }
 .cluster-list table td, .cluster-list table th{
     padding:20px 10px;
 }
-    .cluster-list table thead {
-        background: #CCC;
-        color:#000;
-    }
+.cluster-list table thead {
+    background: #CCC;
+    color:#000;
+}
 .cluster-list tr:nth-child(even) {
     background-color: #EEE;
 }
-.faq
-{
+.faq {
     width:395px;
     float:right;
+    border-left: 1px solid #ccc;
 }
-.faq h4
-{
+.faq h4 {
     color:#00ABEC;
     font-weight:200;
     font-size:24px;
 }
-.faq ul
-{
+.faq ul {
     list-style: none;
 }
-footer
-{
+footer {
     background:#1A1A1A;
     height: 80px;
 }
-footer ul
-{
+footer ul {
 	margin: 0;
 	padding: 0;
 }
