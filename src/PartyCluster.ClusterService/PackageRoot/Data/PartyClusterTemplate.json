@@ -669,7 +669,6 @@
                     }
                 ],
                 "provisioningState": "Default",
-                "reliabilityLevel": "Silver",
                 "upgradeMode": "Manual",
                 "vmImage": "Windows",
                 "privateBuilds": [
