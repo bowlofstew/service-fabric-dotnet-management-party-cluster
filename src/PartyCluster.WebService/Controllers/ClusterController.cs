@@ -9,25 +9,24 @@ namespace PartyCluster.WebService.Controllers
     using System.Collections.Generic;
     using System.Linq;
     using System.Net;
-    using System.Net.Http;
     using System.Threading.Tasks;
-    using System.Web.Http;
     using Microsoft.ServiceFabric.Services.Client;
     using Microsoft.ServiceFabric.Services.Remoting.Client;
     using PartyCluster.Domain;
     using PartyCluster.WebService.Models;
     using PartyCluster.WebService.Resources;
     using PartyCluster.WebService.ViewModels;
+    using Microsoft.AspNetCore.Mvc;
 
-    [RoutePrefix("api")]
-    public class ClusterController : ApiController
+    [Route("api")]
+    public class ClusterController : Controller
     {
         private static Resx messageResources = new Resx("PartyCluster.WebService.Resources.Messages");
         private static Resx clusterNameResources = new Resx("PartyCluster.WebService.Resources.ClusterNames");
         
         [HttpGet]
         [Route("clusters")]
-        public async Task<IHttpActionResult> Get()
+        public async Task<IActionResult> Get()
         {
             ServiceUriBuilder builder = new ServiceUriBuilder("ClusterService");
             IClusterService clusterService = ServiceProxy.Create<IClusterService>(builder.ToUri(), new ServicePartitionKey(1));
@@ -53,15 +52,17 @@ namespace PartyCluster.WebService.Controllers
 
         [HttpPost]
         [Route("clusters/join/{clusterId}")]
-        public async Task<HttpResponseMessage> Join(int clusterId, [FromBody] JoinClusterRequest user)
+        public async Task<IActionResult> Join(int clusterId, [FromBody] JoinClusterRequest user)
         {
             try
             {
                 if (user == null || String.IsNullOrWhiteSpace(user.UserEmail))
                 {
-                    return this.Request.CreateResponse(
-                        HttpStatusCode.BadRequest,
-                        new BadRequestViewModel("MissingInput", messageResources.Manager.GetString("MissingInput"), "Missing input."));
+
+                    return new JsonResult(new BadRequestViewModel("MissingInput", messageResources.Manager.GetString("MissingInput"), "Missing input."))
+                    {
+                        StatusCode = (int)HttpStatusCode.BadRequest
+                    };
                 }
                 
                 ServiceUriBuilder builder = new ServiceUriBuilder("ClusterService");
@@ -69,52 +70,64 @@ namespace PartyCluster.WebService.Controllers
 
                 var userView = await clusterService.JoinClusterAsync(clusterId, user.UserEmail);
 
-                return this.Request.CreateResponse<UserView>(HttpStatusCode.Accepted, userView);
+                return new JsonResult(userView)
+                {
+                    StatusCode = (int)HttpStatusCode.Accepted
+                };
             }
             catch (AggregateException ae)
             {
                 ArgumentException argumentEx = ae.InnerException as ArgumentException;
                 if (argumentEx != null)
                 {
-                    return this.Request.CreateResponse(
-                        HttpStatusCode.BadRequest,
-                        new BadRequestViewModel("InvalidEmail", messageResources.Manager.GetString("InvalidEmail"), argumentEx.Message));
+                    return new JsonResult(new BadRequestViewModel("InvalidEmail", messageResources.Manager.GetString("InvalidEmail"), argumentEx.Message))
+                    {
+                        StatusCode = (int)HttpStatusCode.BadRequest,
+                    };
                 }
 
                 OperationFailedException joinFailedEx = ae.InnerException as OperationFailedException;
                 if (joinFailedEx != null)
                 {
-                    return this.Request.CreateResponse(
-                        HttpStatusCode.BadRequest,
+                    return new JsonResult(
                         new BadRequestViewModel(
                             joinFailedEx.Reason.ToString(),
                             messageResources.Manager.GetString(joinFailedEx.Reason.ToString()),
-                            joinFailedEx.Message));
+                            joinFailedEx.Message))
+                    {
+                        StatusCode = (int)HttpStatusCode.BadRequest
+                    };
                 }
 
-                return this.Request.CreateResponse(
-                    HttpStatusCode.InternalServerError,
-                    new BadRequestViewModel("ServerError", messageResources.Manager.GetString("ServerError"), ae.InnerException.Message));
+                return new JsonResult(
+                    new BadRequestViewModel("ServerError", messageResources.Manager.GetString("ServerError"), ae.InnerException.Message))
+                {
+                    StatusCode = (int)HttpStatusCode.InternalServerError
+                };
             }
             catch (Exception e)
             {
-                return this.Request.CreateResponse(
-                    HttpStatusCode.InternalServerError,
-                    new BadRequestViewModel("ServerError", messageResources.Manager.GetString("ServerError"), e.Message));
+                return new JsonResult(
+                    new BadRequestViewModel("ServerError", messageResources.Manager.GetString("ServerError"), e.Message))
+                {
+                    StatusCode = (int)HttpStatusCode.InternalServerError
+                };
             }
         }
 
         [HttpPost]
         [Route("clusters/joinRandom/{userId?}")]
-        public async Task<HttpResponseMessage> JoinRandom(string userId)
+        public async Task<IActionResult> JoinRandom(string userId)
         {
             try
             {
                 if (string.IsNullOrWhiteSpace(userId))
                 {
-                    return this.Request.CreateResponse(
-                        HttpStatusCode.BadRequest,
-                        new BadRequestViewModel("MissingInput", messageResources.Manager.GetString("MissingInput"), "Missing input."));
+                    return new JsonResult(
+                        new BadRequestViewModel("MissingInput", messageResources.Manager.GetString("MissingInput"), "Missing input."))
+                    {
+                        StatusCode = (int)HttpStatusCode.BadRequest
+                    };
                 }
 
                 ServiceUriBuilder builder = new ServiceUriBuilder("ClusterService");
@@ -122,44 +135,56 @@ namespace PartyCluster.WebService.Controllers
 
                 var userView = await clusterService.JoinRandomClusterAsync(userId);
 
-                return this.Request.CreateResponse<UserView>(HttpStatusCode.Accepted, userView);
+                return new JsonResult(userView)
+                {
+                    StatusCode = (int)HttpStatusCode.Accepted
+                };
             }
             catch (AggregateException ae)
             {
                 ArgumentException argumentEx = ae.InnerException as ArgumentException;
                 if (argumentEx != null)
                 {
-                    return this.Request.CreateResponse(
-                        HttpStatusCode.BadRequest,
-                        new BadRequestViewModel("InvalidEmail", messageResources.Manager.GetString("InvalidEmail"), argumentEx.Message));
+                    return new JsonResult(
+                        new BadRequestViewModel("InvalidEmail", messageResources.Manager.GetString("InvalidEmail"), argumentEx.Message))
+                    {
+                        StatusCode = (int)HttpStatusCode.BadRequest
+                    };
                 }
 
                 OperationFailedException joinFailedEx = ae.InnerException as OperationFailedException;
                 if (joinFailedEx != null)
                 {
-                    return this.Request.CreateResponse(
-                        HttpStatusCode.BadRequest,
+                    return new JsonResult(
                         new BadRequestViewModel(
                             joinFailedEx.Reason.ToString(),
                             messageResources.Manager.GetString(joinFailedEx.Reason.ToString()),
-                            joinFailedEx.Message));
+                            joinFailedEx.Message))
+                    {
+                        StatusCode = (int)HttpStatusCode.BadRequest
+                    };
+
                 }
 
-                return this.Request.CreateResponse(
-                    HttpStatusCode.InternalServerError,
-                    new BadRequestViewModel("ServerError", messageResources.Manager.GetString("ServerError"), ae.InnerException.Message));
+                return new JsonResult(
+                    new BadRequestViewModel("ServerError", messageResources.Manager.GetString("ServerError"), ae.InnerException.Message))
+                {
+                    StatusCode = (int)HttpStatusCode.InternalServerError
+                };
             }
             catch (Exception e)
             {
-                return this.Request.CreateResponse(
-                    HttpStatusCode.InternalServerError,
-                    new BadRequestViewModel("ServerError", messageResources.Manager.GetString("ServerError"), e.Message));
+                return new JsonResult(
+                    new BadRequestViewModel("ServerError", messageResources.Manager.GetString("ServerError"), e.Message))
+                {
+                    StatusCode = (int)HttpStatusCode.InternalServerError
+                };
             }
         }
 
         [HttpPost]
         [Route("clusters/partyStatus/{userId?}")]
-        public async Task<HttpResponseMessage> GetPartyStatus(string userId = "")
+        public async Task<IActionResult> GetPartyStatus(string userId = "")
         {
             try
             {
@@ -168,38 +193,50 @@ namespace PartyCluster.WebService.Controllers
 
                 var userView = await clusterService.GetPartyStatusAsync(userId);
 
-                return this.Request.CreateResponse<UserView>(HttpStatusCode.Accepted, userView);
+                return new JsonResult(userView)
+                {
+                    StatusCode = (int)HttpStatusCode.Accepted
+                };
             }
             catch (AggregateException ae)
             {
                 ArgumentException argumentEx = ae.InnerException as ArgumentException;
                 if (argumentEx != null)
                 {
-                    return this.Request.CreateResponse(
-                        HttpStatusCode.BadRequest,
-                        new BadRequestViewModel("InvalidEmail", messageResources.Manager.GetString("InvalidEmail"), argumentEx.Message));
+                    return new JsonResult(
+                        new BadRequestViewModel("InvalidEmail", messageResources.Manager.GetString("InvalidEmail"), argumentEx.Message))
+                    {
+                        StatusCode = (int)HttpStatusCode.BadRequest
+                    };
+
                 }
 
                 OperationFailedException joinFailedEx = ae.InnerException as OperationFailedException;
                 if (joinFailedEx != null)
                 {
-                    return this.Request.CreateResponse(
-                        HttpStatusCode.BadRequest,
+                    return new JsonResult(
                         new BadRequestViewModel(
                             joinFailedEx.Reason.ToString(),
                             messageResources.Manager.GetString(joinFailedEx.Reason.ToString()),
-                            joinFailedEx.Message));
+                            joinFailedEx.Message))
+                    {
+                        StatusCode = (int)HttpStatusCode.BadRequest
+                    };
                 }
 
-                return this.Request.CreateResponse(
-                    HttpStatusCode.InternalServerError,
-                    new BadRequestViewModel("ServerError", messageResources.Manager.GetString("ServerError"), ae.InnerException.Message));
+                return new JsonResult(
+                    new BadRequestViewModel("ServerError", messageResources.Manager.GetString("ServerError"), ae.InnerException.Message))
+                {
+                    StatusCode = (int)HttpStatusCode.InternalServerError
+                };
             }
             catch (Exception e)
             {
-                return this.Request.CreateResponse(
-                    HttpStatusCode.InternalServerError,
-                    new BadRequestViewModel("ServerError", messageResources.Manager.GetString("ServerError"), e.Message));
+                return new JsonResult(
+                    new BadRequestViewModel("ServerError", messageResources.Manager.GetString("ServerError"), e.Message))
+                {
+                    StatusCode = (int)HttpStatusCode.InternalServerError
+                };
             }
         }
 

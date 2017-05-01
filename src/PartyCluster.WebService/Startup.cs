@@ -1,47 +1,65 @@
-﻿// ------------------------------------------------------------
-//  Copyright (c) Microsoft Corporation.  All rights reserved.
-//  Licensed under the MIT License (MIT). See License.txt in the repo root for license information.
-// ------------------------------------------------------------
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
+using Microsoft.AspNetCore.Builder;
+using Microsoft.AspNetCore.Hosting;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 
 namespace PartyCluster.WebService
 {
-    using System.Fabric;
-    using System.Web.Http;
-    using Microsoft.Owin;
-    using Microsoft.Owin.FileSystems;
-    using Microsoft.Owin.StaticFiles;
-    using Owin;
-
-    internal class Startup : IOwinAppBuilder
+    public class Startup
     {
-        private readonly StatelessServiceContext serviceContext;
-
-        public Startup(StatelessServiceContext serviceContext)
+        public Startup(IHostingEnvironment env)
         {
-            this.serviceContext = serviceContext;
+            var builder = new ConfigurationBuilder()
+                .SetBasePath(env.ContentRootPath)
+                .AddJsonFile("appsettings.json", optional: false, reloadOnChange: true)
+                .AddJsonFile($"appsettings.{env.EnvironmentName}.json", optional: true)
+                .AddEnvironmentVariables();
+            Configuration = builder.Build();
         }
 
-        public void Configuration(IAppBuilder appBuilder)
+        public IConfigurationRoot Configuration { get; }
+
+        // This method gets called by the runtime. Use this method to add services to the container.
+        public void ConfigureServices(IServiceCollection services)
         {
-            HttpConfiguration config = new HttpConfiguration();
+            // Add framework services.
+            services.AddMvc();
+        }
 
-            FormatterConfig.ConfigureFormatters(config.Formatters);
-            UnityConfig.RegisterComponents(config, this.serviceContext);
+        // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
+        public void Configure(IApplicationBuilder app, IHostingEnvironment env, ILoggerFactory loggerFactory)
+        {
+            loggerFactory.AddConsole(Configuration.GetSection("Logging"));
+            loggerFactory.AddDebug();
 
-            PhysicalFileSystem physicalFileSystem = new PhysicalFileSystem(@".\wwwroot");
-            FileServerOptions fileOptions = new FileServerOptions();
+            if (env.IsDevelopment())
+            {
+                app.UseDeveloperExceptionPage();
+                app.UseBrowserLink();
+            }
+            else
+            {
+                app.UseExceptionHandler("/Home/Error");
+            }
 
-            fileOptions.EnableDefaultFiles = true;
-            fileOptions.RequestPath = PathString.Empty;
-            fileOptions.FileSystem = physicalFileSystem;
-            fileOptions.DefaultFilesOptions.DefaultFileNames = new[] {"index.html"};
-            fileOptions.StaticFileOptions.FileSystem = fileOptions.FileSystem = physicalFileSystem;
-            fileOptions.StaticFileOptions.ServeUnknownFileTypes = true;
+            app.UseStaticFiles();
 
-            config.MapHttpAttributeRoutes();
-
-            appBuilder.UseWebApi(config);
-            appBuilder.UseFileServer(fileOptions);
+            app.UseMvc(routes =>
+            {
+                routes.MapRoute(
+                    name: "default",
+                    template: "{controller=Home}/{action=Index}/{id?}");
+                
+                routes.MapRoute(
+                    name: "termsofuse",
+                    defaults: new { controller = "Home", action = "TermsOfUse" },
+                    template: "TermsOfUse");
+            });
         }
     }
 }

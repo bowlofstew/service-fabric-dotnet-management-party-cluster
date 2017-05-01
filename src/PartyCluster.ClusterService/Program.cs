@@ -18,12 +18,50 @@ namespace PartyCluster.ClusterService
 
     public class Program
     {
+#if LOCAL
         public static void Main(string[] args)
         {
             try
             {
-                using (var pipeline = ServiceFabricDiagnosticPipelineFactory.CreatePipeline("PartyCluster.ClusterService"))
+                ServiceRuntime.RegisterServiceAsync(
+                    "ClusterServiceType",
+                    context =>
+                    {
+                        IReliableStateManager stateManager = new ReliableStateManager(context);
+
+                        return new ClusterService(
+                            new FakeClusterOperator(stateManager),
+                            new FakeMailer(),
+                            ServiceProxy.Create<IApplicationDeployService>(
+                                    new ServiceUriBuilder("ApplicationDeployService").ToUri(),
+                                    new ServicePartitionKey(0)),
+                            stateManager,
+                            context,
+                            new ClusterConfig());
+                    })
+                    .GetAwaiter().GetResult();
+
+                ServiceEventSource.Current.ServiceTypeRegistered(Process.GetCurrentProcess().Id, typeof(ClusterService).Name);
+
+                Thread.Sleep(Timeout.Infinite);
+
+            }
+            catch (Exception e)
+            {
+                ServiceEventSource.Current.ServiceHostInitializationFailed(e);
+                throw;
+            }
+        }
+
+#else
+        public static void Main(string[] args)
+        {
+
+            using (var pipeline = ServiceFabricDiagnosticPipelineFactory.CreatePipeline("PartyCluster.ClusterService"))
+            {
+                try
                 {
+
                     ServiceRuntime.RegisterServiceAsync(
                         "ClusterServiceType",
                         context =>
@@ -31,15 +69,9 @@ namespace PartyCluster.ClusterService
                             IReliableStateManager stateManager = new ReliableStateManager(context);
 
                             return new ClusterService(
-#if LOCAL
-                            new FakeClusterOperator(stateManager),
-                            new FakeMailer(),
-#else
-                            new ArmClusterOperator(context),
-                            ////new SendGridMailer(context),
-                            new FakeMailer(),
-#endif
-                            ServiceProxy.Create<IApplicationDeployService>(
+                                new ArmClusterOperator(context),
+                                new FakeMailer(),
+                                ServiceProxy.Create<IApplicationDeployService>(
                                     new ServiceUriBuilder("ApplicationDeployService").ToUri(),
                                     new ServicePartitionKey(0)),
                                 stateManager,
@@ -51,13 +83,16 @@ namespace PartyCluster.ClusterService
                     ServiceEventSource.Current.ServiceTypeRegistered(Process.GetCurrentProcess().Id, typeof(ClusterService).Name);
 
                     Thread.Sleep(Timeout.Infinite);
+
+                }
+                catch (Exception e)
+                {
+                    ServiceEventSource.Current.ServiceHostInitializationFailed(e);
+                    throw;
                 }
             }
-            catch (Exception e)
-            {
-                ServiceEventSource.Current.ServiceHostInitializationFailed(e);
-                throw;
-            }
         }
+#endif
+
     }
 }

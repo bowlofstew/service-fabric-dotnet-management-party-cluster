@@ -19,11 +19,10 @@ namespace PartyCluster.ApplicationDeployService
         /// </summary>
         private static void Main()
         {
-            try
+            //using (var pipeline = ServiceFabricDiagnosticPipelineFactory.CreatePipeline("PartyCluster.ApplicationDeployService"))
             {
-                using (var pipeline = ServiceFabricDiagnosticPipelineFactory.CreatePipeline("PartyCluster.ApplicationDeployService"))
+                try
                 {
-
                     ServiceRuntime.RegisterServiceAsync(
                     "ApplicationDeployServiceType",
                     context =>
@@ -34,12 +33,13 @@ namespace PartyCluster.ApplicationDeployService
                     ServiceEventSource.Current.ServiceTypeRegistered(Process.GetCurrentProcess().Id, typeof(ApplicationDeployService).Name);
 
                     Thread.Sleep(Timeout.Infinite); // Prevents this host process from terminating to keep the service host process running.
+
                 }
-            }
-            catch (Exception e)
-            {
-                ServiceEventSource.Current.ServiceHostInitializationFailed(e.ToString());
-                throw;
+                catch (Exception e)
+                {
+                    ServiceEventSource.Current.ServiceHostInitializationFailed(e.ToString());
+                    throw;
+                }
             }
         }
     }
