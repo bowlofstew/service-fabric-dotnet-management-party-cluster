@@ -30,6 +30,7 @@
     <ProjectReference Include="..\PartyCluster.WebService\PartyCluster.WebService.csproj" />
   </ItemGroup>
   <ItemGroup>
+    <Content Include="app.config" />
     <Content Include="ApplicationPackageRoot\ApplicationManifest.xml" />
     <Content Include="ApplicationParameters\Local.1Node.xml" />
     <Content Include="packages.config" />
