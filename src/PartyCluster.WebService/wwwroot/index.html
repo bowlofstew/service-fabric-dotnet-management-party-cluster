@@ -7,11 +7,11 @@
     <meta http-equiv="content-type" content="application/force-download">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Microsoft Azure Service Fabric Party Clusters</title>
-    <script type="text/javascript" src="/Scripts/jquery-2.1.4.js"></script>
-    <script type="text/javascript" src="/Scripts/main.js"></script>
+    <script type="application/javascript" src="https://ajax.aspnetcdn.com/ajax/jQuery/jquery-3.2.1.min.js"></script>
+    <script type="application/javascript" src="/Scripts/main.js" charset="utf-8"></script>
 
     <!-- Bootstrap -->
-    <link href="/Content/bootstrap.css" rel="stylesheet">
+    <link href="https://ajax.aspnetcdn.com/ajax/bootstrap/3.3.7/css/bootstrap.min.css" rel="stylesheet">
     <link href="/Content/main.css" rel="stylesheet">
 </head>
 <body>
@@ -26,39 +26,41 @@
     </header>
     <section id="main" class="wrapper clearfix">
         <div class="overlay"></div>
-        <div class="dialog join-cluster-dialog">
-            <h3 class="join-cluster-name"></h3>
-            <p>
-                To join the cluster, just fill in your email address, and you'll receive an invitation with all the information you need to connect and deploy apps to the cluster, for free.
-            </p>
-            <div>
-                <label for="useremail">Your email:</label><input id="join-useremail" name="useremail" />
-            </div>
-            <a class="button join-now-button" href="javascript:void(0)">Submit</a>
-            <p class="disclaimer">
-
-            </p>
-        </div>
         <div class="dialog join-cluster-progress">
             <h3>Reticulating splines..</h3>
         </div>
-        <!--<div class="dialog join-cluster-dialog-success">
-            <h3>Invitation sent!</h3>
-            <p>An invitation email with information on how to connect to this cluster has been sent to you. Once this cluster expires, you're free to connect again to another one.</p>
-        </div>-->
         <div class="dialog join-cluster-dialog-failed">
             <h3>Oops!</h3>
-            <p></p>
+            <p>Something did not work as expected. Please try again later.</p>
+        </div>
+        <div class="dialog join-cluster-authenticate">
+            <h3>Pick your auth provider.</h3>
+            <br />
+            <a id="auth-fb-link" href="">Login with Facebook</a>
+            <br />
+            <a id="auth-github-link" href="">Login with Github</a>
         </div>
         <div class="party-area clearfix">
-            <div id="party-open-section" style="display: none">
-                <h3 class="party-area-header">We have free clusters available for you.</h3>
+            <div id="party-unauth-section" style="display: none">
+                <h3 class="party-area-header">Create a Service Fabric cluster on Azure for free.</h3>
                 <a class="button party-now-button" href="javascript:void(0)">Party Now!</a>
             </div>
+            <div id="party-open-section" style="display: none">
+                <h4 class="party-area-auth-header">
+                    You are signed-in as <span id="party-open-userId"></span>.
+                    <a href="/auth/logout">sign-out</a>
+                </h4>
+                <h3 class="party-area-header">We have free clusters available for you.</h3>
+                <a class="button join-now-button" href="javascript:void(0)">Join free ></a>
+            </div>
             <div id="party-closed-section" style="display: none">
-                <h3 class="party-area-header">We\'re sorry. It looks like all the free clusters are currently in use. Please come back later.</h3>
+                <h3 class="party-area-header">We're sorry. It looks like all the free clusters are currently in use. Please come back later.</h3>
             </div>
             <div id="party-joined-section" class="cluster-details" style="display: none">
+                <h4 class="party-area-auth-header">
+                    You are signed-in as <span id="party-joined-userId"></span>.
+                    <a href="/auth/logout">sign-out</a>
+                </h4>
                 <h3 class="party-area-header">You have joined an active Service Fabric cluster.</h3>
                 <div class="cluster-details-row">
                     <div class="cluster-details-item cluster-details-left">Connection Endpoint</div>
@@ -83,9 +85,6 @@
             </div>
             <div id="party-status" class="party-status"></div>
         </div>
-        <!--<div class="cluster-list clearfix hidden">
-            <table class="clearfix"></table>
-        </div>-->
         <div class="faq">
             <ul>
                 <li>

@@ -135,8 +135,6 @@ namespace PartyCluster.ClusterService
             IReliableDictionary<int, Cluster> clusterDictionary =
                 await this.StateManager.GetOrAddAsync<IReliableDictionary<int, Cluster>>(ClusterDictionaryName);
 
-            Tuple<string, string, int, TimeSpan, DateTimeOffset> clusterData = null;
-
             using (ITransaction tx = this.StateManager.CreateTransaction())
             {
                 IAsyncEnumerable<KeyValuePair<int, Cluster>> clusterAsyncEnumerable = await clusterDictionary.CreateEnumerableAsync(tx);

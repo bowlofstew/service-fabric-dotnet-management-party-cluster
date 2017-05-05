@@ -4,79 +4,89 @@
     this.refreshRate = 50000;
     this.serviceUrl = location.protocol + '//' + location.hostname + (location.port ? ':' + location.port : '') + self.appPath;
 
-    this.GetClusters = function (onResult) {
-        this.httpGetJson(self.serviceUrl + '/api/clusters', onResult)
-    };
-
-    this.JoinCluster = function (clusterId, useremail, result, failure) {
+    this.JoinRandomCluster = function (result, failure, authorize) {
         $.ajax({
-            url: self.serviceUrl + '/api/clusters/join/' + clusterId,
+            url: self.serviceUrl + '/api/clusters/joinRandom/',
             type: 'POST',
             contentType: 'application/json',
             datatype: 'json',
-            data: "{ UserEmail: '" + useremail + "' }"
+            data: "{ userId: '' }"
         })
-	   .done(function (data) {
-	       result(data);
+	   .done(function (data, status, xhr) {
+	       self.handleResponse(data, status, xhr, result, failure, authorize);
 	   })
 	   .fail(function (xhr) {
-	       var json = $.parseJSON(xhr.responseText);
-	       failure(json);
-	       return;
+	       self.handleFailure(xhr, failure);
 	   });
     };
 
-    this.JoinRandomCluster = function (userId, result, failure) {
+    this.GetPartyStatus = function (result, failure, authorize) {
         $.ajax({
-            url: self.serviceUrl + '/api/clusters/joinRandom/' + userId,
+            url: self.serviceUrl + '/api/clusters/partyStatus',
             type: 'POST',
             contentType: 'application/json',
             datatype: 'json',
-            data: "{ userId: '" + userId + "' }"
+            data: "{ userId: '' }"
         })
-	   .done(function (data) {
-	       result(data);
+	   .done(function (data, status, xhr) {
+	       self.handleResponse(data, status, xhr, result, failure, authorize);
 	   })
 	   .fail(function (xhr) {
-	       var json = $.parseJSON(xhr.responseText);
-	       failure(json);
-	       return;
+	       self.handleFailure(xhr, failure);
 	   });
     };
 
-    this.GetPartyStatus = function (userId, result, failure) {
-        $.ajax({
-            url: self.serviceUrl + '/api/clusters/partyStatus/' + userId,
-            type: 'POST',
-            contentType: 'application/json',
-            datatype: 'json',
-            data: "{ userId: '" + userId + "' }"
-        })
-	   .done(function (data) {
-	       result(data);
-	   })
-	   .fail(function (xhr) {
-	       var json = $.parseJSON(xhr.responseText);
-	       failure(json);
-	       return;
-	   });
-    };
+    this.handleResponse = function (data, status, xhr, onSuccess, onFailure, onAuthorize) {
+        var response = xhr.getResponseHeader("X-Responded-JSON");
+        if (response != null) {
+            var parsedResponse = JSON.parse(response);
+            if (parsedResponse.status == 401) {
+                var headers = parsedResponse.headers;
+                if (headers != null) {
+                    onAuthorize(headers.location);
+                }
+            }
+            else if (parsedResponse.status == 200) {
+                onSuccess(data);
+            }
+        }
+        else if (data != null && data.Status != null) {
+            onSuccess(data);
+        }
+        else {
+            self.handleFailure(xhr, onFailure);
+        }
+    }
 
-    this.httpGetJson = function (url, result) {
-        $.ajax({
-            url: url,
-            type: 'GET',
-            contentType: 'application/json',
-            datatype: 'json',
-            cache: false
-        })
-	   .done(function (data) {
-	       result(data);
-	   })
-	   .fail(function () {
-	       $.ajax(this);
-	       return;
-	   });
+    this.handleFailure = function (xhr, onFail) {
+        var json = null;
+        if (xhr.responseText != null && xhr.responseText != '') {
+            var json = $.parseJSON(xhr.responseText);
+        }
+        onFail(json);
+    }
+
+    this.SetCsrfHeader = function () {
+        $(document).bind("ajaxSend", function (elm, xhr, settings) {
+            if (settings.type == 'POST' || settings.type == 'PUT' || settings.type == 'DELETE') {
+                xhr.setRequestHeader("x-csrf-token", self.GetCookie('csrf-token'));
+            }
+        });
+    }
+
+    this.GetCookie = function (name) {
+        var cookieValue = null;
+        if (document.cookie && document.cookie != '') {
+            var cookies = document.cookie.split(';');
+            for (var i = 0; i < cookies.length; i++) {
+                var cookie = jQuery.trim(cookies[i]);
+                if (cookie.substring(0, name.length + 1) == (name + '=')) {
+                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                    break;
+                }
+            }
+        }
+        return cookieValue;
     }
 };
 
@@ -110,67 +120,43 @@ function PartyClusters(api) {
     this.api = api;
     this.refreshRate = 5000;
     this.joinClusterDialog = new Dialog();
-    this.clusterList;
-    this.userView;
-    this.userId = '';
     this.clusterConnectionPort = 19000;
     this.clusterHttpGatewayPort = 19080;
 
     this.Initialize = function () {
-        this.UpdateClusterList();
+        self.api.SetCsrfHeader();
+        self.UpdatePartyStatus();
+
         $('.party-now-button').click(function () {
-            self.JoinRandomCluster();
+            self.AuthenticateUser('');
         });
 
         $('.join-now-button').click(function () {
-            self.JoinPartyCluster(3);
+            self.JoinRandomCluster();
         });
-
-        $('.join-cluster-dialog').keypress(function (e) {
-            // handle enter key press
-            if (e.which == 13) {
-                $('.join-now-button').click();
-            }
-        });
-
-
-        setInterval(this.UpdateClusterList, self.refreshRate);
     };
 
     this.JoinRandomCluster = function () {
-        this.ShowJoinClusterDialog();
-    }
-
-    this.JoinPartyCluster = function (retryCount) {
-        var joinClusterWindow = $('.join-cluster-dialog');
         var joinClusterProgressWindow = $('.join-cluster-progress');
+        var joinClusterFailedWindow = $('.join-cluster-dialog-failed');
 
-        var userId = $('#join-useremail').val();
-        if (userId == null || userId == '') {
-            return;
-        }
-        self.userId = userId;
-
-        self.joinClusterDialog.Change(joinClusterWindow, joinClusterProgressWindow);
+        self.joinClusterDialog.Show(joinClusterProgressWindow);
 
         self.api.JoinRandomCluster(
-            userId,
-            function (data) {
+            function (userView) { // success
                 self.joinClusterDialog.Hide(joinClusterProgressWindow);
-                self.userView = data;
-                self.DisplayPartyJoined();
+                self.DisplayPartyJoined(userView);
             },
-            function (data) {
-                if (retryCount > 0) {
-                    switch (data.Code) {
-                        case "ClusterFull":
-                        case "ClusterExpired":
-                        case "ClusterNotReady":
-                        case "ClusterDoesNotExist":
-                        case "NoPortsAvailable":
-                            self.JoinRandomCluster(retryCount - 1);
-                            return;
-                    }
+            function (data) { // failure
+                switch (data.Code) {
+                    case "ClusterFull":
+                    case "ClusterExpired":
+                    case "ClusterNotReady":
+                    case "ClusterDoesNotExist":
+                    case "NoPortsAvailable":
+                        self.joinClusterDialog.Change(joinClusterProgressWindow, joinClusterFailedWindow);
+                        self.DisplayPartyOpen();
+                        return;
                 }
 
                 if (self.IsPartyJoined(data)) {
@@ -178,35 +164,35 @@ function PartyClusters(api) {
                     self.DisplayPartyJoined();
                 }
                 else {
-                    // TODO: handle failure
+                    self.joinClusterDialog.Change(joinClusterProgressWindow, joinClusterFailedWindow);
+                    self.DisplayPartyOpen();
                 }
+            },
+            function (loginUrl) { // authorize
+                self.joinClusterDialog.Change(joinClusterProgressWindow, joinClusterFailedWindow);
+                self.DisplayPartyOpen();
             }
         );
     }
 
-    this.ShowJoinClusterDialog = function () {
-        var joinClusterWindow = $('.join-cluster-dialog');
-        self.joinClusterDialog.Show(joinClusterWindow);
-    };
-
-    this.UpdateClusterList = function () {
+    this.UpdatePartyStatus = function () {
         self.api.GetPartyStatus(
-            self.userId,
-            function (result) {
-                self.userView = result;
-
-                if (self.IsPartyClosed(self.userView)) {
-                    self.DisplayPartyClosed();
+            function (userView) {
+                if (self.IsPartyClosed(userView)) {
+                    self.DisplayPartyClosed(userView);
                 }
-                else if (self.IsPartyJoined(self.userView)) {
-                    self.DisplayPartyJoined();
+                else if (self.IsPartyJoined(userView)) {
+                    self.DisplayPartyJoined(userView);
                 }
-                else if (self.IsPartyOpen(self.userView)) {
-                    self.DisplayPartyOpen();
+                else if (self.IsPartyOpen(userView)) {
+                    self.DisplayPartyOpen(userView);
                 }
             },
             function (error) {
                 // TODO: handle error
+            },
+            function (loginUrl) { // authorize
+                self.DisplayPartyUnauthenticated();
             });
     };
 
@@ -222,35 +208,62 @@ function PartyClusters(api) {
         return userViewInstance.Status == "Joined";
     }
 
-    this.DisplayPartyOpen = function () {
+    this.DisplayPartyOpen = function (userView) {
+        $('#party-unauth-section').hide();
         $('#party-open-section').show();
         $('#party-closed-section').hide();
         $('#party-joined-section').hide();
+
+        self.DisplayAuthHeader('party-open-userId', userView);
     }
 
-    this.DisplayPartyClosed = function () {
+    this.DisplayPartyClosed = function (userView) {
+        $('#party-unauth-section').hide();
         $('#party-open-section').hide();
         $('#party-closed-section').show();
         $('#party-joined-section').hide();
     }
 
-    this.DisplayPartyJoined = function () {
+    this.DisplayPartyJoined = function (userView) {
+        $('#party-unauth-section').hide();
         $('#party-open-section').hide();
         $('#party-closed-section').hide();
         $('#party-joined-section').show();
 
-        this.DisplayActiveClusterInformation();
+        self.DisplayAuthHeader('party-joined-userId', userView);
+        self.DisplayActiveClusterInformation(userView);
     }
 
-    this.DisplayActiveClusterInformation = function () {
-        $('#cluster-details-endpoint').text(self.userView.ConnectionEndpoint);
-        $('#cluster-details-userPort').text(self.userView.UserPort);
-        $('#cluster-details-timeRemaining').text(self.userView.TimeRemaining);
-        $('#cluster-details-expTime').text(self.userView.ExpirationTime);
+    this.DisplayPartyUnauthenticated = function (userView) {
+        $('#party-unauth-section').show();
+        $('#party-open-section').hide();
+        $('#party-closed-section').hide();
+        $('#party-joined-section').hide();
+    }
 
-        var uriPart = self.userView.ConnectionEndpoint.replace(self.clusterConnectionPort, self.clusterHttpGatewayPort);
+    this.DisplayActiveClusterInformation = function (userView) {
+        $('#cluster-details-endpoint').text(userView.ConnectionEndpoint);
+        $('#cluster-details-userPort').text(userView.UserPort);
+        $('#cluster-details-timeRemaining').text(userView.TimeRemaining);
+        $('#cluster-details-expTime').text(userView.ExpirationTime);
+
+        var uriPart = userView.ConnectionEndpoint.replace(self.clusterConnectionPort, self.clusterHttpGatewayPort);
         var uri = 'http://' + uriPart + '/Explorer/index.html';
         $('#sfe-link').text(uri);
         $('#sfe-link').attr('href', uri);
+    }
+
+    this.DisplayAuthHeader = function (userIdSpan, userView) {
+        if (userView != null && userView.UserId != null) {
+            $('#' + userIdSpan).text(userView.UserId);
+        }
+    }
+
+    this.AuthenticateUser = function () {
+        $('#auth-fb-link').attr('href', "/auth/facebook");
+        $('#auth-github-link').attr('href', "/auth/github");
+
+        var joinClusterAuthWindow = $('.join-cluster-authenticate');
+        self.joinClusterDialog.Show(joinClusterAuthWindow);
     }
 };

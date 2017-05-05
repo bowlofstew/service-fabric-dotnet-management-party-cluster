@@ -1,4 +1,5 @@
-﻿html, body
+﻿@charset "utf-8";
+html, body
 {
 	min-height:100%;
 }
@@ -67,65 +68,6 @@ font-weight:200;
     z-index: 11;
 	
 }
-.dialog.join-cluster-progress > h3 {
-    margin-top: 120px;
-    text-align: center;
-}
-.join-cluster-dialog-success
-{
-	height:200px;
-}
-.join-cluster-dialog-success h3
-{
-	color:#89c402;
-}
-.join-cluster-dialog-failed
-{
-	height:200px;
-}
-.join-cluster-dialog-failed h3
-{
-	color:#DD0000;
-}
-.join-cluster-dialog h3
-{
-	margin:0;
-	padding:0;
-}
-.join-cluster-dialog p
-{
-	margin:20px 0;
-}
-.join-cluster-dialog label
-{
-	width:130px;
-    vertical-align:middle;
-}
-.join-cluster-dialog input
-{
-	width: 300px;
-	border:1px solid #CCC;
-	padding:9px;
-	margin:5px 0;
-    vertical-align:middle;
-}
-.join-cluster-dialog .disclaimer
-{
-	font-size:11px;
-	font-style:italic;
-}
-.join-cluster-dialog .join-now-button{
-	font-size: 18px;
-    line-height: 33px;
-    padding: 6px 20px 9px 20px;
-	margin:10px 0 0 130px;
-}
-.join-cluster-dialog .recaptcha
-{
-	width:300px;
-	display:inline-block;
-    vertical-align:middle;
-}
 .button
 {
     display: inline-block;
@@ -147,7 +89,7 @@ font-weight:200;
     margin:20px 0 0;
 }
 
-.button.join-a-cluster-now-button{
+.button.join-now-button{
     background:#89c402 center right no-repeat;
     font-size: 24px;
     line-height: 33px;

@@ -10,6 +10,7 @@ namespace PartyCluster.WebService.Controllers
     using System.Linq;
     using System.Net;
     using System.Net.Http;
+    using System.Security.Claims;
     using System.Threading.Tasks;
     using System.Web.Http;
     using Microsoft.ServiceFabric.Services.Client;
@@ -25,8 +26,8 @@ namespace PartyCluster.WebService.Controllers
         private static Resx messageResources = new Resx("PartyCluster.WebService.Resources.Messages");
         private static Resx clusterNameResources = new Resx("PartyCluster.WebService.Resources.ClusterNames");
         
-        [HttpGet]
-        [Route("clusters")]
+        //[HttpGet]
+        //[Route("clusters")]
         public async Task<IHttpActionResult> Get()
         {
             ServiceUriBuilder builder = new ServiceUriBuilder("ClusterService");
@@ -51,8 +52,8 @@ namespace PartyCluster.WebService.Controllers
                     }));
         }
 
-        [HttpPost]
-        [Route("clusters/join/{clusterId}")]
+        //[HttpPost]
+        //[Route("clusters/join/{clusterId}")]
         public async Task<HttpResponseMessage> Join(int clusterId, [FromBody] JoinClusterRequest user)
         {
             try
@@ -105,16 +106,19 @@ namespace PartyCluster.WebService.Controllers
         }
 
         [HttpPost]
-        [Route("clusters/joinRandom/{userId?}")]
-        public async Task<HttpResponseMessage> JoinRandom(string userId)
+        [Route("clusters/joinRandom")]
+        [Authorize]
+        public async Task<HttpResponseMessage> JoinRandom()
         {
             try
             {
+                var userId = this.ExtractUserIdClaim();
+
                 if (string.IsNullOrWhiteSpace(userId))
                 {
                     return this.Request.CreateResponse(
-                        HttpStatusCode.BadRequest,
-                        new BadRequestViewModel("MissingInput", messageResources.Manager.GetString("MissingInput"), "Missing input."));
+                        HttpStatusCode.Unauthorized,
+                        new BadRequestViewModel("Unauthorized", messageResources.Manager.GetString("Unauthorized"), "Unauthorized."));
                 }
 
                 ServiceUriBuilder builder = new ServiceUriBuilder("ClusterService");
@@ -122,7 +126,7 @@ namespace PartyCluster.WebService.Controllers
 
                 var userView = await clusterService.JoinRandomClusterAsync(userId);
 
-                return this.Request.CreateResponse<UserView>(HttpStatusCode.Accepted, userView);
+                return this.Request.CreateResponse<UserView>(HttpStatusCode.OK, userView);
             }
             catch (AggregateException ae)
             {
@@ -158,17 +162,27 @@ namespace PartyCluster.WebService.Controllers
         }
 
         [HttpPost]
-        [Route("clusters/partyStatus/{userId?}")]
-        public async Task<HttpResponseMessage> GetPartyStatus(string userId = "")
+        [Route("clusters/partyStatus")]
+        [Authorize]
+        public async Task<HttpResponseMessage> GetPartyStatus()
         {
             try
             {
+                var userId = this.ExtractUserIdClaim();
+
+                if (string.IsNullOrEmpty(userId))
+                {
+                    return this.Request.CreateResponse(
+                        HttpStatusCode.Unauthorized,
+                        new BadRequestViewModel("Unauthorized", messageResources.Manager.GetString("Unauthorized"), "Unauthorized."));
+                }
+
                 ServiceUriBuilder builder = new ServiceUriBuilder("ClusterService");
                 IClusterService clusterService = ServiceProxy.Create<IClusterService>(builder.ToUri(), new ServicePartitionKey(1));
 
                 var userView = await clusterService.GetPartyStatusAsync(userId);
 
-                return this.Request.CreateResponse<UserView>(HttpStatusCode.Accepted, userView);
+                return this.Request.CreateResponse<UserView>(HttpStatusCode.OK, userView);
             }
             catch (AggregateException ae)
             {
@@ -201,6 +215,32 @@ namespace PartyCluster.WebService.Controllers
                     HttpStatusCode.InternalServerError,
                     new BadRequestViewModel("ServerError", messageResources.Manager.GetString("ServerError"), e.Message));
             }
+        }
+
+        private string ExtractUserIdClaim()
+        {
+            var userId = string.Empty;
+            var principal = this.User as ClaimsPrincipal;
+            if (principal != null)
+            {
+                var identity = principal.Identity as ClaimsIdentity;
+                if (identity != null)
+                {
+                    foreach (var claim in identity.Claims)
+                    {
+                        if (claim.Type == ClaimTypes.Email)
+                        {
+                            userId = claim.Value;
+                        }
+                        else if (claim.Type == ClaimTypes.Name)
+                        {
+                            userId = claim.Value;
+                        }
+                    }
+                }
+            }
+
+            return userId;
         }
 
         private string GetClusterName(int key)

@@ -31,12 +31,14 @@ namespace PartyCluster.WebService
 
         public Task<string> OpenAsync(CancellationToken cancellationToken)
         {
-            EndpointResourceDescription serviceEndpoint = this.serviceContext.CodePackageActivationContext.GetEndpoint("ServiceEndpoint");
+            EndpointResourceDescription serviceEndpoint = this.serviceContext.CodePackageActivationContext.GetEndpoint("ServiceEndpointHttps");
+            var protocol = serviceEndpoint.Protocol;
             int port = serviceEndpoint.Port;
 
             this.listeningAddress = String.Format(
                 CultureInfo.InvariantCulture,
-                "http://+:{0}/{1}",
+                "{0}://+:{1}/{2}",
+                protocol,
                 port,
                 String.IsNullOrWhiteSpace(this.appRoot)
                     ? String.Empty

@@ -5,28 +5,41 @@
 
 namespace PartyCluster.WebService
 {
+    using System;
     using System.Fabric;
+    using System.Linq;
+    using System.Security.Claims;
+    using System.Threading.Tasks;
     using System.Web.Http;
+    using Common;
     using Microsoft.Owin;
     using Microsoft.Owin.FileSystems;
+    using Microsoft.Owin.Security.Facebook;
     using Microsoft.Owin.StaticFiles;
+    using Middleware;
     using Owin;
+    using Owin.Security.Providers.GitHub;
 
     internal class Startup : IOwinAppBuilder
     {
         private readonly StatelessServiceContext serviceContext;
+        private readonly ConfigSettings config;
 
         public Startup(StatelessServiceContext serviceContext)
         {
             this.serviceContext = serviceContext;
+
+            var configPkg = this.serviceContext.CodePackageActivationContext.GetConfigurationPackageObject("Config");
+            var parameters = configPkg.Settings.Sections["AuthProviderConfiguration"].Parameters;
+            this.config = new ConfigSettings(parameters);
         }
 
         public void Configuration(IAppBuilder appBuilder)
         {
-            HttpConfiguration config = new HttpConfiguration();
+            HttpConfiguration httpConfig = new HttpConfiguration();
 
-            FormatterConfig.ConfigureFormatters(config.Formatters);
-            UnityConfig.RegisterComponents(config, this.serviceContext);
+            FormatterConfig.ConfigureFormatters(httpConfig.Formatters);
+            UnityConfig.RegisterComponents(httpConfig, this.serviceContext);
 
             PhysicalFileSystem physicalFileSystem = new PhysicalFileSystem(@".\wwwroot");
             FileServerOptions fileOptions = new FileServerOptions();
@@ -34,14 +47,100 @@ namespace PartyCluster.WebService
             fileOptions.EnableDefaultFiles = true;
             fileOptions.RequestPath = PathString.Empty;
             fileOptions.FileSystem = physicalFileSystem;
-            fileOptions.DefaultFilesOptions.DefaultFileNames = new[] {"index.html"};
+            fileOptions.DefaultFilesOptions.DefaultFileNames = new[] { "index.html" };
             fileOptions.StaticFileOptions.FileSystem = fileOptions.FileSystem = physicalFileSystem;
             fileOptions.StaticFileOptions.ServeUnknownFileTypes = true;
 
-            config.MapHttpAttributeRoutes();
+            httpConfig.MapHttpAttributeRoutes();
+            
+            appBuilder.Use(typeof(CsrfCookieMiddleware), this.config);
+            appBuilder.Use(typeof(CustomHeadersMiddleware));
 
-            appBuilder.UseWebApi(config);
+            appBuilder.UseCookieAuthentication(new Microsoft.Owin.Security.Cookies.CookieAuthenticationOptions()
+            {
+                AuthenticationType = this.config.AuthenticationTypeName,
+                LoginPath = new PathString("/auth/login"),
+                CookieSecure = Microsoft.Owin.Security.Cookies.CookieSecureOption.Always,
+                ExpireTimeSpan = TimeSpan.FromHours(1)
+            });
+
+            appBuilder.UseFacebookAuthentication(
+                new Microsoft.Owin.Security.Facebook.FacebookAuthenticationOptions()
+                {
+                    AppId = this.config.FacebookAppId.ToUnsecureString(),
+                    AppSecret = this.config.FacebookAppSecret.ToUnsecureString(),
+                    SignInAsAuthenticationType = this.config.AuthenticationTypeName,
+                });
+
+            appBuilder.UseGitHubAuthentication(
+                new GitHubAuthenticationOptions()
+                {
+                    ClientId = this.config.GithubClientId.ToUnsecureString(),
+                    ClientSecret = this.config.GithubClientSecret.ToUnsecureString(),
+                    SignInAsAuthenticationType = this.config.AuthenticationTypeName,
+                    Provider = new Owin.Security.Providers.GitHub.GitHubAuthenticationProvider()
+                    {
+                        OnAuthenticated = (context) =>
+                        {
+                            return Task.FromResult(false);
+                        }
+                    },
+                });
+
+            appBuilder.Map(new PathString("/auth/logout"),
+                (application) =>
+                {
+                    application.Run(Logout);
+                });
+
+            appBuilder.Map(new PathString("/auth/facebook"),
+                (application) =>
+                {
+                    application.Run(InvokeFacebookLogin);
+                });
+
+            appBuilder.Map(new PathString("/auth/github"),
+                (application) =>
+                {
+                    application.Run(InvokeGithubLogin);
+                });
+
+            appBuilder.Use(typeof(CsrfValidationMiddleware), this.config);
+            appBuilder.UseWebApi(httpConfig);
             appBuilder.UseFileServer(fileOptions);
+        }
+
+        public Task Logout(IOwinContext context)
+        {
+            context.Authentication.SignOut(this.config.AuthenticationTypeName);
+            context.Authentication.SignOut(
+                context.Authentication.GetAuthenticationTypes()
+                .Select(o => o.AuthenticationType).ToArray());
+
+            context.Response.Redirect("/");
+            return Task.FromResult(false);
+        }
+
+        public Task<int> InvokeFacebookLogin(IOwinContext context)
+        {
+            context.Authentication.Challenge(
+                new Microsoft.Owin.Security.AuthenticationProperties()
+                    {
+                        RedirectUri = "/"
+                    }, "Facebook");
+
+            return Task.FromResult((int)System.Net.HttpStatusCode.Unauthorized);
+        }
+
+        public Task<int> InvokeGithubLogin(IOwinContext context)
+        {
+            context.Authentication.Challenge(
+                new Microsoft.Owin.Security.AuthenticationProperties()
+                {
+                    RedirectUri = "/"
+                }, "GitHub");
+
+            return Task.FromResult((int)System.Net.HttpStatusCode.Unauthorized);
         }
     }
 }
