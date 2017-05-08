@@ -66,12 +66,13 @@ font-weight:200;
     background-color: #EEE;
     box-shadow: 0 0 15px #222;
     z-index: 11;
-	
 }
-.button
-{
+.auth-header {
+    margin: 20px 0 20px 14px;
+    font-size: 16pt;
+}
+.button {
     display: inline-block;
-    background:#89c402;
     border: 0 none;
     box-sizing: border-box;
     color: #fff;
@@ -88,7 +89,11 @@ font-weight:200;
     padding: 6px 55px 9px 20px;
     margin:20px 0 0;
 }
-
+.button.party-now-button:hover
+{
+    background-color:#A5CE00;
+    text-decoration:none;
+}
 .button.join-now-button{
     background:#89c402 center right no-repeat;
     font-size: 24px;
@@ -96,9 +101,40 @@ font-weight:200;
     padding: 6px 55px 9px 20px;
     margin:20px 0 0;
 }
-
-.button.download
+.button.join-now-button:hover
 {
+    background-color:#A5CE00;
+    text-decoration:none;
+}
+.button.auth {
+    color: white;
+    height: 47px;
+    width: 200px;
+    margin: 14px;
+    padding: 0;
+}
+.button.auth:hover {
+    text-decoration:none;
+}
+.button.fb-link {
+    background-color: #3b5998;
+}
+.button.github-link {
+    background-color: #555;
+}
+.auth-button-text {
+    line-height: 46px;
+    font-size: 14pt;
+}
+.auth-button-icon {
+    height: 47px;
+    width: 47px;
+    float: left;
+}
+.border-icon-box {
+    border: 1px solid #555;
+}
+.button.download {
     background:#999;
     font-size: 24px;
     line-height: 33px;
@@ -116,12 +152,6 @@ font-weight:200;
     top: 50%;
     width: 16px;
 }
-.button:hover
-{
-    background-color:#A5CE00;
-    text-decoration:none;
-}
-
 .button.download:hover
 {
     background-color:#BBB;
@@ -184,8 +214,19 @@ section#main
 .party-status {
     float:left;
 }
+.party-area-auth-header {
+    margin-bottom: 20px;
+    width: 65%;
+}
+.party-auth-userid {
+    font-weight: bold;
+}
+.party-auth-logout-button {
+    float: right;
+    font-weight: bold;
+}
 .cluster-details {
-    margin: 50px 50px 50px 0;
+    margin-bottom: 50px;
 }
 .cluster-details-row {
 }

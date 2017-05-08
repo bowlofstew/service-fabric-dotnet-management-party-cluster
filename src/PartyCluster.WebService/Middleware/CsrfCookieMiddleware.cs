@@ -55,6 +55,7 @@ namespace PartyCluster.WebService.Middleware
                                 string.Empty,
                                 new CookieOptions()
                                 {
+                                    Secure = true,
                                     Expires = DateTime.UtcNow.AddDays(-1),
                                 });
                 }

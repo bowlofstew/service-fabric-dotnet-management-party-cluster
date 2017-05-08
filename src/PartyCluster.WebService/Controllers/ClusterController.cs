@@ -228,13 +228,15 @@ namespace PartyCluster.WebService.Controllers
                 {
                     foreach (var claim in identity.Claims)
                     {
-                        if (claim.Type == ClaimTypes.Email)
+                        if (claim.Type == ClaimTypes.Name)
                         {
                             userId = claim.Value;
+                            break;
                         }
-                        else if (claim.Type == ClaimTypes.Name)
+                        else if (claim.Type == ClaimTypes.Email)
                         {
                             userId = claim.Value;
+                            break;
                         }
                     }
                 }

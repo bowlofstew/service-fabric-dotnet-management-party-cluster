@@ -34,11 +34,15 @@
             <p>Something did not work as expected. Please try again later.</p>
         </div>
         <div class="dialog join-cluster-authenticate">
-            <h3>Pick your auth provider.</h3>
-            <br />
-            <a id="auth-fb-link" href="">Login with Facebook</a>
-            <br />
-            <a id="auth-github-link" href="">Login with Github</a>
+            <div class="auth-header">Log in to continue</div>
+            <a id="auth-fb-link" class="button auth fb-link" href="">
+                <img class="auth-button-icon" src="Content/fb.png" />
+                <span class="auth-button-text">Facebook</span>
+            </a>
+            <a id="auth-github-link" class="button auth github-link" href="">
+                <img class="auth-button-icon border-icon-box" src="Content/github.png" />
+                <span class="auth-button-text">GitHub</span>
+            </a>
         </div>
         <div class="party-area clearfix">
             <div id="party-unauth-section" style="display: none">
@@ -47,8 +51,8 @@
             </div>
             <div id="party-open-section" style="display: none">
                 <h4 class="party-area-auth-header">
-                    You are signed-in as <span id="party-open-userId"></span>.
-                    <a href="/auth/logout">sign-out</a>
+                    You are logged in as <span id="party-open-userId" class="party-auth-userid"></span>.
+                    <a href="/auth/logout" class="party-auth-logout-button">Log out</a>
                 </h4>
                 <h3 class="party-area-header">We have free clusters available for you.</h3>
                 <a class="button join-now-button" href="javascript:void(0)">Join free ></a>
@@ -58,8 +62,8 @@
             </div>
             <div id="party-joined-section" class="cluster-details" style="display: none">
                 <h4 class="party-area-auth-header">
-                    You are signed-in as <span id="party-joined-userId"></span>.
-                    <a href="/auth/logout">sign-out</a>
+                    You are logged in as <span id="party-joined-userId" class="party-auth-userid"></span>.
+                    <a href="/auth/logout" class="party-auth-logout-button">Log out</a>
                 </h4>
                 <h3 class="party-area-header">You have joined an active Service Fabric cluster.</h3>
                 <div class="cluster-details-row">
