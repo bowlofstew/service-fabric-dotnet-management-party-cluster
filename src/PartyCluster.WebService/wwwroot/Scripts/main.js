@@ -214,7 +214,7 @@ function PartyClusters(api) {
         $('#party-closed-section').hide();
         $('#party-joined-section').hide();
 
-        self.DisplayAuthHeader('party-open-userId', userView);
+        self.DisplayAuthHeader(userView);
     }
 
     this.DisplayPartyClosed = function (userView) {
@@ -222,6 +222,8 @@ function PartyClusters(api) {
         $('#party-open-section').hide();
         $('#party-closed-section').show();
         $('#party-joined-section').hide();
+
+        self.DisplayAuthHeader(userView);
     }
 
     this.DisplayPartyJoined = function (userView) {
@@ -230,7 +232,7 @@ function PartyClusters(api) {
         $('#party-closed-section').hide();
         $('#party-joined-section').show();
 
-        self.DisplayAuthHeader('party-joined-userId', userView);
+        self.DisplayAuthHeader(userView);
         self.DisplayActiveClusterInformation(userView);
     }
 
@@ -253,9 +255,14 @@ function PartyClusters(api) {
         $('#sfe-link').attr('href', uri);
     }
 
-    this.DisplayAuthHeader = function (userIdSpan, userView) {
+    this.DisplayAuthHeader = function (userView) {
         if (userView != null && userView.UserId != null) {
-            $('#' + userIdSpan).text(userView.UserId);
+            $('#party-auth-userId').text(userView.UserId);
+            $('#party-area-auth-header').show();
+        }
+        else {
+            $('#party-auth-userId').text('');
+            $('#party-area-auth-header').hide();
         }
     }
 

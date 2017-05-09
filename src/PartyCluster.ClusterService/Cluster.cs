@@ -166,5 +166,20 @@ namespace PartyCluster.ClusterService
 
             return DateTimeOffset.UtcNow - this.LifetimeStartedOn.ToUniversalTime();
         }
+
+        public Cluster ToRemoveState()
+        {
+            // clone the cluster and clear the assigned user and ports.
+            return new Cluster(
+                       this.InternalName,
+                       ClusterStatus.Remove,
+                       this.AppCount,
+                       this.ServiceCount,
+                       this.Address,
+                       Enumerable.Empty<int>(),
+                       Enumerable.Empty<ClusterUser>(),
+                       this.CreatedOn,
+                       this.LifetimeStartedOn);
+        }
     }
 }

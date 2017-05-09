@@ -780,13 +780,12 @@ namespace PartyCluster.ClusterService
                     // Failed to create the cluster, so remove it.
                     // Processing will add a new one in the next iteration if we need more.
                     ServiceEventSource.Current.ServiceMessage(this, "Cluster failed to create: {0}", cluster.Address);
-                    return new Cluster(ClusterStatus.Remove, cluster);
+                    return cluster.ToRemoveState();
 
                 case ClusterOperationStatus.Deleting:
 
                     // Cluster is being deleted.
                     return new Cluster(ClusterStatus.Deleting, cluster);
-
 
                 case ClusterOperationStatus.ClusterNotFound:
 
@@ -809,7 +808,7 @@ namespace PartyCluster.ClusterService
             if (DateTimeOffset.UtcNow - cluster.LifetimeStartedOn.ToUniversalTime() >= this.config.MaximumClusterUptime)
             {
                 ServiceEventSource.Current.ServiceMessage(this, "Cluster expired: {0}", cluster.Address);
-                return new Cluster(ClusterStatus.Remove, cluster);
+                return cluster.ToRemoveState();
             }
 
             ClusterOperationStatus readyStatus = await this.clusterOperator.GetClusterStatusAsync(cluster.InternalName);
@@ -906,7 +905,7 @@ namespace PartyCluster.ClusterService
                 case ClusterOperationStatus.Ready:
 
                     // hopefully shouldn't ever get here
-                    return new Cluster(ClusterStatus.Remove, cluster);
+                    return cluster.ToRemoveState();
 
                 case ClusterOperationStatus.Deleting:
 
@@ -924,7 +923,7 @@ namespace PartyCluster.ClusterService
 
                     // Failed to delete, set its status to "remove" to try again.
                     ServiceEventSource.Current.ServiceMessage(this, "Cluster failed to delete: {0}.", cluster.Address);
-                    return new Cluster(ClusterStatus.Remove, cluster);
+                    return cluster.ToRemoveState();
             }
 
             return cluster;

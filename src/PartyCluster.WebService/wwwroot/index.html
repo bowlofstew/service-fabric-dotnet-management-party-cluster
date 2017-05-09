@@ -49,42 +49,44 @@
                 <h3 class="party-area-header">Create a Service Fabric cluster on Azure for free.</h3>
                 <a class="button party-now-button" href="javascript:void(0)">Party Now!</a>
             </div>
-            <div id="party-open-section" style="display: none">
-                <h4 class="party-area-auth-header">
-                    You are logged in as <span id="party-open-userId" class="party-auth-userid"></span>.
+            <div id="party-auth-section">
+                <h4 id="party-area-auth-header" class="party-area-auth-header" style="display:none">
+                    You are logged in as <span id="party-auth-userId" class="party-auth-userid"></span>.
                     <a href="/auth/logout" class="party-auth-logout-button">Log out</a>
                 </h4>
-                <h3 class="party-area-header">We have free clusters available for you.</h3>
-                <a class="button join-now-button" href="javascript:void(0)">Join free ></a>
-            </div>
-            <div id="party-closed-section" style="display: none">
-                <h3 class="party-area-header">We're sorry. It looks like all the free clusters are currently in use. Please come back later.</h3>
-            </div>
-            <div id="party-joined-section" class="cluster-details" style="display: none">
-                <h4 class="party-area-auth-header">
-                    You are logged in as <span id="party-joined-userId" class="party-auth-userid"></span>.
-                    <a href="/auth/logout" class="party-auth-logout-button">Log out</a>
-                </h4>
-                <h3 class="party-area-header">You have joined an active Service Fabric cluster.</h3>
-                <div class="cluster-details-row">
-                    <div class="cluster-details-item cluster-details-left">Connection Endpoint</div>
-                    <div id="cluster-details-endpoint" class="cluster-details-item cluster-details-right">.</div>
+                <div id="party-open-section" style="display: none">
+                    <h3 class="party-area-header">We have free clusters available for you.</h3>
+                    <a class="button join-now-button" href="javascript:void(0)">Join free ></a>
                 </div>
-                <div class="cluster-details-row">
-                    <div class="cluster-details-item cluster-details-left">UserPort</div>
-                    <div id="cluster-details-userPort" class="cluster-details-item cluster-details-right">.</div>
+                <div id="party-closed-section" style="display: none">
+                    <h3 class="party-area-header">We're sorry. It looks like all the free clusters are currently in use. Please come back later.</h3>
                 </div>
-                <div class="cluster-details-row">
-                    <div class="cluster-details-item cluster-details-left">ExpirationTime</div>
-                    <div id="cluster-details-expTime" class="cluster-details-item cluster-details-right">.</div>
-                </div>
-                <div class="cluster-details-row">
-                    <div class="cluster-details-item cluster-details-left">TimeRemaining</div>
-                    <div id="cluster-details-timeRemaining" class="cluster-details-item cluster-details-right">.</div>
-                </div>
-                <div class="cluster-details-row">
-                    <div class="cluster-details-item cluster-details-left">Service Fabric Explorer</div>
-                    <div id="cluster-details-sfe" class="cluster-details-item cluster-details-right"><a id="sfe-link" href="" target="_blank">.</a></div>
+                <div id="party-joined-section" class="cluster-details" style="display: none">
+                    <!--<h4 class="party-area-auth-header">
+                        You are logged in as <span id="party-joined-userId" class="party-auth-userid"></span>.
+                        <a href="/auth/logout" class="party-auth-logout-button">Log out</a>
+                    </h4>-->
+                    <h3 class="party-area-header">You have joined an active Service Fabric cluster.</h3>
+                    <div class="cluster-details-row">
+                        <div class="cluster-details-item cluster-details-left">Connection Endpoint</div>
+                        <div id="cluster-details-endpoint" class="cluster-details-item cluster-details-right">.</div>
+                    </div>
+                    <div class="cluster-details-row">
+                        <div class="cluster-details-item cluster-details-left">UserPort</div>
+                        <div id="cluster-details-userPort" class="cluster-details-item cluster-details-right">.</div>
+                    </div>
+                    <div class="cluster-details-row">
+                        <div class="cluster-details-item cluster-details-left">ExpirationTime</div>
+                        <div id="cluster-details-expTime" class="cluster-details-item cluster-details-right">.</div>
+                    </div>
+                    <div class="cluster-details-row">
+                        <div class="cluster-details-item cluster-details-left">TimeRemaining</div>
+                        <div id="cluster-details-timeRemaining" class="cluster-details-item cluster-details-right">.</div>
+                    </div>
+                    <div class="cluster-details-row">
+                        <div class="cluster-details-item cluster-details-left">Service Fabric Explorer</div>
+                        <div id="cluster-details-sfe" class="cluster-details-item cluster-details-right"><a id="sfe-link" href="" target="_blank">.</a></div>
+                    </div>
                 </div>
             </div>
             <div id="party-status" class="party-status"></div>
