@@ -62,14 +62,14 @@
                     <h3 class="party-area-header">We're sorry. It looks like all the free clusters are currently in use. Please come back later.</h3>
                 </div>
                 <div id="party-joined-section" class="cluster-details" style="display: none">
-                    <!--<h4 class="party-area-auth-header">
-                        You are logged in as <span id="party-joined-userId" class="party-auth-userid"></span>.
-                        <a href="/auth/logout" class="party-auth-logout-button">Log out</a>
-                    </h4>-->
                     <h3 class="party-area-header">You have joined an active Service Fabric cluster.</h3>
                     <div class="cluster-details-row">
                         <div class="cluster-details-item cluster-details-left">Connection Endpoint</div>
                         <div id="cluster-details-endpoint" class="cluster-details-item cluster-details-right">.</div>
+                    </div>
+                    <div class="cluster-details-row">
+                        <div class="cluster-details-item cluster-details-left">Service Fabric Explorer</div>
+                        <div id="cluster-details-sfe" class="cluster-details-item cluster-details-right"><a id="sfe-link" href="" target="_blank">Explore your cluster with Service Fabric Explorer</a></div>
                     </div>
                     <div class="cluster-details-row">
                         <div class="cluster-details-item cluster-details-left">UserPort</div>
@@ -82,10 +82,6 @@
                     <div class="cluster-details-row">
                         <div class="cluster-details-item cluster-details-left">TimeRemaining</div>
                         <div id="cluster-details-timeRemaining" class="cluster-details-item cluster-details-right">.</div>
-                    </div>
-                    <div class="cluster-details-row">
-                        <div class="cluster-details-item cluster-details-left">Service Fabric Explorer</div>
-                        <div id="cluster-details-sfe" class="cluster-details-item cluster-details-right"><a id="sfe-link" href="" target="_blank">.</a></div>
                     </div>
                 </div>
             </div>
