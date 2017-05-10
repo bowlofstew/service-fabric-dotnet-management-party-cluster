@@ -20,7 +20,7 @@
             <h2 class="azure-heading">Microsoft Azure Service Fabric</h2>
             <h1 class="party-heading">Party Clusters</h1>
             <h3 class="party-subheading">Try Service Fabric on Azure for free!</h3>
-            
+
             <a class="button download" href="http://aka.ms/servicefabricSDK">Download SDK</a>
         </div>
     </header>
@@ -31,57 +31,58 @@
         </div>
         <div class="dialog join-cluster-dialog-failed">
             <h3>Oops!</h3>
-            <p>Something did not work as expected. Please try again later.</p>
+            <p>Something went wrong. Please try again later.</p>
         </div>
         <div class="dialog join-cluster-authenticate">
-            <div class="auth-header">Log in to continue</div>
-            <a id="auth-fb-link" class="button auth fb-link" href="">
-                <img class="auth-button-icon" src="Content/fb.png" />
-                <span class="auth-button-text">Facebook</span>
-            </a>
+            <h3 class="auth-header">Sign in to join a Party Cluster</h3>
             <a id="auth-github-link" class="button auth github-link" href="">
                 <img class="auth-button-icon border-icon-box" src="Content/github.png" />
                 <span class="auth-button-text">GitHub</span>
             </a>
+            <a id="auth-fb-link" class="button auth fb-link" href="">
+                <img class="auth-button-icon" src="Content/fb.png" />
+                <span class="auth-button-text">Facebook</span>
+            </a>
+            <p>
+                Please refer to our <a href="https://privacy.microsoft.com/privacystatement/ " target="_blank">Privacy &amp; Cookies</a> policy and <a href="termsofuse.html" target="_blank">Terms of Use</a> for details.
+            </p>
         </div>
         <div class="party-area clearfix">
             <div id="party-unauth-section" style="display: none">
-                <h3 class="party-area-header">Create a Service Fabric cluster on Azure for free.</h3>
-                <a class="button party-now-button" href="javascript:void(0)">Party Now!</a>
+                <h2 class="party-area-header">Try Azure Service Fabric</h2>
+                <p>Get started with a time-limited Service Fabric cluster in Azure free of charge, no subscriptions required.<p>
+                    <a class="button party-now-button" href="javascript:void(0)">Party Now!</a>
             </div>
             <div id="party-auth-section">
                 <h4 id="party-area-auth-header" class="party-area-auth-header" style="display:none">
-                    You are logged in as <span id="party-auth-userId" class="party-auth-userid"></span>.
-                    <a href="/auth/logout" class="party-auth-logout-button">Log out</a>
+                    Welcome, <span id="party-auth-userId" class="party-auth-userid"></span>.
+                    <a href="/auth/logout" class="party-auth-logout-button">Sign out</a>
                 </h4>
                 <div id="party-open-section" style="display: none">
-                    <h3 class="party-area-header">We have free clusters available for you.</h3>
-                    <a class="button join-now-button" href="javascript:void(0)">Join free ></a>
+                    <h3 class="party-area-header">Party clusters are available!</h3>
+                    <a class="button join-now-button" href="javascript:void(0)">Join a cluster</a>
                 </div>
                 <div id="party-closed-section" style="display: none">
-                    <h3 class="party-area-header">We're sorry. It looks like all the free clusters are currently in use. Please come back later.</h3>
+                    <h3 class="party-area-header">Sorry, but it looks like all the Party Clusters are currently occupied. Please come back later.</h3>
                 </div>
                 <div id="party-joined-section" class="cluster-details" style="display: none">
-                    <h3 class="party-area-header">You have joined an active Service Fabric cluster.</h3>
+                    <h4 class="party-area-header">Your cluster is ready!</h4>
+                    <h3 id="cluster-details-address"></h3>
                     <div class="cluster-details-row">
-                        <div class="cluster-details-item cluster-details-left">Connection Endpoint</div>
-                        <div id="cluster-details-endpoint" class="cluster-details-item cluster-details-right">.</div>
+                        <label>Service Fabric Explorer</label>
+                        <div id="cluster-details-sfe" class="cluster-details-item"><a id="sfe-link" href="" target="_blank"></a></div>
                     </div>
                     <div class="cluster-details-row">
-                        <div class="cluster-details-item cluster-details-left">Service Fabric Explorer</div>
-                        <div id="cluster-details-sfe" class="cluster-details-item cluster-details-right"><a id="sfe-link" href="" target="_blank">Explore your cluster with Service Fabric Explorer</a></div>
+                        <label>connection endpoint</label>
+                        <div id="cluster-details-endpoint" class="cluster-details-item">.</div>
                     </div>
                     <div class="cluster-details-row">
-                        <div class="cluster-details-item cluster-details-left">UserPort</div>
-                        <div id="cluster-details-userPort" class="cluster-details-item cluster-details-right">.</div>
+                        <label>expires on:</label>
+                        <div id="cluster-details-expTime" class="cluster-details-item">.</div>
                     </div>
                     <div class="cluster-details-row">
-                        <div class="cluster-details-item cluster-details-left">ExpirationTime</div>
-                        <div id="cluster-details-expTime" class="cluster-details-item cluster-details-right">.</div>
-                    </div>
-                    <div class="cluster-details-row">
-                        <div class="cluster-details-item cluster-details-left">TimeRemaining</div>
-                        <div id="cluster-details-timeRemaining" class="cluster-details-item cluster-details-right">.</div>
+                        <label>time remaining:</label>
+                        <div id="cluster-details-timeRemaining" class="cluster-details-item">.</div>
                     </div>
                 </div>
             </div>
@@ -98,10 +99,10 @@
                 <li>
                     <h4>how does it work?</h4>
                     <p>
-                        Just click to join a cluster and we'll send you information on how to connect and deploy your applications. No subscriptions or sign-ups required.
+                        Just sign in with an account of your choice and we'll give you information on how to connect to your cluster and deploy your applications. No subscriptions required.
                     </p>
                     <p>
-                        Each party cluster is the same and has a time limit. It runs for a few hours, then it's automatically taken down and a fresh new one comes up.
+                        Your cluster runs for an hour, then it's automatically taken down.
                         At that point, all your applications will be removed and you'll have to connect to a new cluster to keep partying.
                         You can only connect to one party cluster at a time, but you can come back as many times as you like.
                     </p>
@@ -110,7 +111,10 @@
                     <h4>what are the rules?</h4>
                     <p>
                         You can deploy any application you like to learn about the platform - we suggest starting with one of our <a href="https://azure.microsoft.com/en-us/documentation/samples/?service=service-fabric" target="_blank">sample applications</a>.
-                        But remember, these clusters are public and shared with others, so everyone can see your applications. Please see our <a href="termsofuse.html">Terms of Use</a> for all the details.
+                    </p>
+                    <p>
+                        But remember, although you get a cluster all to yourself, these clusters are <b>not secured</b> and are open to the public, so anyone can see your applications and any data you put in them.
+                        Please read over our <a href="termsofuse.html">Terms of Use</a> for all the details.
                     </p>
                 </li>
                 <li>
@@ -132,16 +136,15 @@
             </div>
             <div class="footer-right">
                 <a href="http://www.microsoft.com" target="_blank" class="copyright-logo">Microsoft</a>
-                <span class="copyright">© 2016 Microsoft</span>
+                <span class="copyright">© 2017 Microsoft</span>
             </div>
         </div>
     </footer>
     <script type="text/javascript">
-		$(function()
-		{
-			var partyClusters = new PartyClusters(new Api());
-			partyClusters.Initialize();
-		});
+        $(function () {
+            var partyClusters = new PartyClusters(new Api());
+            partyClusters.Initialize();
+        });
 
     </script>
 </body>
