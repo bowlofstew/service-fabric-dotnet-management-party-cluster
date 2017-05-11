@@ -4,7 +4,7 @@
     <Parameter Name="WebService_InstanceCount" Value="1" />
     <Parameter Name="ClusterService_MinReplicaSetSize" Value="1" />
     <Parameter Name="ClusterService_TargetReplicaSetSize" Value="1" />
-    <Parameter Name="ApplicationDeployService_MinReplicaSetSize" Value="1" />
-    <Parameter Name="ApplicationDeployService_TargetReplicaSetSize" Value="1" />
+    <!--<Parameter Name="ApplicationDeployService_MinReplicaSetSize" Value="1" />
+    <Parameter Name="ApplicationDeployService_TargetReplicaSetSize" Value="1" />-->
   </Parameters>
 </Application>

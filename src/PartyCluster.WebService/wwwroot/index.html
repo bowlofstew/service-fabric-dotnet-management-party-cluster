@@ -49,40 +49,39 @@
         </div>
         <div class="party-area clearfix">
             <div id="party-unauth-section" style="display: none">
-                <h2 class="party-area-header">Try Azure Service Fabric</h2>
+                <div class="party-area-header-large">Try Azure Service Fabric</div>
                 <p>Get started with a time-limited Service Fabric cluster in Azure free of charge, no subscriptions required.<p>
-                    <a class="button party-now-button" href="javascript:void(0)">Party Now!</a>
+                <a class="button party-now-button" href="javascript:void(0)">Party Now!</a>
             </div>
             <div id="party-auth-section">
-                <h4 id="party-area-auth-header" class="party-area-auth-header" style="display:none">
+                <div id="party-area-auth-header" class="party-area-auth-header" style="display:none">
                     Welcome, <span id="party-auth-userId" class="party-auth-userid"></span>.
                     <a href="/auth/logout" class="party-auth-logout-button">Sign out</a>
-                </h4>
+                </div>
                 <div id="party-open-section" style="display: none">
-                    <h3 class="party-area-header">Party clusters are available!</h3>
+                    <div class="party-area-header-medium">Party clusters are available!</div>
                     <a class="button join-now-button" href="javascript:void(0)">Join a cluster</a>
                 </div>
                 <div id="party-closed-section" style="display: none">
-                    <h3 class="party-area-header">Sorry, but it looks like all the Party Clusters are currently occupied. Please come back later.</h3>
+                    <div class="party-area-header-medium">Sorry, but it looks like all the Party Clusters are currently occupied. Please come back later.</div>
                 </div>
                 <div id="party-joined-section" class="cluster-details" style="display: none">
-                    <h4 class="party-area-header">Your cluster is ready!</h4>
-                    <h3 id="cluster-details-address"></h3>
+                    <div class="party-area-header-medium">Your cluster is ready!</div>
                     <div class="cluster-details-row">
                         <label>Service Fabric Explorer</label>
                         <div id="cluster-details-sfe" class="cluster-details-item"><a id="sfe-link" href="" target="_blank"></a></div>
                     </div>
                     <div class="cluster-details-row">
-                        <label>connection endpoint</label>
-                        <div id="cluster-details-endpoint" class="cluster-details-item">.</div>
+                        <label>Connection endpoint</label>
+                        <div id="cluster-details-endpoint" class="cluster-details-item"></div>
                     </div>
                     <div class="cluster-details-row">
-                        <label>expires on:</label>
-                        <div id="cluster-details-expTime" class="cluster-details-item">.</div>
+                        <label>Expires on:</label>
+                        <div id="cluster-details-expTime" class="cluster-details-item"></div>
                     </div>
                     <div class="cluster-details-row">
-                        <label>time remaining:</label>
-                        <div id="cluster-details-timeRemaining" class="cluster-details-item">.</div>
+                        <label>Time remaining:</label>
+                        <div id="cluster-details-timeRemaining" class="cluster-details-item"></div>
                     </div>
                 </div>
             </div>

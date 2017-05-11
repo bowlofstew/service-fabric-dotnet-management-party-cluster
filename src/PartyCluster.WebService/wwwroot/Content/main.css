@@ -37,12 +37,14 @@ section#main { margin: 40px auto; }
 .hidden { display: none; }
 .join-cluster-authenticate p { bottom: 0; position: absolute; }
 .party-area { width: 595px; float: left; }
-.party-area-header { font-weight: lighter; }
+.party-area-header-large { margin: 10px 0 15px 0; font-size: 32px; font-weight: 300; }
+.party-area-header-medium { margin: 10px 0 10px 0; font-size: 28px; font-weight: 300; }
+.party-area-header-small { margin: 10px 0 10px 0; font-size: 24px; font-weight: 300; }
 .party-status { float: left; }
-.party-area-auth-header { margin-bottom: 20px; width: 65%; }
-.party-auth-userid { font-weight: bold; }
+.party-area-auth-header { margin: 10px 0 30px 0; width: 65%; font-size: 16px; }
+.party-auth-userid { font-weight: normal; font-size: 18px; }
 .party-auth-logout-button { float: right; }
-.cluster-details { margin: 50px 0; }
+.cluster-details { margin: 20px 0; }
     .cluster-details h4 { color: #00abec; }
 .cluster-details-row { padding: 25px 0 0 }
     .cluster-details-row label { color: #00abec; font-size: 18px }

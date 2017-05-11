@@ -1,9 +1,6 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
-<ApplicationManifest xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" ApplicationTypeName="PartyClusterType" ApplicationTypeVersion="2.0.21" xmlns="http://schemas.microsoft.com/2011/01/fabric">
+<ApplicationManifest xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" ApplicationTypeName="PartyClusterType" ApplicationTypeVersion="2.0.23" xmlns="http://schemas.microsoft.com/2011/01/fabric">
   <Parameters>
-    <Parameter Name="ApplicationDeployService_MinReplicaSetSize" DefaultValue="2" />
-    <Parameter Name="ApplicationDeployService_PartitionCount" DefaultValue="1" />
-    <Parameter Name="ApplicationDeployService_TargetReplicaSetSize" DefaultValue="3" />
     <Parameter Name="WebService_InstanceCount" DefaultValue="-1" />
     <Parameter Name="ClusterService_MinReplicaSetSize" DefaultValue="2" />
     <Parameter Name="ClusterService_PartitionCount" DefaultValue="1" />
@@ -11,34 +8,17 @@
     <Parameter Name="PackageTempDirectory" DefaultValue="" />
   </Parameters>
   <ServiceManifestImport>
-    <ServiceManifestRef ServiceManifestName="ApplicationDeployServicePkg" ServiceManifestVersion="2.0.20" />
-    <ConfigOverrides>
-      <ConfigOverride Name="Config">
-        <Settings>
-          <Section Name="ApplicationDeploySettings">
-            <Parameter Name="PackageTempDirectory" Value="[PackageTempDirectory]" />
-          </Section>
-        </Settings>
-      </ConfigOverride>
-    </ConfigOverrides>
-  </ServiceManifestImport>
-  <ServiceManifestImport>
-    <ServiceManifestRef ServiceManifestName="WebServicePkg" ServiceManifestVersion="2.0.21" />
+    <ServiceManifestRef ServiceManifestName="WebServicePkg" ServiceManifestVersion="2.0.23" />
     <ConfigOverrides />
     <Policies>
       <EndpointBindingPolicy EndpointRef="ServiceEndpointHttps" CertificateRef="tryazureservicefabric-test-ssl" />
     </Policies>
   </ServiceManifestImport>
   <ServiceManifestImport>
-    <ServiceManifestRef ServiceManifestName="ClusterServicePkg" ServiceManifestVersion="2.0.21" />
+    <ServiceManifestRef ServiceManifestName="ClusterServicePkg" ServiceManifestVersion="2.0.23" />
     <ConfigOverrides />
   </ServiceManifestImport>
   <DefaultServices>
-    <Service Name="ApplicationDeployService">
-      <StatefulService ServiceTypeName="ApplicationDeployServiceType" TargetReplicaSetSize="[ApplicationDeployService_TargetReplicaSetSize]" MinReplicaSetSize="[ApplicationDeployService_MinReplicaSetSize]">
-        <UniformInt64Partition PartitionCount="[ApplicationDeployService_PartitionCount]" LowKey="-9223372036854775808" HighKey="9223372036854775807" />
-      </StatefulService>
-    </Service>
     <Service Name="WebService">
       <StatelessService ServiceTypeName="WebServiceType" InstanceCount="[WebService_InstanceCount]">
         <SingletonPartition />

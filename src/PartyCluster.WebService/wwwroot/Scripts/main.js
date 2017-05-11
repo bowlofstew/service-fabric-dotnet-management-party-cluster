@@ -252,6 +252,7 @@ function PartyClusters(api) {
         var uriPart = userView.ConnectionEndpoint.replace(self.clusterConnectionPort, self.clusterHttpGatewayPort);
         var uri = 'http://' + uriPart + '/Explorer/index.html';
         $('#sfe-link').attr('href', uri);
+        $('#sfe-link').text(uri);
     }
 
     this.DisplayAuthHeader = function (userView) {

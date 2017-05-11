@@ -356,6 +356,7 @@
     <Compile Include="ClusterStatus.cs" />
     <Compile Include="ClusterUser.cs" />
     <Compile Include="ArmClusterOperator.cs" />
+    <Compile Include="EmptyApplicationDeployService.cs" />
     <Compile Include="FakeClusterOperator.cs" />
     <Compile Include="FakeMailer.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />

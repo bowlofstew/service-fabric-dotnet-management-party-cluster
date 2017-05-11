@@ -4,8 +4,6 @@
     <Parameter Name="WebService_InstanceCount" Value="-1" />
     <Parameter Name="ClusterService_MinReplicaSetSize" Value="3" />
     <Parameter Name="ClusterService_TargetReplicaSetSize" Value="5" />
-    <Parameter Name="ApplicationDeployService_MinReplicaSetSize" Value="3" />
-    <Parameter Name="ApplicationDeployService_TargetReplicaSetSize" Value="5" />
     <Parameter Name="PackageTempDirectory" Value="D:\Party\Packages" />
   </Parameters>
 </Application>

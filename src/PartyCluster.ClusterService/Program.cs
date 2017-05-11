@@ -39,12 +39,10 @@ namespace PartyCluster.ClusterService
                             ////new SendGridMailer(context),
                             new FakeMailer(),
 #endif
-                            ServiceProxy.Create<IApplicationDeployService>(
-                                    new ServiceUriBuilder("ApplicationDeployService").ToUri(),
-                                    new ServicePartitionKey(0)),
-                                stateManager,
-                                context,
-                                new ClusterConfig());
+                            new EmptyApplicationDeployService(),
+                            stateManager,
+                            context,
+                            new ClusterConfig());
                         })
                         .GetAwaiter().GetResult();
 
