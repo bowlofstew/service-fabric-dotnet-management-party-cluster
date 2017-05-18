@@ -20,7 +20,6 @@ namespace PartyCluster.WebService
         private readonly StatelessServiceContext serviceContext;
         private readonly string appRoot;
         private IDisposable serverHandle;
-        private string listeningAddress;
 
         public OwinCommunicationListener(string appRoot, IOwinAppBuilder startup, StatelessServiceContext serviceContext)
         {
@@ -31,11 +30,27 @@ namespace PartyCluster.WebService
 
         public Task<string> OpenAsync(CancellationToken cancellationToken)
         {
-            EndpointResourceDescription serviceEndpoint = this.serviceContext.CodePackageActivationContext.GetEndpoint("ServiceEndpointHttps");
+            var httpsEndpoint = GetListeningAddress("ServiceEndpointHttps");
+
+            var startOptions = new StartOptions();
+            startOptions.Urls.Add(httpsEndpoint);
+
+            this.serverHandle = WebApp.Start(startOptions, appBuilder => this.startup.Configuration(appBuilder));
+
+            string resultAddress = httpsEndpoint.Replace("+", FabricRuntime.GetNodeContext().IPAddressOrFQDN);
+
+            ServiceEventSource.Current.Message("Listening on {0}", resultAddress);
+
+            return Task.FromResult(resultAddress);
+        }
+
+        private string GetListeningAddress(string endpointName)
+        {
+            EndpointResourceDescription serviceEndpoint = this.serviceContext.CodePackageActivationContext.GetEndpoint(endpointName);
             var protocol = serviceEndpoint.Protocol;
             int port = serviceEndpoint.Port;
 
-            this.listeningAddress = String.Format(
+            return String.Format(
                 CultureInfo.InvariantCulture,
                 "{0}://+:{1}/{2}",
                 protocol,
@@ -43,14 +58,6 @@ namespace PartyCluster.WebService
                 String.IsNullOrWhiteSpace(this.appRoot)
                     ? String.Empty
                     : this.appRoot.TrimEnd('/') + '/');
-
-            this.serverHandle = WebApp.Start(this.listeningAddress, appBuilder => this.startup.Configuration(appBuilder));
-
-            string resultAddress = this.listeningAddress.Replace("+", FabricRuntime.GetNodeContext().IPAddressOrFQDN);
-
-            ServiceEventSource.Current.Message("Listening on {0}", resultAddress);
-
-            return Task.FromResult(resultAddress);
         }
 
         public Task CloseAsync(CancellationToken cancellationToken)

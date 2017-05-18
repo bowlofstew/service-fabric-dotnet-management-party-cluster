@@ -1,4 +1,6 @@
-﻿function Api() {
+﻿'use strict';
+
+function Api() {
     var self = this;
     this.appPath = '';
     this.refreshRate = 50000;

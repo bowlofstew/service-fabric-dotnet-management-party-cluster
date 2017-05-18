@@ -1,24 +1,20 @@
-// ------------------------------------------------------------
-//  Copyright (c) Microsoft Corporation.  All rights reserved.
-//  Licensed under the MIT License (MIT). See License.txt in the repo root for license information.
-// ------------------------------------------------------------
+using Microsoft.Practices.Unity;
+using System.Web.Http;
+using Unity.WebApi;
 
 namespace PartyCluster.WebService
 {
-    using System.Fabric;
-    using System.Web.Http;
-    using Microsoft.Practices.Unity;
-    using PartyCluster.WebService.Controllers;
-    using Unity.WebApi;
-
     public static class UnityConfig
     {
-        public static void RegisterComponents(HttpConfiguration config, StatelessServiceContext serviceContext)
+        public static void RegisterComponents()
         {
-            UnityContainer container = new UnityContainer();
+			var container = new UnityContainer();
             
-
-            config.DependencyResolver = new UnityDependencyResolver(container);
+            // register all your components with the container here
+            // it is NOT necessary to register your controllers
+            
+            // e.g. container.RegisterType<ITestService, TestService>();
+            //GlobalConfiguration.Configuration.DependencyResolver = new UnityDependencyResolver(container);
         }
     }
 }

@@ -39,7 +39,8 @@ namespace PartyCluster.WebService
             HttpConfiguration httpConfig = new HttpConfiguration();
 
             FormatterConfig.ConfigureFormatters(httpConfig.Formatters);
-            UnityConfig.RegisterComponents(httpConfig, this.serviceContext);
+
+            UnityConfig.RegisterComponents();
 
             PhysicalFileSystem physicalFileSystem = new PhysicalFileSystem(@".\wwwroot");
             FileServerOptions fileOptions = new FileServerOptions();
@@ -52,7 +53,7 @@ namespace PartyCluster.WebService
             fileOptions.StaticFileOptions.ServeUnknownFileTypes = true;
 
             httpConfig.MapHttpAttributeRoutes();
-            
+
             appBuilder.Use(typeof(CsrfCookieMiddleware), this.config);
             appBuilder.Use(typeof(CustomHeadersMiddleware));
 

@@ -22,8 +22,8 @@ namespace PartyCluster.ClusterService
         {
             try
             {
-                using (var pipeline = ServiceFabricDiagnosticPipelineFactory.CreatePipeline("PartyCluster.ClusterService"))
-                {
+                //using (var pipeline = ServiceFabricDiagnosticPipelineFactory.CreatePipeline("PartyCluster.ClusterService"))
+                //{
                     ServiceRuntime.RegisterServiceAsync(
                         "ClusterServiceType",
                         context =>
@@ -36,7 +36,6 @@ namespace PartyCluster.ClusterService
                             new FakeMailer(),
 #else
                             new ArmClusterOperator(context),
-                            ////new SendGridMailer(context),
                             new FakeMailer(),
 #endif
                             new EmptyApplicationDeployService(),
@@ -49,7 +48,7 @@ namespace PartyCluster.ClusterService
                     ServiceEventSource.Current.ServiceTypeRegistered(Process.GetCurrentProcess().Id, typeof(ClusterService).Name);
 
                     Thread.Sleep(Timeout.Infinite);
-                }
+                //}
             }
             catch (Exception e)
             {

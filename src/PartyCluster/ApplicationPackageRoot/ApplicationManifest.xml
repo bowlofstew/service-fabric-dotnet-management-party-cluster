@@ -1,32 +1,36 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
-<ApplicationManifest xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" ApplicationTypeName="PartyClusterType" ApplicationTypeVersion="2.0.23" xmlns="http://schemas.microsoft.com/2011/01/fabric">
+<ApplicationManifest xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" ApplicationTypeName="PartyClusterType" ApplicationTypeVersion="2.0.26" xmlns="http://schemas.microsoft.com/2011/01/fabric">
   <Parameters>
     <Parameter Name="WebService_InstanceCount" DefaultValue="-1" />
+    <Parameter Name="WebService_PlacementConstraints" DefaultValue="" />
     <Parameter Name="ClusterService_MinReplicaSetSize" DefaultValue="2" />
     <Parameter Name="ClusterService_PartitionCount" DefaultValue="1" />
     <Parameter Name="ClusterService_TargetReplicaSetSize" DefaultValue="3" />
+    <Parameter Name="ClusterService_PlacementConstraints" DefaultValue="" />
     <Parameter Name="PackageTempDirectory" DefaultValue="" />
   </Parameters>
   <ServiceManifestImport>
-    <ServiceManifestRef ServiceManifestName="WebServicePkg" ServiceManifestVersion="2.0.23" />
+    <ServiceManifestRef ServiceManifestName="WebServicePkg" ServiceManifestVersion="2.0.26" />
     <ConfigOverrides />
     <Policies>
       <EndpointBindingPolicy EndpointRef="ServiceEndpointHttps" CertificateRef="tryazureservicefabric-test-ssl" />
     </Policies>
   </ServiceManifestImport>
   <ServiceManifestImport>
-    <ServiceManifestRef ServiceManifestName="ClusterServicePkg" ServiceManifestVersion="2.0.23" />
+    <ServiceManifestRef ServiceManifestName="ClusterServicePkg" ServiceManifestVersion="2.0.26" />
     <ConfigOverrides />
   </ServiceManifestImport>
   <DefaultServices>
     <Service Name="WebService">
       <StatelessService ServiceTypeName="WebServiceType" InstanceCount="[WebService_InstanceCount]">
         <SingletonPartition />
+        <PlacementConstraints>[WebService_PlacementConstraints]</PlacementConstraints>
       </StatelessService>
     </Service>
     <Service Name="ClusterService">
       <StatefulService ServiceTypeName="ClusterServiceType" TargetReplicaSetSize="[ClusterService_TargetReplicaSetSize]" MinReplicaSetSize="[ClusterService_MinReplicaSetSize]">
         <UniformInt64Partition PartitionCount="[ClusterService_PartitionCount]" LowKey="-9223372036854775808" HighKey="9223372036854775807" />
+        <PlacementConstraints>[ClusterService_PlacementConstraints]</PlacementConstraints>
       </StatefulService>
     </Service>
   </DefaultServices>
