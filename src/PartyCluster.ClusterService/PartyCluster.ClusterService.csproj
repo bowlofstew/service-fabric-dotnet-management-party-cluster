@@ -362,6 +362,7 @@
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="ClusterService.cs" />
     <Compile Include="Program.cs" />
+    <Compile Include="RandomNameGenerator.cs" />
     <Compile Include="SendGridMailer.cs" />
     <Compile Include="ServiceEventSource.cs" />
   </ItemGroup>

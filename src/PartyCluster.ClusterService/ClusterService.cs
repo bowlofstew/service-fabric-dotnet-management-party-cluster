@@ -16,6 +16,7 @@ namespace PartyCluster.ClusterService
     using Microsoft.ServiceFabric.Data;
     using Microsoft.ServiceFabric.Data.Collections;
     using Microsoft.ServiceFabric.Services.Communication.Runtime;
+    using Microsoft.ServiceFabric.Services.Remoting.FabricTransport.Runtime;
     using Microsoft.ServiceFabric.Services.Remoting.Runtime;
     using Microsoft.ServiceFabric.Services.Runtime;
     using PartyCluster.Common;
@@ -40,8 +41,6 @@ namespace PartyCluster.ClusterService
         /// The default value is 4 seconds.
         /// </summary>
         private static readonly TimeSpan transactionTimeout = TimeSpan.FromSeconds(4);
-
-        private readonly Random random = new Random();
 
         /// <summary>
         /// Does cluster-related functions. 
@@ -412,7 +411,10 @@ namespace PartyCluster.ClusterService
 
         protected override IEnumerable<ServiceReplicaListener> CreateServiceReplicaListeners()
         {
-            return new[] {new ServiceReplicaListener(context => this.CreateServiceRemotingListener(context))};
+            return new[]
+            {
+                new ServiceReplicaListener(context => new FabricTransportServiceRemotingListener(context, this))
+            };
         }
 
         /// <summary>
@@ -510,8 +512,8 @@ namespace PartyCluster.ClusterService
                         await
                             clusterDictionary.AddAsync(
                                 tx,
-                                this.CreateClusterId(),
-                                new Cluster(this.CreateClusterInternalName()),
+                                RandomNameGenerator.GetRandomId(),
+                                new Cluster(RandomNameGenerator.GetRandomNameString()),
                                 transactionTimeout,
                                 cancellationToken);
                     }
@@ -1007,24 +1009,6 @@ namespace PartyCluster.ClusterService
         private void CodePackageActivationContext_ConfigurationPackageModifiedEvent(object sender, PackageModifiedEventArgs<ConfigurationPackage> e)
         {
             this.UpdateClusterConfigSettings(e.NewPackage.Settings);
-        }
-
-        /// <summary>
-        /// Creates a new cluster ID.
-        /// </summary>
-        /// <returns></returns>
-        private int CreateClusterId()
-        {
-            return this.random.Next();
-        }
-
-        /// <summary>
-        /// Creates a name for a cluster resource.
-        /// </summary>
-        /// <returns></returns>
-        private string CreateClusterInternalName()
-        {
-            return "party" + (ushort) this.random.Next();
         }
     }
 }

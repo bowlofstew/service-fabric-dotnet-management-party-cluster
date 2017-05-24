@@ -11,8 +11,8 @@
     <Parameter Name="RefreshInterval" Value="00:00:10"/>
     <Parameter Name="MinimumClusterCount" Value="5"/>
     <Parameter Name="MaximumClusterCount" Value="10" />
-    <Parameter Name="MaximumUsersPerCluster" Value="5"/>
-    <Parameter Name="MaximumClusterUptime" Value="05:00:00" />
+    <Parameter Name="MaximumUsersPerCluster" Value="1"/>
+    <Parameter Name="MaximumClusterUptime" Value="01:00:00" />
     <Parameter Name="UserCapacityHighPercentThreshold" Value="0.75"/>
     <Parameter Name="UserCapacityLowPercentThreshold" Value="0.25" />
   </Section>
@@ -33,5 +33,16 @@
     <Parameter Name="SubscriptionID" IsEncrypted="true" Value="" />
     <Parameter Name="Username" IsEncrypted="true" Value="" />
     <Parameter Name="Password" IsEncrypted="true" Value="" />
+  </Section>
+
+  <Section Name="TransportSettings">
+    <Parameter Name="SecurityCredentialsType" Value="X509" />
+    <Parameter Name="CertificateFindType" Value="FindByThumbprint" />
+    <Parameter Name="CertificateFindValue" Value="" />
+    <Parameter Name="CertificateStoreLocation" Value="LocalMachine" />
+    <Parameter Name="CertificateStoreName" Value="My" />
+    <Parameter Name="CertificateProtectionLevel" Value="EncryptAndSign" />
+    <Parameter Name="CertificateRemoteCommonNames" Value="" />
+    <Parameter Name="CertificateRemoteThumbprints" Value="" />
   </Section>
 </Settings>

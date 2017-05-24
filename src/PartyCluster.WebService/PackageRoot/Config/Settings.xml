@@ -6,6 +6,17 @@
     <Parameter Name="Github.ClientId" IsEncrypted="true" Value=""/>
     <Parameter Name="Github.ClientSecret" IsEncrypted="true" Value=""/>
     <Parameter Name="Csrf.Salt" IsEncrypted="true" Value=""/>
-    <Parameter Name="AuthenticationTypeName" IsEncrypted="false" Value="PartyAuthCookie"/>
+    <Parameter Name="AuthenticationTypeName" IsEncrypted="false" Value=""/>
+  </Section>
+  <Section Name="TransportSettings">
+    <Parameter Name="MaxMessageSize" Value="10000000" />
+    <Parameter Name="SecurityCredentialsType" Value="X509" />
+    <Parameter Name="CertificateFindType" Value="FindByThumbprint" />
+    <Parameter Name="CertificateFindValue" Value="" />
+    <Parameter Name="CertificateStoreLocation" Value="LocalMachine" />
+    <Parameter Name="CertificateStoreName" Value="My" />
+    <Parameter Name="CertificateProtectionLevel" Value="EncryptAndSign" />
+    <Parameter Name="CertificateRemoteCommonNames" Value="" />
+    <Parameter Name="CertificateRemoteThumbprints" Value="" />
   </Section>
 </Settings>
