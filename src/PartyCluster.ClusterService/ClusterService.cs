@@ -252,7 +252,7 @@ namespace PartyCluster.ClusterService
                 throw new ArgumentNullException("userId");
             }
 
-            ServiceEventSource.Current.ServiceMessage(this, "Join random cluster request.");
+            ServiceEventSource.Current.ServiceMessage(this, "Join random cluster request for userid: {0}.", userId);
 
             IReliableDictionary<int, Cluster> clusterDictionary =
                 await this.StateManager.GetOrAddAsync<IReliableDictionary<int, Cluster>>(ClusterDictionaryName);
@@ -312,7 +312,7 @@ namespace PartyCluster.ClusterService
                 await clusterDictionary.SetAsync(tx, openClusterId, updatedCluster);
                 await tx.CommitAsync();
 
-                ServiceEventSource.Current.ServiceMessage(this, "Join cluster request completed. Cluster: {0}.", openClusterId);
+                ServiceEventSource.Current.ServiceMessage(this, "Join cluster request completed. User: {0}, Cluster: {1}.", userId, openClusterId);
 
                 return this.GetUserView(PartyStatus.Joined, userId, openClusterId, updatedCluster);
             }

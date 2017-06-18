@@ -11,7 +11,7 @@ namespace PartyCluster.ApplicationDeployService
     using System.Threading.Tasks;
     using Microsoft.ServiceFabric.Services.Runtime;
 
-    [EventSource(Name = "MyCompany-PartyCluster-ApplicationDeployService")]
+    [EventSource(Name = "ServiceFabric-PartyCluster-ApplicationDeployService")]
     internal sealed class ServiceEventSource : EventSource
     {
         public static readonly ServiceEventSource Current = new ServiceEventSource();

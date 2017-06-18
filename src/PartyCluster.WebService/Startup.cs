@@ -61,8 +61,7 @@ namespace PartyCluster.WebService
             {
                 AuthenticationType = this.config.AuthenticationTypeName,
                 LoginPath = new PathString("/auth/login"),
-                CookieSecure = Microsoft.Owin.Security.Cookies.CookieSecureOption.Always,
-                ExpireTimeSpan = TimeSpan.FromHours(1)
+                CookieSecure = Microsoft.Owin.Security.Cookies.CookieSecureOption.Always
             });
 
             appBuilder.UseFacebookAuthentication(
@@ -127,8 +126,9 @@ namespace PartyCluster.WebService
             context.Authentication.Challenge(
                 new Microsoft.Owin.Security.AuthenticationProperties()
                     {
-                        RedirectUri = "/"
-                    }, "Facebook");
+                        RedirectUri = "/",
+                        ExpiresUtc = DateTime.UtcNow.AddMinutes(45),
+                }, "Facebook");
 
             return Task.FromResult((int)System.Net.HttpStatusCode.Unauthorized);
         }
@@ -138,7 +138,8 @@ namespace PartyCluster.WebService
             context.Authentication.Challenge(
                 new Microsoft.Owin.Security.AuthenticationProperties()
                 {
-                    RedirectUri = "/"
+                    RedirectUri = "/",
+                    ExpiresUtc = DateTime.UtcNow.AddMinutes(45),
                 }, "GitHub");
 
             return Task.FromResult((int)System.Net.HttpStatusCode.Unauthorized);

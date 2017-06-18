@@ -10,7 +10,7 @@ namespace PartyCluster.ClusterService
     using Microsoft.ServiceFabric.Services.Runtime;
     using System.Diagnostics.Tracing;
 
-    [EventSource(Name = "MyCompany-PartyCluster-ClusterService")]
+    [EventSource(Name = "ServiceFabric-PartyCluster-ClusterService")]
     internal sealed class ServiceEventSource : EventSource
     {
         public static ServiceEventSource Current = new ServiceEventSource();

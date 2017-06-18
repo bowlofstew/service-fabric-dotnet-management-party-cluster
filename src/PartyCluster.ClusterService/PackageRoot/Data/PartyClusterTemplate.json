@@ -101,7 +101,7 @@
     },
     "clusterVersion": {
       "type": "string",
-      "defaultValue": "255.255.5703.255"
+      "defaultValue": "255.255.5718.255"
     }
   },
   "variables": {
