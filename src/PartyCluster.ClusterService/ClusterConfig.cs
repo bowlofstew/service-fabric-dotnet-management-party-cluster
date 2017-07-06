@@ -6,14 +6,17 @@
 namespace PartyCluster.ClusterService
 {
     using System;
+    using Common;
 
-    internal class ClusterConfig
+    public class ClusterConfig
     {
         public ClusterConfig()
         {
+            Trace.Message("ClusterConfig ctor.");
+
             this.RefreshInterval = TimeSpan.FromSeconds(1);
-            this.MinimumClusterCount = 10;
-            this.MaximumClusterCount = 100;
+            this.MinimumClusterCount = 1;
+            this.MaximumClusterCount = 2;
             this.MaximumUsersPerCluster = 1;
             this.MaximumClusterUptime = TimeSpan.FromHours(1);
             this.UserCapacityHighPercentThreshold = 0.75;
@@ -35,5 +38,9 @@ namespace PartyCluster.ClusterService
         public double UserCapacityLowPercentThreshold { get; set; }
 
         public double CapacityThresholdIncrement { get; set; }
+
+        public string ArmTemplateFile { get; set; }
+
+        public string ArmTemplateParameterFile { get; set; }
     }
 }

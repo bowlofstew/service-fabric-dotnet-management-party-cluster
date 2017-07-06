@@ -6,6 +6,7 @@
 namespace PartyCluster.WebService
 {
     using System;
+    using System.Collections.Generic;
     using System.Fabric;
     using System.Linq;
     using System.Security.Claims;
@@ -59,11 +60,14 @@ namespace PartyCluster.WebService
 
             appBuilder.UseCookieAuthentication(new Microsoft.Owin.Security.Cookies.CookieAuthenticationOptions()
             {
+#if !LOCAL
+                CookieSecure = Microsoft.Owin.Security.Cookies.CookieSecureOption.Always,
+#endif
                 AuthenticationType = this.config.AuthenticationTypeName,
                 LoginPath = new PathString("/auth/login"),
-                CookieSecure = Microsoft.Owin.Security.Cookies.CookieSecureOption.Always
             });
 
+#if !LOCAL
             appBuilder.UseFacebookAuthentication(
                 new Microsoft.Owin.Security.Facebook.FacebookAuthenticationOptions()
                 {
@@ -86,6 +90,7 @@ namespace PartyCluster.WebService
                         }
                     },
                 });
+#endif
 
             appBuilder.Map(new PathString("/auth/logout"),
                 (application) =>
@@ -93,6 +98,13 @@ namespace PartyCluster.WebService
                     application.Run(Logout);
                 });
 
+#if LOCAL
+            appBuilder.Map(new PathString("/auth/login"),
+                (application) =>
+                {
+                    application.Run(LocalLogin);
+                });
+#else
             appBuilder.Map(new PathString("/auth/facebook"),
                 (application) =>
                 {
@@ -104,7 +116,7 @@ namespace PartyCluster.WebService
                 {
                     application.Run(InvokeGithubLogin);
                 });
-
+#endif
             appBuilder.Use(typeof(CsrfValidationMiddleware), this.config);
             appBuilder.UseWebApi(httpConfig);
             appBuilder.UseFileServer(fileOptions);
@@ -116,6 +128,24 @@ namespace PartyCluster.WebService
             context.Authentication.SignOut(
                 context.Authentication.GetAuthenticationTypes()
                 .Select(o => o.AuthenticationType).ToArray());
+
+            context.Response.Redirect("/");
+            return Task.FromResult(false);
+        }
+
+        public Task LocalLogin(IOwinContext context)
+        {
+            var userId = context.Request.Query["id"] ?? "testUser";
+
+            var claims = new List<Claim>();
+            claims.Add(new Claim(ClaimTypes.Name, userId));
+
+            var identity = new ClaimsIdentity(claims, this.config.AuthenticationTypeName);
+
+            context.Authentication.SignIn(new Microsoft.Owin.Security.AuthenticationProperties()
+            {
+                ExpiresUtc = DateTime.UtcNow.AddMinutes(45),
+            }, identity);
 
             context.Response.Redirect("/");
             return Task.FromResult(false);

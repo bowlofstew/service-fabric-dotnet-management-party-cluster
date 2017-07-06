@@ -16,7 +16,11 @@ namespace PartyCluster.WebService.Middleware
 
         public CsrfTokenProvider(ConfigSettings config)
         {
+#if LOCAL
+            this.csrfSalt = "qwerty6543";
+#else
             this.csrfSalt = config.CsrfSalt.ToUnsecureString();
+#endif
         }
 
         public string GenerateCsrfToken(string authToken)

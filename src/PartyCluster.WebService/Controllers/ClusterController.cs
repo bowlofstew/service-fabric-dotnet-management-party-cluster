@@ -6,8 +6,6 @@
 namespace PartyCluster.WebService.Controllers
 {
     using System;
-    using System.Collections.Generic;
-    using System.Linq;
     using System.Net;
     using System.Net.Http;
     using System.Security.Claims;
@@ -16,7 +14,6 @@ namespace PartyCluster.WebService.Controllers
     using Microsoft.ServiceFabric.Services.Client;
     using Microsoft.ServiceFabric.Services.Remoting.Client;
     using PartyCluster.Domain;
-    using PartyCluster.WebService.Models;
     using PartyCluster.WebService.Resources;
     using PartyCluster.WebService.ViewModels;
 
@@ -26,89 +23,10 @@ namespace PartyCluster.WebService.Controllers
         private static Resx messageResources = new Resx("PartyCluster.WebService.Resources.Messages");
         private static Resx clusterNameResources = new Resx("PartyCluster.WebService.Resources.ClusterNames");
         
-        //[HttpGet]
-        //[Route("clusters")]
-        public async Task<IHttpActionResult> Get()
-        {
-            ServiceUriBuilder builder = new ServiceUriBuilder("ClusterService");
-            IClusterService clusterService = ServiceProxy.Create<IClusterService>(builder.ToUri(), new ServicePartitionKey(1));
-
-            IEnumerable<ClusterView> clusters = await clusterService.GetClusterListAsync();
-
-            return this.Ok(
-                clusters.Select(
-                    x => new
-                    {
-                        ClusterId = x.ClusterId,
-                        Name = this.GetClusterName(x.ClusterId),
-                        ApplicationCount = x.ApplicationCount,
-                        ServiceCount = x.ServiceCount,
-                        Capacity = this.GetUserCapacity(x.UserCount, x.MaxUsers),
-                        UserCount = x.UserCount,
-                        MaxUsers = x.MaxUsers,
-                        TimeRemaining = x.TimeRemaining > TimeSpan.Zero
-                            ? String.Format("{0:hh\\:mm\\:ss}", x.TimeRemaining)
-                            : "expired"
-                    }));
-        }
-
-        //[HttpPost]
-        //[Route("clusters/join/{clusterId}")]
-        public async Task<HttpResponseMessage> Join(int clusterId, [FromBody] JoinClusterRequest user)
-        {
-            try
-            {
-                if (user == null || String.IsNullOrWhiteSpace(user.UserEmail))
-                {
-                    return this.Request.CreateResponse(
-                        HttpStatusCode.BadRequest,
-                        new BadRequestViewModel("MissingInput", messageResources.Manager.GetString("MissingInput"), "Missing input."));
-                }
-                
-                ServiceUriBuilder builder = new ServiceUriBuilder("ClusterService");
-                IClusterService clusterService = ServiceProxy.Create<IClusterService>(builder.ToUri(), new ServicePartitionKey(1));
-
-                var userView = await clusterService.JoinClusterAsync(clusterId, user.UserEmail);
-
-                return this.Request.CreateResponse<UserView>(HttpStatusCode.Accepted, userView);
-            }
-            catch (AggregateException ae)
-            {
-                ArgumentException argumentEx = ae.InnerException as ArgumentException;
-                if (argumentEx != null)
-                {
-                    return this.Request.CreateResponse(
-                        HttpStatusCode.BadRequest,
-                        new BadRequestViewModel("InvalidEmail", messageResources.Manager.GetString("InvalidEmail"), argumentEx.Message));
-                }
-
-                OperationFailedException joinFailedEx = ae.InnerException as OperationFailedException;
-                if (joinFailedEx != null)
-                {
-                    return this.Request.CreateResponse(
-                        HttpStatusCode.BadRequest,
-                        new BadRequestViewModel(
-                            joinFailedEx.Reason.ToString(),
-                            messageResources.Manager.GetString(joinFailedEx.Reason.ToString()),
-                            joinFailedEx.Message));
-                }
-
-                return this.Request.CreateResponse(
-                    HttpStatusCode.InternalServerError,
-                    new BadRequestViewModel("ServerError", messageResources.Manager.GetString("ServerError"), ae.InnerException.Message));
-            }
-            catch (Exception e)
-            {
-                return this.Request.CreateResponse(
-                    HttpStatusCode.InternalServerError,
-                    new BadRequestViewModel("ServerError", messageResources.Manager.GetString("ServerError"), e.Message));
-            }
-        }
-
         [HttpPost]
-        [Route("clusters/joinRandom")]
+        [Route("clusters/{platform}/joinRandom")]
         [Authorize]
-        public async Task<HttpResponseMessage> JoinRandom()
+        public async Task<HttpResponseMessage> JoinRandom(Platform platform)
         {
             try
             {
@@ -124,7 +42,7 @@ namespace PartyCluster.WebService.Controllers
                 ServiceUriBuilder builder = new ServiceUriBuilder("ClusterService");
                 IClusterService clusterService = ServiceProxy.Create<IClusterService>(builder.ToUri(), new ServicePartitionKey(1));
 
-                var userView = await clusterService.JoinRandomClusterAsync(userId);
+                var userView = await clusterService.JoinRandomClusterAsync(userId, platform);
 
                 return this.Request.CreateResponse<UserView>(HttpStatusCode.OK, userView);
             }

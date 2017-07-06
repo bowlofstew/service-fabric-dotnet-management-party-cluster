@@ -8,19 +8,18 @@ h1, h2, h3, h4 { font-family: "Segoe UI Light","Segoe WP Light","Segoe UI","Sego
 .wrapper { clear: both; display: block; margin: 0 auto; min-width: 1000px; width: 1000px; }
 .overlay { display: none; position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 10; background-color: rgba(0,0,0,0.5); }
 .dialog { display: none; width: 500px; height: 330px; position: fixed; top: 50%; left: 50%; margin-top: -150px; margin-left: -200px; padding: 20px; background-color: #EEE; box-shadow: 0 0 15px #222; z-index: 11; }
-.auth-header { margin: 20px 0 20px 14px; }
+.auth-header { margin: 30px 0 20px 0; }
 .button { display: inline-block; border: 0 none; box-sizing: border-box; color: #fff; padding: 4px 15px; position: relative; text-align: center; vertical-align: bottom; text-decoration: none; }
-    .button.party-now-button { background: #89c402 url('balloons-icon.png') center right no-repeat; font-size: 24px; line-height: 33px; padding: 6px 55px 9px 20px; margin: 20px 0 0; }
-        .button.party-now-button:hover { background-color: #A5CE00; text-decoration: none; }
-    .button.join-now-button { background: #89c402 center right no-repeat; font-size: 24px; line-height: 33px; padding: 6px 55px 9px 20px; margin: 20px 0 0; }
+    .button.disabled-join-now-button { width: 300px; background: #999 center right no-repeat; font-size: 16px; line-height: 33px; padding: 6px 20px 9px 20px; margin: 20px 0 0; }
+    .button.join-now-button { width: 300px; background: #89c402 center right no-repeat; font-size: 24px; line-height: 33px; padding: 6px 20px 9px 20px; margin: 20px 0 0; }
         .button.join-now-button:hover { background-color: #A5CE00; text-decoration: none; }
-    .button.auth { color: white; height: 47px; width: 200px; margin: 14px; padding: 0; }
+    .button.auth { color: white; height: 47px; width: 200px; margin-right: 25px; margin-bottom: 20px; padding: 0; }
         .button.auth:hover { text-decoration: none; }
     .button.fb-link { background-color: #3b5998; }
-    .button.github-link { background-color: #555; }
+    .button.github-link { background-color: #7db303; }
 .auth-button-text { line-height: 46px; font-size: 14pt; }
 .auth-button-icon { height: 47px; width: 47px; float: left; }
-.border-icon-box { border: 1px solid #555; }
+.border-icon-box { border: 1px solid #7db303; }
 .button.download { background: #999; font-size: 24px; line-height: 33px; padding: 6px 55px 9px 20px; margin: 20px 0 0 0; }
     .button.download::after { background: url("data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAbCAYAAAB1NA+iAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAAJcEhZcwAADsMAAA7DAcdvqGQAAAAYdEVYdFNvZnR3YXJlAHBhaW50Lm5ldCA0LjAuM4zml1AAAABRSURBVDhPY/j//78AEDcAsQEDuQCoOQGI348aggCjhmCCUUMwAVAzKPOBDFGAChEPQDZDNc+HChEPRjWTCEY1kwgo1QyqmdYDcT9UiATAwAAA8wwclpvxEbIAAAAASUVORK5CYII=") no-repeat; content: ""; display: inline-block; height: 28px; margin-top: -14px; position: absolute; right: 15px; top: 50%; width: 16px; }
     .button.download:hover { background-color: #BBB; text-decoration: none; }
@@ -35,13 +34,12 @@ header { background: #303030; }
 section#main { margin: 40px auto; }
 .cluster-list { width: 595px; min-height: 580px; float: left; }
 .hidden { display: none; }
-.join-cluster-authenticate p { bottom: 0; position: absolute; }
 .party-area { width: 595px; float: left; }
-.party-area-header-large { margin: 10px 0 15px 0; font-size: 32px; font-weight: 300; }
 .party-area-header-medium { margin: 10px 0 10px 0; font-size: 28px; font-weight: 300; }
 .party-area-header-small { margin: 10px 0 10px 0; font-size: 24px; font-weight: 300; }
 .party-status { float: left; }
 .party-area-auth-header { margin: 10px 0 30px 0; width: 65%; font-size: 16px; }
+.party-area-unauth-text { width: 80%; }
 .party-auth-userid { font-weight: normal; font-size: 18px; }
 .party-auth-logout-button { float: right; }
 .cluster-details { margin: 20px 0; }

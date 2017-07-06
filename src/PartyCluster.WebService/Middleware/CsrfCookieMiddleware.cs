@@ -24,7 +24,11 @@ namespace PartyCluster.WebService.Middleware
             context.Response.OnSendingHeaders((state) =>
             {
                 if (context.Request.Path == new PathString("/signin-github")
-                || context.Request.Path == new PathString("/signin-facebook"))
+                || context.Request.Path == new PathString("/signin-facebook")
+#if LOCAL
+                || context.Request.Path == new PathString("/auth/login")
+#endif
+                )
                 {
                     if (context.Response.Headers.ContainsKey("set-cookie"))
                     {
@@ -41,7 +45,9 @@ namespace PartyCluster.WebService.Middleware
                                 csrfToken,
                                 new CookieOptions()
                                 {
+#if !LOCAL
                                     Secure = true,
+#endif
                                     Expires = DateTime.UtcNow.AddHours(1),
                                     //HttpOnly = true
                                 });

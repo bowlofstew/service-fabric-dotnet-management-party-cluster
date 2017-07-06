@@ -23,7 +23,7 @@ namespace PartyCluster.ClusterService
             this.stateManager = stateManager;
         }
 
-        public async Task<string> CreateClusterAsync(string name, IEnumerable<int> ports)
+        public async Task<string> CreateClusterAsync(Platform platform, string name, IEnumerable<int> ports)
         {
             IReliableDictionary<string, ClusterOperationStatus> clusters =
                 await this.stateManager.GetOrAddAsync<IReliableDictionary<string, ClusterOperationStatus>>(new Uri("fakeclusterops:/clusters"));

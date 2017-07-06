@@ -33,25 +33,23 @@
             <h3>Oops!</h3>
             <p>Something went wrong. Please try again later.</p>
         </div>
-        <div class="dialog join-cluster-authenticate">
-            <h3 class="auth-header">Sign in to join a Party Cluster</h3>
-            <a id="auth-github-link" class="button auth github-link" href="">
-                <img class="auth-button-icon border-icon-box" src="Content/github.png" />
-                <span class="auth-button-text">GitHub</span>
-            </a>
-            <a id="auth-fb-link" class="button auth fb-link" href="">
-                <img class="auth-button-icon" src="Content/fb.png" />
-                <span class="auth-button-text">Facebook</span>
-            </a>
-            <p>
-                Please refer to our <a href="https://privacy.microsoft.com/privacystatement/ " target="_blank">Privacy &amp; Cookies</a> policy and <a href="termsofuse.html" target="_blank">Terms of Use</a> for details.
-            </p>
-        </div>
         <div class="party-area clearfix">
             <div id="party-unauth-section" style="display: none">
-                <div class="party-area-header-large">Try Azure Service Fabric</div>
-                <p>Get started with a time-limited Service Fabric cluster in Azure free of charge, no subscriptions required.<p>
-                <a class="button party-now-button" href="javascript:void(0)">Party Now!</a>
+                <div class="party-area-unauth-text">
+                    Get started with a time-limited Service Fabric cluster in Azure free of charge, no subscriptions required.
+                </div>
+                <h4 class="auth-header">Sign in to join a Party Cluster</h4>
+                <a id="auth-github-link" class="button auth github-link" href="/auth/github">
+                    <img class="auth-button-icon border-icon-box" src="Content/github.png" />
+                    <span class="auth-button-text">GitHub</span>
+                </a>
+                <a id="auth-fb-link" class="button auth fb-link" href="/auth/facebook">
+                    <img class="auth-button-icon" src="Content/fb.png" />
+                    <span class="auth-button-text">Facebook</span>
+                </a>
+                <p>
+                    Please refer to our <a href="https://privacy.microsoft.com/privacystatement/ " target="_blank">Privacy &amp; Cookies</a> policy and <a href="termsofuse.html" target="_blank">Terms of Use</a> for details.
+                </p>
             </div>
             <div id="party-auth-section">
                 <div id="party-area-auth-header" class="party-area-auth-header" style="display:none">
@@ -60,10 +58,29 @@
                 </div>
                 <div id="party-open-section" style="display: none">
                     <div class="party-area-header-medium">Party clusters are available!</div>
-                    <a class="button join-now-button" href="javascript:void(0)">Join a cluster</a>
+                    <div class="party-open-windows-section" style="display: none">
+                        <a id="joinWindowsButton" class="button join-now-button" href="javascript:void(0)">
+                            Join a Windows cluster
+                        </a>
+                    </div>
+                    <div class="party-closed-windows-section" style="display: none">
+                        <div class="button disabled-join-now-button" href="javascript:void(0)">
+                            All Windows clusters are occupied. Please try later.
+                        </div>
+                    </div>
+                    <div class="party-open-linux-section" style="display: none">
+                        <a id="joinLinuxButton" class="button join-now-button" href="javascript:void(0)">
+                            Join a Linux cluster
+                        </a>
+                    </div>
+                    <div class="party-closed-linux-section" style="display: none">
+                        <div class="button disabled-join-now-button" href="javascript:void(0)">
+                            All Linux clusters are occupied. Please try later.
+                        </div>
+                    </div>
                 </div>
                 <div id="party-closed-section" style="display: none">
-                    <div class="party-area-header-medium">Sorry, but it looks like all the Party Clusters are currently occupied. Please come back later.</div>
+                    <div class="party-area-header-medium">Sorry, all the Party Clusters are currently occupied. Please try later.</div>
                 </div>
                 <div id="party-joined-section" class="cluster-details" style="display: none">
                     <div class="party-area-header-medium">Your cluster is ready!</div>

@@ -14,11 +14,14 @@ namespace PartyCluster.WebService
     {
         public ConfigSettings(KeyedCollection<string, ConfigurationProperty> webServiceConfig)
         {
+#if LOCAL
+#else
             this.FacebookAppId = webServiceConfig["Facebook.AppId"].DecryptValue();
             this.FacebookAppSecret = webServiceConfig["Facebook.AppSecret"].DecryptValue();
             this.GithubClientId = webServiceConfig["Github.ClientId"].DecryptValue();
             this.GithubClientSecret = webServiceConfig["Github.ClientSecret"].DecryptValue();
             this.CsrfSalt = webServiceConfig["Csrf.Salt"].DecryptValue();
+#endif
             this.AuthenticationTypeName = webServiceConfig["AuthenticationTypeName"].Value;
         }
 

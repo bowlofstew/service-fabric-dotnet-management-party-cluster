@@ -13,7 +13,7 @@ namespace PartyCluster.ClusterService
         private static readonly object nameSyncLock = new object();
         private static readonly object idSyncLock = new object();
 
-        public static string GetRandomNameString()
+        public static string GetRandomNameString(string prefix)
         {
             const string chars = "abcdefghijklmnopqrstuvwxyz0123456789";
             var stringChars = new char[8];
@@ -30,7 +30,7 @@ namespace PartyCluster.ClusterService
             }
 
             var nameString = new String(stringChars);
-            return nameString;
+            return string.Format("{0}{1}", prefix, nameString);
         }
 
         public static int GetRandomId()

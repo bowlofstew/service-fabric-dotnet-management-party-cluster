@@ -16,7 +16,9 @@ namespace PartyCluster.WebService.Middleware
 
         public override async Task Invoke(IOwinContext context)
         {
+#if !LOCAL
             context.Response.Headers.Add("Strict-Transport-Security", new string[] { "max-age=31536000; includeSubDomains" });
+#endif
             context.Response.Headers.Add("x-content-type-options", new string[] { "nosniff" });
             context.Response.Headers.Add("x-frame-options", new string[] { "deny" });
 

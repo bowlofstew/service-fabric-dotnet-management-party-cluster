@@ -6,9 +6,9 @@ function Api() {
     this.refreshRate = 50000;
     this.serviceUrl = location.protocol + '//' + location.hostname + (location.port ? ':' + location.port : '') + self.appPath;
 
-    this.JoinRandomCluster = function (result, failure, authorize) {
+    this.JoinRandomCluster = function (platform, result, failure, authorize) {
         $.ajax({
-            url: self.serviceUrl + '/api/clusters/joinRandom/',
+            url: self.serviceUrl + '/api/clusters/' + platform + '/joinRandom/',
             type: 'POST',
             contentType: 'application/json',
             datatype: 'json',
@@ -52,7 +52,7 @@ function Api() {
                 onSuccess(data);
             }
         }
-        else if (data != null && data.Status != null) {
+        else if (data != null && data.WindowsStatus != null && data.LinuxStatus != null) {
             onSuccess(data);
         }
         else {
@@ -129,22 +129,23 @@ function PartyClusters(api) {
         self.api.SetCsrfHeader();
         self.UpdatePartyStatus();
 
-        $('.party-now-button').click(function () {
-            self.AuthenticateUser('');
+        $('#joinWindowsButton').click(function () {
+            self.JoinRandomCluster("windows");
         });
 
-        $('.join-now-button').click(function () {
-            self.JoinRandomCluster();
+        $('#joinLinuxButton').click(function () {
+            self.JoinRandomCluster("linux");
         });
     };
 
-    this.JoinRandomCluster = function () {
+    this.JoinRandomCluster = function (platform) {
         var joinClusterProgressWindow = $('.join-cluster-progress');
         var joinClusterFailedWindow = $('.join-cluster-dialog-failed');
 
         self.joinClusterDialog.Show(joinClusterProgressWindow);
 
         self.api.JoinRandomCluster(
+            platform,
             function (userView) { // success
                 self.joinClusterDialog.Hide(joinClusterProgressWindow);
                 self.DisplayPartyJoined(userView);
@@ -199,22 +200,43 @@ function PartyClusters(api) {
     };
 
     this.IsPartyOpen = function (userViewInstance) {
-        return userViewInstance.Status == "Open";
+        return userViewInstance.WindowsStatus == "Open" 
+            || userViewInstance.LinuxStatus == "Open";
     }
 
     this.IsPartyClosed = function (userViewInstance) {
-        return userViewInstance.Status == "Closed";
+        return userViewInstance.WindowsStatus == "Closed"
+            && userViewInstance.LinuxStatus == "Closed";
     }
 
     this.IsPartyJoined = function (userViewInstance) {
-        return userViewInstance.Status == "Joined";
+        return userViewInstance.WindowsStatus == "Joined" 
+            || userViewInstance.LinuxStatus == "Joined";
     }
 
     this.DisplayPartyOpen = function (userView) {
         $('#party-unauth-section').hide();
-        $('#party-open-section').show();
         $('#party-closed-section').hide();
         $('#party-joined-section').hide();
+        $('#party-open-section').show();
+
+        if (userView.WindowsStatus == "Open") {
+            $('.party-open-windows-section').show();
+            $('.party-closed-windows-section').hide();
+        }
+        else {
+            $('.party-open-windows-section').hide();
+            $('.party-closed-windows-section').show();
+        }
+
+        if (userView.LinuxStatus == "Open") {
+            $('.party-open-linux-section').show();
+            $('.party-closed-linux-section').hide();
+        }
+        else {
+            $('.party-open-linux-section').hide();
+            $('.party-closed-linux-section').show();
+        }
 
         self.DisplayAuthHeader(userView);
     }
@@ -266,13 +288,5 @@ function PartyClusters(api) {
             $('#party-auth-userId').text('');
             $('#party-area-auth-header').hide();
         }
-    }
-
-    this.AuthenticateUser = function () {
-        $('#auth-fb-link').attr('href', "/auth/facebook");
-        $('#auth-github-link').attr('href', "/auth/github");
-
-        var joinClusterAuthWindow = $('.join-cluster-authenticate');
-        self.joinClusterDialog.Show(joinClusterAuthWindow);
     }
 };

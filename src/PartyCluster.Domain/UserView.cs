@@ -11,14 +11,15 @@ namespace PartyCluster.Domain
     [DataContract]
     public struct UserView
     {
-        public UserView(PartyStatus status, string userId)
-            : this (status, -1, userId, string.Empty, -1, TimeSpan.Zero, DateTimeOffset.MaxValue)
+        public UserView(PartyStatus windowsStatus, PartyStatus linuxStatus, string userId)
+            : this (windowsStatus, linuxStatus, -1, userId, string.Empty, -1, TimeSpan.Zero, DateTimeOffset.MaxValue)
         {
         }
 
-        public UserView(PartyStatus status, int clusterId, string userId, string endpoint, int userPort, TimeSpan timeRemaining, DateTimeOffset expirationTime)
+        public UserView(PartyStatus windowsStatus, PartyStatus linuxStatus, int clusterId, string userId, string endpoint, int userPort, TimeSpan timeRemaining, DateTimeOffset expirationTime)
         {
-            this.Status = status.ToString();
+            this.WindowsStatus = windowsStatus.ToString();
+            this.LinuxStatus = linuxStatus.ToString();
             this.ClusterId = clusterId;
             this.UserId = userId;
             this.ConnectionEndpoint = endpoint;
@@ -31,7 +32,10 @@ namespace PartyCluster.Domain
         }
 
         [DataMember]
-        public string Status { get; private set; }
+        public string WindowsStatus { get; private set; }
+
+        [DataMember]
+        public string LinuxStatus { get; private set; }
 
         [DataMember]
         public int ClusterId { get; private set; }

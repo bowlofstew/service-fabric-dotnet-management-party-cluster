@@ -92,6 +92,7 @@
   <ItemGroup>
     <Compile Include="ApplicationView.cs" />
     <Compile Include="PartyStatus.cs" />
+    <Compile Include="Platform.cs" />
     <Compile Include="UserView.cs" />
     <Compile Include="ClusterView.cs" />
     <Compile Include="ClusterOperationStatus.cs" />

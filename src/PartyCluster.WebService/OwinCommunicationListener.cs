@@ -30,14 +30,18 @@ namespace PartyCluster.WebService
 
         public Task<string> OpenAsync(CancellationToken cancellationToken)
         {
-            var httpsEndpoint = GetListeningAddress("ServiceEndpointHttps");
+#if LOCAL
+            var endpointUrl = GetListeningAddress("ServiceEndpointHttp");
+#else
+            var endpointUrl = GetListeningAddress("ServiceEndpointHttps");
+#endif
 
             var startOptions = new StartOptions();
-            startOptions.Urls.Add(httpsEndpoint);
+            startOptions.Urls.Add(endpointUrl);
 
             this.serverHandle = WebApp.Start(startOptions, appBuilder => this.startup.Configuration(appBuilder));
 
-            string resultAddress = httpsEndpoint.Replace("+", FabricRuntime.GetNodeContext().IPAddressOrFQDN);
+            string resultAddress = endpointUrl.Replace("+", FabricRuntime.GetNodeContext().IPAddressOrFQDN);
 
             ServiceEventSource.Current.Message("Listening on {0}", resultAddress);
 

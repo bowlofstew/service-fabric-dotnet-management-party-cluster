@@ -24,6 +24,8 @@ namespace PartyCluster.ClusterService
         private ArmClusterOperatorSettings settings;
         private string armTemplate;
         private string armParameters;
+        private string linuxTemplate;
+        private string linuxParameters;
 
         public ArmClusterOperator(StatefulServiceContext serviceContext)
         {
@@ -31,8 +33,10 @@ namespace PartyCluster.ClusterService
             DataPackage dataPackage = serviceContext.CodePackageActivationContext.GetDataPackageObject("Data");
 
             this.UpdateClusterOperatorSettings(configPackage.Settings);
-            this.armTemplate = this.GetArmTemplateContent(dataPackage.Path);
-            this.armParameters = this.GetArmParameterContent(dataPackage.Path);
+            this.armTemplate = this.GetArmTemplateContent(dataPackage.Path, "PartyClusterTemplate.json");
+            this.armParameters = this.GetArmParameterContent(dataPackage.Path, "PartyClusterTemplate.Parameters.json");
+            this.linuxTemplate = this.GetArmTemplateContent(dataPackage.Path, "LinuxNonSecure.json");
+            this.linuxParameters = this.GetArmParameterContent(dataPackage.Path, "LinuxNonSecure.Parameters.json");
 
             serviceContext.CodePackageActivationContext.ConfigurationPackageModifiedEvent
                 += this.CodePackageActivationContext_ConfigurationPackageModifiedEvent;
@@ -47,9 +51,10 @@ namespace PartyCluster.ClusterService
         /// <remarks>
         /// If a cluster with the given domain could not be created, an exception should be thrown indicating the failure reason.
         /// </remarks>
+        /// <param name="platform">Windows or Linux.</param>
         /// <param name="name">A unique name for the cluster.</param>
         /// <returns>The FQDN of the new cluster.</returns>
-        public async Task<string> CreateClusterAsync(string name, IEnumerable<int> ports)
+        public async Task<string> CreateClusterAsync(Platform platform, string name, IEnumerable<int> ports)
         {
             string token = await this.GetAuthorizationTokenAsync();
             TokenCloudCredentials credential = new TokenCloudCredentials(this.settings.SubscriptionID.ToUnsecureString(), token);
@@ -62,8 +67,9 @@ namespace PartyCluster.ClusterService
                     "ResourceGroup/Cluster already exists. Please try passing a different name, or delete the ResourceGroup/Cluster first.");
             }
 
-            string templateContent = this.armTemplate;
-            string parameterContent = this.armParameters
+            string templateContent = platform == Platform.Windows ? this.armTemplate : this.linuxTemplate;
+            string parameterContent = platform == Platform.Windows ? this.armParameters : this.linuxParameters;
+            parameterContent = parameterContent
                 .Replace("_CLUSTER_NAME_", name)
                 .Replace("_CLUSTER_LOCATION_", this.settings.Region)
                 .Replace("_USER_", this.settings.Username.ToUnsecureString())
@@ -199,11 +205,11 @@ namespace PartyCluster.ClusterService
                 {
                     DeploymentOperationsCreateResult dpResult =
                         await templateDeploymentClient.Deployments.CreateOrUpdateAsync(rgName, deploymentname, deployment);
-                    ServiceEventSource.Current.Message("ArmClusterOperator: Deployment in RG {0}: {1} ({2})", rgName, dpResult.RequestId, dpResult.StatusCode);
+                    Trace.Message("ArmClusterOperator: Deployment in RG {0}: {1} ({2})", rgName, dpResult.RequestId, dpResult.StatusCode);
                 }
                 catch (Exception e)
                 {
-                    ServiceEventSource.Current.Message(
+                    Trace.Message(
                         "ArmClusterOperator: Failed deploying ARM template to create a cluster in RG {0}. {1}",
                         rgName,
                         e.Message);
@@ -220,8 +226,10 @@ namespace PartyCluster.ClusterService
 
         private void CodePackageActivationContext_DataPackageModifiedEvent(object sender, PackageModifiedEventArgs<DataPackage> e)
         {
-            this.armTemplate = this.GetArmTemplateContent(e.NewPackage.Path);
-            this.armParameters = this.GetArmParameterContent(e.NewPackage.Path);
+            this.armTemplate = this.GetArmTemplateContent(e.NewPackage.Path, "PartyClusterTemplate.json");
+            this.armParameters = this.GetArmParameterContent(e.NewPackage.Path, "PartyClusterTemplate.Parameters.json");
+            this.linuxTemplate = this.GetArmTemplateContent(e.NewPackage.Path, "LinuxNonSecure.json");
+            this.linuxParameters = this.GetArmParameterContent(e.NewPackage.Path, "LinuxNonSecure.Parameters.json");
         }
 
         private void UpdateClusterOperatorSettings(ConfigurationSettings settings)
@@ -240,10 +248,10 @@ namespace PartyCluster.ClusterService
                 clusterConfigParameters["Password"].DecryptValue());
         }
 
-        private string GetArmTemplateContent(string templateDataPath)
+        private string GetArmTemplateContent(string templateDataPath, string templateFile)
         {
             var armTemplateContent = string.Empty;
-            using (StreamReader reader = new StreamReader(Path.Combine(templateDataPath, "PartyClusterTemplate.json")))
+            using (StreamReader reader = new StreamReader(Path.Combine(templateDataPath, templateFile)))
             {
                 armTemplateContent = reader.ReadToEnd();
             }
@@ -251,10 +259,10 @@ namespace PartyCluster.ClusterService
             return armTemplateContent;
         }
 
-        private string GetArmParameterContent(string templateDataPath)
+        private string GetArmParameterContent(string templateDataPath, string parameterFile)
         {
             var armParameterContent = string.Empty;
-            using (StreamReader reader = new StreamReader(Path.Combine(templateDataPath, "PartyClusterTemplate.Parameters.json")))
+            using (StreamReader reader = new StreamReader(Path.Combine(templateDataPath, parameterFile)))
             {
                 armParameterContent = reader.ReadToEnd();
             }

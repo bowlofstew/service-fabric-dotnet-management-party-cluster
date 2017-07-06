@@ -33,26 +33,26 @@ namespace PartyCluster.ClusterService
                             return new ClusterService(
 #if LOCAL
                             new FakeClusterOperator(stateManager),
-                            new FakeMailer(),
 #else
                             new ArmClusterOperator(context),
-                            new FakeMailer(),
 #endif
-                            new EmptyApplicationDeployService(),
                             stateManager,
                             context,
+                            new ClusterConfig(),
                             new ClusterConfig());
                         })
                         .GetAwaiter().GetResult();
 
-                    ServiceEventSource.Current.ServiceTypeRegistered(Process.GetCurrentProcess().Id, typeof(ClusterService).Name);
+                //Common.Trace.Message("ServiceTypeRegistered {0} {1}", Process.GetCurrentProcess().Id, typeof(ClusterService).Name);
+                //ServiceEventSource.Current.ServiceTypeRegistered(Process.GetCurrentProcess().Id, typeof(ClusterService).Name);
 
                     Thread.Sleep(Timeout.Infinite);
                 //}
             }
             catch (Exception e)
             {
-                ServiceEventSource.Current.ServiceHostInitializationFailed(e);
+                Common.Trace.Error(e.Message + e.StackTrace);
+                //ServiceEventSource.Current.ServiceHostInitializationFailed(e);
                 throw;
             }
         }

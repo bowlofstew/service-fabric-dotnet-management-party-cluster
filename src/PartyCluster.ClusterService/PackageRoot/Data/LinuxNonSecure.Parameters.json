@@ -1,0 +1,15 @@
+{
+  "clusterLocation": { "value": "_CLUSTER_LOCATION_" },
+  "clusterName": { "value": "_CLUSTER_NAME_" },
+  "adminUserName": { "value": "_USER_" },
+  "adminPassword": { "value": "_PWD_" },
+  "vmImagePublisher": { "value": "Microsoft.Azure.ServiceFabric" },
+  "vmImageOffer": { "value": "UbuntuServer" },
+  "vmImageSku": { "value": "16.04" },
+  "vmImageVersion": { "value": "6.0.11" },
+  "loadBalancedAppPort1": { "value": 80 },
+  "loadBalancedAppPort2": { "value": 8081 },
+  "storageAccountType": { "value": "Standard_LRS" },
+  "supportLogStorageAccountType": { "value": "Standard_LRS" },
+  "nt0InstanceCount": { "value": 3 }
+}
