@@ -1,15 +1,13 @@
 ﻿{
   "clusterName": { "value": "_CLUSTER_NAME_" },
   "clusterLocation": { "value": "_CLUSTER_LOCATION_" },
-  "clusterVersion": { "value": "" },
   "adminUserName": { "value": "_USER_" },
   "adminPassword": { "value": "_PWD_" },
-  "privateBuildVersion": { "value": "5.6.9006.2000" },
-  "privateBuildBuildUrl": { "value": "" },
-  "privateBuildFabricSettingsUrl": { "value": "" },
-  "loadBalancedAppPort1": { "value": "_PORT1_" },
-  "loadBalancedAppPort2": { "value": "_PORT1_" },
-  "loadBalancedAppPort3": { "value": "_PORT1_" },
-  "loadBalancedAppPort4": { "value": "_PORT1_" },
-  "loadBalancedAppPort5": { "value": "_PORT1_" }
+  "clusterVersion": { "value": "255.255.5718.255" },
+  "loadBalancedAppPort0": { "value": 80 },
+  "loadBalancedAppPort1": { "value": 8081 },
+  "loadBalancedAppPort2": { "value": 8080 },
+  "loadBalancedAppPort3": { "value": 20001 },
+  "loadBalancedAppPort4": { "value": 20003 },
+  "loadBalancedAppPort5": { "value": 20004 }
 }

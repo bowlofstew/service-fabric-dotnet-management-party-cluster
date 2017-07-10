@@ -9,6 +9,8 @@
   "vmImageVersion": { "value": "6.0.11" },
   "loadBalancedAppPort1": { "value": 80 },
   "loadBalancedAppPort2": { "value": 8081 },
+  "loadBalancedAppPort3": { "value": 8080 },
+  "loadBalancedAppPort4": { "value": 20001 },
   "storageAccountType": { "value": "Standard_LRS" },
   "supportLogStorageAccountType": { "value": "Standard_LRS" },
   "nt0InstanceCount": { "value": 3 }
