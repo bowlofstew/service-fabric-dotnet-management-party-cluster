@@ -385,6 +385,7 @@
               "numberOfProbes": 2,
               "port": "[parameters('loadBalancedAppPort2')]",
               "protocol": "tcp"
+            }
           },
           {
             "name": "AppPortProbe3",
@@ -393,6 +394,7 @@
               "numberOfProbes": 2,
               "port": "[parameters('loadBalancedAppPort3')]",
               "protocol": "tcp"
+            }
           },
           {
             "name": "AppPortProbe4",
