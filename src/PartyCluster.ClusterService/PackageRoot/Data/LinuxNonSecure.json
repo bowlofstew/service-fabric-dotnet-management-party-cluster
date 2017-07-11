@@ -72,6 +72,13 @@
         "description": "Input endpoint4 for the application to use. Replace it with what your application uses"
       }
     },
+    "SFReverseProxyPort": {
+      "type": "int",
+      "defaultValue": 19081,
+      "metadata": {
+        "description": "Endpoint for Service Fabric Reverse proxy"
+      }
+    },
     "storageAccountType": {
       "type": "string",
       "allowedValues": [
@@ -591,6 +598,7 @@
               "startPort": "[variables('nt0ephemeralStartPort')]"
             },
             "httpGatewayEndpointPort": "[variables('nt0fabricHttpGatewayPort')]",
+            "reverseProxyEndpointPort": "[parameters('SFReverseProxyPort')]",
             "isPrimary": true,
             "vmInstanceCount": "[parameters('nt0InstanceCount')]"
           }
