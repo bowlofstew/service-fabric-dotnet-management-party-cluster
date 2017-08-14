@@ -565,9 +565,18 @@ namespace PartyCluster.ClusterService
                         {
                             try
                             {
+                                // Take Update lock on item to be processed.
+                                var cluster =
+                                    await clusterDictionary.TryGetValueAsync(tx, item.Key, LockMode.Update);
+                                if (!cluster.HasValue)
+                                {
+                                    // The cluster has been deleted since starting enumeration.
+                                    return;
+                                }
+
                                 // The Cluster struct is immutable so that we don't end up with a partially-updated Cluster
                                 // in local memory in case the transaction doesn't complete.
-                                Cluster updatedCluster = await this.ProcessClusterStatusAsync(item.Value);
+                                Cluster updatedCluster = await this.ProcessClusterStatusAsync(cluster.Value);
 
                                 if (updatedCluster.Status == ClusterStatus.Deleted)
                                 {
