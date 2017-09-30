@@ -402,13 +402,6 @@ namespace PartyCluster.ClusterService
             return keys.ToList();
         }
 
-        protected override Task OnOpenAsync(ReplicaOpenMode openMode, CancellationToken cancellationToken)
-        {
-            this.LoadConfigPackageAndSubscribe();
-
-            return base.OnOpenAsync(openMode, cancellationToken);
-        }
-
         protected override IEnumerable<ServiceReplicaListener> CreateServiceReplicaListeners()
         {
             return new[]
@@ -428,6 +421,7 @@ namespace PartyCluster.ClusterService
             try
             {
                 ServiceEventSource.Current.ServiceMessage(this, "Cluster Service RunAsync started.");
+                this.LoadConfigPackageAndSubscribe();
 
                 while (true)
                 {
