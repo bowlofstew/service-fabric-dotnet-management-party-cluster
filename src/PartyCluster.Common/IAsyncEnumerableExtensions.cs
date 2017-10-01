@@ -52,6 +52,25 @@ namespace PartyCluster.Common
         }
 
         /// <summary>
+        /// Performs an asynchronous for-each loop on an IAsyncEnumerable.
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="instance"></param>
+        /// <param name="token"></param>
+        /// <param name="doSomethingAsync"></param>
+        /// <returns></returns>
+        public static async Task ForeachAsync<T>(this IAsyncEnumerable<T> instance, CancellationToken cancellationToken, Func<T, Task> doSomethingAsync)
+        {
+            using (IAsyncEnumerator<T> e = instance.GetAsyncEnumerator())
+            {
+                while (await e.MoveNextAsync(cancellationToken).ConfigureAwait(false))
+                {
+                    await doSomethingAsync(e.Current);
+                }
+            }
+        }
+
+        /// <summary>
         /// Counts the number of items that pass the given predicate.
         /// </summary>
         /// <typeparam name="TSource"></typeparam>
